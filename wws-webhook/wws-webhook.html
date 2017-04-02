@@ -1,0 +1,29 @@
+<script type="text/javascript">
+  RED.nodes.registerType("wws-webhook", {
+    category: "input",
+    color: "#a6bbcf",
+    defaults: {
+      name: { value: "" },
+      application: { value: "", type: "wws-application" },
+    },
+    inputs: 0,
+    outputs: 1,
+    icon: "arrow-in.png",
+    label: "WWS Webhook"
+  });
+</script>
+
+<script type="text/x-red" data-template-name="wws-webhook">
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-application"><i class="icon-tag"></i> WWS Application</label>
+    <input type="text" id="node-input-application" placeholder="Application">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-webhook">
+  <p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>

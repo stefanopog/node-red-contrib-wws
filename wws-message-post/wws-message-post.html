@@ -1,0 +1,40 @@
+<script type="text/javascript">
+  RED.nodes.registerType("wws-message-post", {
+    category: "output",
+    color: "#a6bbcf",
+    defaults: {
+      name: { value: "" },
+      application: { value: "", type: "wws-application" },
+      space: { value: "", required: true }
+    },
+    inputs: 1,
+    outputs: 0,
+    icon: "arrow-out.png",
+    label: "WWS Message Post",
+    oneditsave: function() {
+      console.log("OnEditSave");
+      function getToken(appID, appSecret) {
+        
+      }
+    }
+  });
+</script>
+
+<script type="text/x-red" data-template-name="wws-message-post">
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-application"><i class="icon-tag"></i> WWS Application</label>
+    <input type="text" id="node-input-application" placeholder="WWS Application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-space"><i class="icon-tag"></i> WWS Space</label>
+    <input type="text" id="node-input-space" placeholder="WWS Space">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-message-post">
+  <p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>
