@@ -9,7 +9,7 @@
     "request-promise-native": "latest",
     "body-parser": "latest"
   },
-  "keywords": [ ],
+  "keywords": [ "node-red" ],
   "node-red": {
     "nodes": {
       "wws-application": "wws-application/wws-application.js",
