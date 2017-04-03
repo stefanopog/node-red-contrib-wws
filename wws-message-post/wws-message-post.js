@@ -5,6 +5,7 @@ module.exports = function(RED) {
   function wwsMessagePostNode(config) {
     RED.nodes.createNode(this, config);
     var node = this;
+
     this.on("input", function(msg) {
       this.application = RED.nodes.getNode(config.application);
       if(this.application) {
@@ -27,6 +28,7 @@ module.exports = function(RED) {
       }
     });
   }
+  
   RED.nodes.registerType("wws-message-post", wwsMessagePostNode);
 
   // Helper functions

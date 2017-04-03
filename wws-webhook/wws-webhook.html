@@ -4,6 +4,9 @@
     color: "#a6bbcf",
     defaults: {
       name: { value: "" },
+      webhookPath: { value: "", required: true },
+      webhookID: { value: "", required: true },
+      webhookSecret: { value: "", required: true },
       application: { value: "", type: "wws-application" },
     },
     inputs: 0,
@@ -21,6 +24,18 @@
   <div class="form-row">
     <label for="node-input-application"><i class="icon-tag"></i> WWS Application</label>
     <input type="text" id="node-input-application" placeholder="Application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-webhookPath"><i class="icon-tag"></i> Webhook Path</label>
+    <input type="text" id="node-input-webhookPath" placeholder="Webhook URL">
+  </div>
+  <div class="form-row">
+    <label for="node-input-webhookID"><i class="icon-tag"></i> Webhook ID</label>
+    <input type="text" id="node-input-webhookID" placeholder="Webhook ID">
+  </div>
+  <div class="form-row">
+    <label for="node-input-webhookSecret"><i class="icon-tag"></i> Webhook Secret</label>
+    <input type="text" id="node-input-webhookSecret" placeholder="Webhook Secret">
   </div>
 </script>
 

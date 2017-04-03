@@ -4,7 +4,8 @@
   "description": "A library of Watson Work Services nodes for node-red",
   "dependencies": {
     "request": "latest",
-    "request-promise-native": "latest"
+    "request-promise-native": "latest",
+    "body-parser": "latest"
   },
   "keywords": [ "node-red" ],
   "node-red": {
