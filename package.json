@@ -2,12 +2,14 @@
   "name": "node-red-contrib-wws",
   "version": "0.0.1",
   "description": "A library of Watson Work Services nodes for node-red",
+  "author": "Benedikt Müller <mueller@me.com>",
+  "repository": "bndkt/node-red-contrib-wws",
   "dependencies": {
     "request": "latest",
     "request-promise-native": "latest",
     "body-parser": "latest"
   },
-  "keywords": [ "node-red" ],
+  "keywords": [ ],
   "node-red": {
     "nodes": {
       "wws-application": "wws-application/wws-application.js",
