@@ -8,8 +8,6 @@ module.exports = function(RED) {
     RED.nodes.createNode(this, config);
     var node = this;
 
-    this.application = RED.nodes.getNode(config.application);
-
     // CORS Handler
     this.corsHandler = function(req, res, next) { next(); }
     if (RED.settings.httpNodeCors) {
@@ -40,6 +38,10 @@ module.exports = function(RED) {
       console.log("Received request.");
       var bodyString = JSON.stringify(req.body);
 
+      this.application = RED.nodes.getNode(config.application);
+      this.appID = this.application.appID;
+      // this.warn("App ID: " + this.appID);
+
       if(this.authenticateRequest(bodyString, req.get("X-OUTBOUND-TOKEN"), config.webhookSecret)) {
         if(req.body.type === "verification") {
           console.log("Verification request.");
@@ -55,9 +57,12 @@ module.exports = function(RED) {
         } else {
           console.log("Notification request.");
 
-          var msgid = RED.util.generateId();
-          res._msgid = msgid;
-          node.send({ _msgid: msgid, req: req, res: res, payload: req.body });
+          var sender = req.body.userId;
+          if(sender != this.appID) {
+            var msgid = RED.util.generateId();
+            res._msgid = msgid;
+            node.send({ _msgid: msgid, req: req, res: res, payload: req.body });
+          }
 
           res.status(200).end();
         }
