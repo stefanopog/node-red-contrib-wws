@@ -56,6 +56,7 @@ module.exports = function(RED) {
           console.log("Verification request successful.");
         } else {
           console.log("Notification request.");
+          this.status({ fill: "green", shape: "dot", text: "connected" });
 
           var sender = req.body.userId;
           if(sender != this.appID) {
@@ -68,6 +69,7 @@ module.exports = function(RED) {
         }
       } else {
         console.log("Request authentication failed.");
+        this.status({ fill: "red", shape: "ring", text: "disconnected" });
         res.status(401).end();
       }
     };

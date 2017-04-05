@@ -1,7 +1,7 @@
 <script type="text/javascript">
   RED.nodes.registerType("wws-webhook", {
     category: "input",
-    color: "#a6bbcf",
+    color: "#A6BBCF",
     defaults: {
       name: { value: "" },
       webhookPath: { value: "", required: true },
@@ -12,7 +12,9 @@
     inputs: 0,
     outputs: 1,
     icon: "arrow-in.png",
-    label: "WWS Webhook"
+    label: function() {
+      return this.name || "WWS Webhook";
+    }
   });
 </script>
 
@@ -40,5 +42,5 @@
 </script>
 
 <script type="text/x-red" data-help-name="wws-webhook">
-  <p>A simple node that converts the message payloads into all lower-case characters</p>
+  <p>A node that acts as a webhook endpoint for <a href="https://developer.watsonwork.ibm.com">IBM Watson Work Services</a>.</p>
 </script>

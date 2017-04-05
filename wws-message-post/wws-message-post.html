@@ -1,7 +1,7 @@
 <script type="text/javascript">
   RED.nodes.registerType("wws-message-post", {
     category: "output",
-    color: "#a6bbcf",
+    color: "#A6BBCF",
     defaults: {
       name: { value: "" },
       application: { value: "", type: "wws-application" },
@@ -9,14 +9,11 @@
     },
     inputs: 1,
     outputs: 0,
-    icon: "arrow-out.png",
-    label: "WWS Message Post",
-    oneditsave: function() {
-      console.log("OnEditSave");
-      function getToken(appID, appSecret) {
-        
-      }
-    }
+    icon: "bridge.png",
+    label: function() {
+      return this.name || "WWS Message Post";
+    },
+    align: "right"
   });
 </script>
 
@@ -36,5 +33,5 @@
 </script>
 
 <script type="text/x-red" data-help-name="wws-message-post">
-  <p>A simple node that converts the message payloads into all lower-case characters</p>
+  <p>A node that posts a message to a space in <a href="https://workspace.ibm.com">IBM Watson Workspace</a> via <a href="https://developer.watsonwork.ibm.com">IBM Watson Work Services</a>.</p>
 </script>

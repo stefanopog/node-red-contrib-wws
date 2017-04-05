@@ -2,7 +2,7 @@ var request = require("request");
 var rp = require("request-promise-native");
 
 module.exports = function(RED) {
-  function wwsMessagePostNode(config) {
+  function wwsGraphQLNode(config) {
     RED.nodes.createNode(this, config);
     var node = this;
 
@@ -10,12 +10,7 @@ module.exports = function(RED) {
       this.application = RED.nodes.getNode(config.application);
       if(this.application) {
         this.application.getAccessToken().then(function(auth) {
-          var actor = {
-            avatar: "",
-            name: "Node Red",
-            url: ""
-          }
-          wwsMessagePost(auth.accessToken, config.space, actor, "red", msg.payload, msg.topic).then(() => {
+          wwsGraphQL(auth.accessToken, msg.payload, msg.topic).then(() => {
             console.log("Successfully posted message to WWS.");
             this.status({ fill: "green", shape: "dot", text: "connected" });
           }).catch((err) => {
@@ -33,12 +28,12 @@ module.exports = function(RED) {
     });
   }
 
-  RED.nodes.registerType("wws-message-post", wwsMessagePostNode);
+  RED.nodes.registerType("wws-graphql", wwsGraphQLNode);
 
   // Helper functions
-  function wwsMessagePost(accessToken, space, actor, color, text, title) {
+  function wwsGraphQL(accessToken, actor, color, text, title) {
     var host = "https://api.watsonwork.ibm.com";
-    var uri = host + "/v1/spaces/" + space + "/messages";
+    var uri = host + "/graphql";
     var options = {
       method: "POST",
       uri: uri,
@@ -47,20 +42,9 @@ module.exports = function(RED) {
       },
       json: true,
       body: {
-        annotations: [{
-          actor: {
-            avatar: actor.avatar,
-            name: actor.name,
-            url: actor.url
-          },
-          color: color,
-          text: text,
-          title: title,
-          type: "generic",
-          version: 1
-        }],
-        type: "appMessage",
-        version: 1
+        operationName: operationName,
+        query: query,
+        variables: variables
       }
     };
     return rp(options);
