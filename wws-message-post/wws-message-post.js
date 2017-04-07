@@ -15,7 +15,12 @@ module.exports = function(RED) {
             name: config.author,
             url: ""
           }
-          wwsMessagePost(auth.accessToken, config.space, actor, "red", msg.payload, msg.topic).then(() => {
+          var space = config.space;
+          if(msg.payload.spaceId) {
+            space = msg.payload.spaceId;
+          }
+
+          wwsMessagePost(auth.accessToken, space, actor, "red", msg.payload, msg.topic).then(() => {
             console.log("Successfully posted message to WWS.");
             this.status({ fill: "green", shape: "dot", text: "connected" });
           }).catch((err) => {
