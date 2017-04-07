@@ -16,8 +16,8 @@ module.exports = function(RED) {
             url: ""
           }
           var space = config.space;
-          if(msg.payload.spaceId) {
-            space = msg.payload.spaceId;
+          if(msg.spaceId) {
+            space = msg.spaceId;
           }
 
           wwsMessagePost(auth.accessToken, space, actor, "red", msg.payload, msg.topic).then(() => {
