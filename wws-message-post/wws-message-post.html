@@ -5,7 +5,8 @@
     defaults: {
       name: { value: "" },
       application: { value: "", type: "wws-application" },
-      space: { value: "", required: true }
+      space: { value: "", required: true },
+      author: { value: "" }
     },
     inputs: 1,
     outputs: 0,
@@ -29,6 +30,10 @@
   <div class="form-row">
     <label for="node-input-space"><i class="icon-tag"></i> WWS Space</label>
     <input type="text" id="node-input-space" placeholder="WWS Space">
+  </div>
+  <div class="form-row">
+    <label for="node-input-author"><i class="icon-tag"></i> Author Name</label>
+    <input type="text" id="node-input-author" placeholder="Author Name">
   </div>
 </script>
 

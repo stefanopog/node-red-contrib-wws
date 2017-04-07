@@ -12,7 +12,7 @@ module.exports = function(RED) {
         this.application.getAccessToken().then(function(auth) {
           var actor = {
             avatar: "",
-            name: "Node Red",
+            name: config.author,
             url: ""
           }
           wwsMessagePost(auth.accessToken, config.space, actor, "red", msg.payload, msg.topic).then(() => {
