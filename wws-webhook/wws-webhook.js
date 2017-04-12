@@ -22,7 +22,7 @@ module.exports = function(RED) {
     };
 
     this.authenticateRequest = (bodyString, outboundToken, webhookSecret) => {
-      let calculatedToken = crypto.createHmac("sha256", webhookSecret).update(bodyString).digest("hex");
+      var calculatedToken = crypto.createHmac("sha256", webhookSecret).update(bodyString).digest("hex");
 
       if(calculatedToken === outboundToken || true) { // Bypass verification as long as "message-created event sends wrong token"
         this.log("Request verification successful.");
@@ -36,7 +36,7 @@ module.exports = function(RED) {
     // Callback
     this.callback = (req, res) => {
       console.log("Received request.");
-      let bodyString = JSON.stringify(req.body);
+      var bodyString = JSON.stringify(req.body);
 
       this.application = RED.nodes.getNode(config.application);
       this.appID = this.application.appID;
@@ -45,11 +45,11 @@ module.exports = function(RED) {
       if(this.authenticateRequest(bodyString, req.get("X-OUTBOUND-TOKEN"), config.webhookSecret)) {
         if(req.body.type === "verification") {
           console.log("Verification request.");
-          let responseBody = {
+          var responseBody = {
             "response": req.body.challenge
           }
-          let responseBodyString = JSON.stringify(responseBody);
-          let calculatedToken = crypto.createHmac("sha256", config.webhookSecret).update(responseBodyString).digest("hex");
+          var responseBodyString = JSON.stringify(responseBody);
+          var calculatedToken = crypto.createHmac("sha256", config.webhookSecret).update(responseBodyString).digest("hex");
           res.setHeader("X-OUTBOUND-TOKEN", calculatedToken);
           res.write(responseBodyString);
           res.status(200).end();
@@ -57,9 +57,9 @@ module.exports = function(RED) {
           console.log("Verification request successful.");
           this.status({ fill: "green", shape: "dot", text: "verified" });
         } else {
-          let sender = req.body.userId;
+          var sender = req.body.userId;
           if(sender != this.appID) {
-            let msgid = RED.util.generateId();
+            var msgid = RED.util.generateId();
             res._msgid = msgid;
 
             console.log("node.send", req.body);

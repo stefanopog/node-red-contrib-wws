@@ -4,23 +4,23 @@ var rp = require("request-promise-native");
 module.exports = function(RED) {
   function wwsMessagePostNode(config) {
     RED.nodes.createNode(this, config);
-    let node = this;
+    var node = this;
 
     this.on("input", (msg) => {
       this.application = RED.nodes.getNode(config.application);
       if(this.application) {
         this.application.getAccessToken().then((auth) => {
-          let actor = {
+          var actor = {
             avatar: "",
             name: config.author,
             url: ""
           }
-          let space = config.space;
+          var space = config.space;
           if(msg.spaceId) {
             space = msg.spaceId;
           }
 
-          let text = String(msg.payload) || "";
+          var text = String(msg.payload) || "";
           wwsMessagePost(auth.accessToken, space, actor, "red", text, msg.topic).then(() => {
             console.log("Successfully posted message to WWS.");
             this.status({ fill: "green", shape: "dot", text: "connected" });
@@ -43,9 +43,9 @@ module.exports = function(RED) {
 
   // Helper functions
   function wwsMessagePost(accessToken, space, actor, color, text, title) {
-    let host = "https://api.watsonwork.ibm.com";
-    let uri = host + "/v1/spaces/" + space + "/messages";
-    let options = {
+    var host = "https://api.watsonwork.ibm.com";
+    var uri = host + "/v1/spaces/" + space + "/messages";
+    var options = {
       method: "POST",
       uri: uri,
       headers: {
