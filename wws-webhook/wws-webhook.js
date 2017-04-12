@@ -22,7 +22,7 @@ module.exports = function(RED) {
     };
 
     this.authenticateRequest = (bodyString, outboundToken, webhookSecret) => {
-      var calculatedToken = crypto.createHmac("sha256", webhookSecret).update(bodyString).digest("hex");
+      let calculatedToken = crypto.createHmac("sha256", webhookSecret).update(bodyString).digest("hex");
 
       if(calculatedToken === outboundToken || true) { // Bypass verification as long as "message-created event sends wrong token"
         this.log("Request verification successful.");
@@ -36,7 +36,7 @@ module.exports = function(RED) {
     // Callback
     this.callback = (req, res) => {
       console.log("Received request.");
-      var bodyString = JSON.stringify(req.body);
+      let bodyString = JSON.stringify(req.body);
 
       this.application = RED.nodes.getNode(config.application);
       this.appID = this.application.appID;
@@ -45,24 +45,28 @@ module.exports = function(RED) {
       if(this.authenticateRequest(bodyString, req.get("X-OUTBOUND-TOKEN"), config.webhookSecret)) {
         if(req.body.type === "verification") {
           console.log("Verification request.");
-          var responseBody = {
+          let responseBody = {
             "response": req.body.challenge
           }
-          var responseBodyString = JSON.stringify(responseBody);
-          var calculatedToken = crypto.createHmac("sha256", config.webhookSecret).update(responseBodyString).digest("hex");
+          let responseBodyString = JSON.stringify(responseBody);
+          let calculatedToken = crypto.createHmac("sha256", config.webhookSecret).update(responseBodyString).digest("hex");
           res.setHeader("X-OUTBOUND-TOKEN", calculatedToken);
           res.write(responseBodyString);
           res.status(200).end();
-          console.log("Verification request successful.");
-        } else {
-          console.log("Notification request.");
-          this.status({ fill: "green", shape: "dot", text: "connected" });
 
-          var sender = req.body.userId;
+          console.log("Verification request successful.");
+          this.status({ fill: "green", shape: "dot", text: "verified" });
+        } else {
+          let sender = req.body.userId;
           if(sender != this.appID) {
-            var msgid = RED.util.generateId();
+            let msgid = RED.util.generateId();
             res._msgid = msgid;
-            node.send({ _msgid: msgid, req: req, res: res, payload: req.body });
+
+            console.log("node.send", req.body);
+            node.send({ _msgid: msgid, req: req, payload: req.body });
+
+            console.log("Notification request successful.");
+            this.status({ fill: "green", shape: "dot", text: "received" });
           }
 
           res.status(200).end();
