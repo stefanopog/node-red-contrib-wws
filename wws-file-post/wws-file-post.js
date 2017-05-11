@@ -16,10 +16,10 @@ module.exports = function(RED) {
           }
 
           wwsFilePost(auth.accessToken, space, msg.file).then(() => {
-            console.log("Successfully posted message to WWS.");
+            console.log("Successfully posted file to WWS.");
             this.status({ fill: "green", shape: "dot", text: "connected" });
           }).catch((err) => {
-            console.log("Error while posting message to WWS.", err);
+            console.log("Error while posting file to WWS.", err);
             this.status({ fill: "red", shape: "ring", text: "disconnected" });
           });
         }).catch(function(err) {
@@ -46,7 +46,7 @@ module.exports = function(RED) {
         Authorization: "Bearer " + accessToken
       },
       json: true,
-      body: {
+      formData: {
         file: file
       }
     };

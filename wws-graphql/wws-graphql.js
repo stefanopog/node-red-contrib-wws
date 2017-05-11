@@ -6,15 +6,19 @@ module.exports = function(RED) {
     RED.nodes.createNode(this, config);
     var node = this;
 
-    this.on("input", function(msg) {
+    this.on("input", (msg) => {
       this.application = RED.nodes.getNode(config.application);
       if(this.application) {
-        this.application.getAccessToken().then(function(auth) {
-          wwsGraphQL(auth.accessToken, msg.payload, msg.topic).then(() => {
-            console.log("Successfully posted message to WWS.");
+        this.application.getAccessToken().then((auth) => {
+          wwsGraphQL(auth.accessToken, msg.query, msg.operationName, msg.variables).then((res) => {
+            console.log("Successfully posted GraphQL query to WWS.");
             this.status({ fill: "green", shape: "dot", text: "connected" });
+
+            var msgid = RED.util.generateId();
+            res._msgid = msgid;
+            node.send({ _msgid: msgid, response: res });
           }).catch((err) => {
-            console.log("Error while posting message to WWS.", err);
+            console.log("Error while posting GraphQL query to WWS.", err);
             this.status({ fill: "red", shape: "ring", text: "disconnected" });
           });
         }).catch(function(err) {
@@ -31,7 +35,7 @@ module.exports = function(RED) {
   RED.nodes.registerType("wws-graphql", wwsGraphQLNode);
 
   // Helper functions
-  function wwsGraphQL(accessToken, actor, color, text, title) {
+  function wwsGraphQL(accessToken, query, operationName, variables) {
     var host = "https://api.watsonwork.ibm.com";
     var uri = host + "/graphql";
     var options = {
@@ -42,8 +46,8 @@ module.exports = function(RED) {
       },
       json: true,
       body: {
-        operationName: operationName,
         query: query,
+        operationName: operationName,
         variables: variables
       }
     };

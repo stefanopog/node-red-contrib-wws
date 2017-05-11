@@ -37,6 +37,19 @@ module.exports = function(RED) {
         this.status({ fill: "red", shape: "ring", text: "disconnected" });
       }
     });
+
+    // HTTP Endpoint to Get List of Spaces
+    RED.httpAdmin.get('/wws/spaces', RED.auth.needsPermission('wws.read'), function(req, res) {
+      application = RED.nodes.getNode(config.application);
+      if(application) {
+        application.getSpaces().then((spaces) => {
+          console.log("SPACES: ", spaces);
+          res.json(spaces);
+        }).catch((err) => {
+          console.log("Erroe while getting list of spaces.", err);
+        });
+      }
+    });
   }
 
   RED.nodes.registerType("wws-message-post", wwsMessagePostNode);

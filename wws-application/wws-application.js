@@ -30,6 +30,21 @@ module.exports = function(RED) {
         });
       }
     }
+
+    this.getSpaces = () => {
+      var query = "query getSpaces { spaces(first: 50) { items { id title } } }";
+
+      return this.getAccessToken().then((auth) => {
+        return wwsGraphQL(auth.accessToken, query, "", "").then((response) => {
+          var spaces = response.data.spaces.items;
+          return spaces;
+        }).catch(function(err) {
+          console.log("Error while getting list of spaces." + err)
+        });
+      }).catch(function(err) {
+        console.log("Error while getting access token." + err)
+      });
+    }
   }
   RED.nodes.registerType("wws-application", wwsApplicationNode);
 
@@ -49,6 +64,26 @@ module.exports = function(RED) {
       },
       json: true
     }
+    return rp(options);
+  }
+
+  function wwsGraphQL(accessToken, query, operationName, variables) {
+    var host = "https://api.watsonwork.ibm.com";
+    var uri = host + "/graphql";
+    var options = {
+      method: "POST",
+      uri: uri,
+      headers: {
+        Authorization: "Bearer " + accessToken
+      },
+      json: true,
+      body: {
+        query: query /*,
+        operationName: operationName,
+        variables: variables */
+      }
+    };
+    console.log(options)
     return rp(options);
   }
 }

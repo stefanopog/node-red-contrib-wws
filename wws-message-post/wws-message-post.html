@@ -14,7 +14,23 @@
     label: function() {
       return this.name || "WWS Message Post";
     },
-    align: "right"
+    align: "right",
+    oneditprepare: function() {
+      var devices;
+      $.getJSON('wws/spaces', function(spaces) {
+        console.log(spaces);
+        $.each(spaces, function(index, value) {
+          $('#node-input-space2').append($('<option>', { value: value.id }).text(value.title));
+        });
+      });
+      $('#node-input-space2').change(function() {
+        var spaceID = $("#node-input-space2 option:selected").first().val();
+        if(spaceID) {
+          $('#node-input-space').val(spaceID);
+        }
+        console.log("Space Change");
+      });
+    }
   });
 </script>
 
@@ -30,6 +46,9 @@
   <div class="form-row">
     <label for="node-input-space"><i class="icon-tag"></i> WWS Space</label>
     <input type="text" id="node-input-space" placeholder="WWS Space">
+    <select id="node-input-space2" placeholder="WWS Space">
+      <option>Available Spaces</option>
+    </select>
   </div>
   <div class="form-row">
     <label for="node-input-author"><i class="icon-tag"></i> Author Name</label>
