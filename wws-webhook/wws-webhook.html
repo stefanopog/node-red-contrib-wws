@@ -1,46 +1,400 @@
-<script type="text/javascript">
-  RED.nodes.registerType("wws-webhook", {
-    category: "input",
-    color: "#A6BBCF",
-    defaults: {
-      name: { value: "" },
-      webhookPath: { value: "", required: true },
-      webhookID: { value: "", required: true },
-      webhookSecret: { value: "", required: true },
-      application: { value: "", type: "wws-application" },
+<script type="text/x-red" data-template-name="webhook">
+    <div class="form-row">
+        <label for="node-input-account"><i class="fa fa-user"></i> App Name</label>
+        <input type="text" id="node-input-account">
+    </div>
+    <div class="form-row">
+        <label for="node-input-webhookSecret"><i class="fa fa-user-secret"></i> Hook Secret</label>
+        <input type="password" id="node-input-webhookSecret" autocomplete="off">
+    </div>
+    <div class="form-row">
+        <label for="node-input-webhookPath"><i class="fa fa-cog"></i> Hook Path</label>
+        <input type="text" id="node-input-webhookPath">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
+        <input type="text" id="node-input-name" placeholder="node-red:common.label.name">
+    </div>
+    <div class="form-tips">
+		<h4>Tip</h4>
+		<p>To see which message types are received by this webhook you can easily obeserve it by looking at the nodes status information.</p>
+	</div>
+</script>
+
+<script type="text/x-red" data-help-name="webhook">
+    <p>Node to receive webhook events published by Watson Work.</p>
+    <h3>Instructions</h3>
+    <p>
+        Read the <a href="https://developer.watsonwork.ibm.com/docs/apps/prepare-your-app-to-run" target="_blank">following instructions</a> provided by the Watson Work Developer Team.</br>
+        This provides you with the ability to enter the required information for the node to work properly.<br/>
+        <b>TIP:</b> Do not enable the webhook during the event registration, as you need to configure this node first.
+    </p>
+    <ol>
+        <li>Select or create configure a workspace app</li>
+        <li>Enter the Webhook Secret provided to you during the <a href="https://developer.watsonwork.ibm.com/apps" target="_blank">Watson Work App registration process.</a></li>
+        <li>Check, if Webhook URL matches with the one you entered during the Watson Work App event registration page.</li>
+    </ol>
+    <p>
+        Once the workspace app and the webhook secret have been entered, you can deploy the flow with this configured node.</br>
+        Now you can enable the webhook by clicking the <code>Enable</code> button on the event registration page.
+    </p>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload
+            <span class="property-type">string | object</span>
+        </dt>
+        <dd>The webhook event received from Watson Work. Check the reference documentation, to understand and know the different event types.</dd>
+        <dt>spaceId
+            <span class="property-type">string</span>
+        </dt>
+        <dd>The space ID from which this Webhook Event has been received.</dd>
+        <dt>messageId
+            <span class="property-type">string</span>
+        </dt>
+        <dd>The message ID - depending of the type of the event this is either the actual message OR the message to which this event belongs to e.g. annotations.</dd>
+        <dt>type
+            <span class="property-type">enum</span>
+        </dt>
+        <dd>The name of the event. See the Details section for further information. </dd>
+        <dt>event
+                <span class="property-type">object</span>
+            </dt>
+            <dd>The raw webhook event received from Watson Work.</dd>
+        <dt class="optional">spaceName <span class="property-type">string | undefined</span></dt>
+        <dd> The display name of the space. Depending on the event type this value is present.</dd>
+    </dl>
+    <h3>Details</h3>
+    <p>Depending on the event type, different values will appear. Ideally a switch node should be added as the following node, to push the message according to the type.<br/>
+    The following message types are supported.</p>
+    <ul>
+            <li><code>message-created</code></li>
+            <li><code>message-deleted</code></li>
+            <li><code>message-annotation-added</code></li>
+            <li><code>message-annotation-edited</code></li>
+            <li><code>message-annotation-removed</code></li>
+            <li><code>space-members-added</code></li>
+            <li><code>space-members-removed</code></li>
+            <li><b>NEW</b> <code>reaction-added</code></li>
+            <li><b>NEW</b> <code>reaction-removed</code></li>
+            <li><b>NEW</b> <code>space-updated</code></li>
+            <li><b>NEW</b> <code>space-deleted</code></li>
+
+            
+    </ul>
+    <h5>message-created</h5>
+    <p>This event is issued when an user (not an app) is posting a message to this space.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": "Hello App!",
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "spaceName": "NodeRed Test",
+    "messageId": "5ac57856e4b0758fdb1d14af",
+    "type": "message-created",
+    "userName": "Arne Sutor",
+    "userId": "54f13685-35f7-468e-939e-28f8bed06a87",
+    "event": {
+        "spaceName": "NodeRed Test",
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "messageId": "5ac57856e4b0758fdb1d14af",
+        "time": 1522890838960,
+        "type": "message-created",
+        "userName": "Arne Sutor",
+        "userId": "54f13685-35f7-468e-939e-28f8bed06a87",
+        "contentType": "text/markdown",
+        "content": "Hello App!"
     },
-    inputs: 0,
-    outputs: 1,
-    icon: "arrow-in.png",
-    label: function() {
-      return this.name || "WWS Webhook";
-    }
-  });
+    "_msgid": "e962a795.d92bd8"
+}
+    </pre>
+    <h5>message-deleted</h5>
+    <p>This event is issued when an user has removed the message from this space.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": "5ac57691e4b01fb480a7d493",
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "messageId": "5ac57691e4b01fb480a7d493",
+    "type": "message-deleted",
+    "event": {
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "messageId": "5ac57691e4b01fb480a7d493",
+        "time": 1522891128960,
+        "type": "message-deleted"
+    },
+    "_msgid": "7ae0081f.b9cad8"
+}
+    </pre>
+    <h5>message-annotation-added</h5>
+    <p>This event is issued when an app is enriching the message or respond to a particular user message.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": {
+        "language": "de",
+        "docSentiment": {
+            "score": 0,
+            "type": "neutral"
+        }
+    },
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "spaceName": "NodeRed Test",
+    "messageId": "5ac57915e4b0b65c47d9fb15",
+    "type": "message-annotation-added",
+    "annotationId": "5ac57915e4b0797dd985c834",
+    "annotationService": "toscana-aip-nlc-consumer-client-id",
+    "annotationType": "message-nlp-docSentiment",
+    "event": {
+        "spaceName": "NodeRed Test",
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "annotationPayload": "{\"language\":\"de\",\"docSentiment\":{\"score\":0.0,\"type\":\"neutral\"}}",
+        "messageId": "5ac57915e4b0b65c47d9fb15",
+        "annotationType": "message-nlp-docSentiment",
+        "annotationId": "5ac57915e4b0797dd985c834",
+        "time": 1522891029779,
+        "type": "message-annotation-added",
+        "userId": "toscana-aip-nlc-consumer-client-id"
+    },
+    "_msgid": "48b1e538.52c2dc"
+}
+    </pre>
+    <h5>message-annotation-edited</h5>
+    <p>This event is issued when an app is updating the annotation (e.g. to create moments) of a user message.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": {
+        "hidden": false,
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "momentSummary": {
+            "phrases": [],
+            "mostRelevantMessage": {
+                "messageId": "5ac57691e4b01fb480a7d493",
+                "published": 1522890385417
+            }
+        },
+        "momentId": "d371dfee5d9aa30eafcabdd9dd656dce992ed2eb",
+        "algorithm": "timegap",
+        "participants": [
+            {
+                "authorId": "54f13685-35f7-468e-939e-28f8bed06a87",
+                "messageCount": 3
+            }
+        ],
+        "startMessage": {
+            "messageId": "5ac57691e4b01fb480a7d493",
+            "published": 1522890385417
+        },
+        "lastUpdatedMessage": {
+            "messageId": "5ac57856e4b0758fdb1d14af",
+            "published": 1522890838960
+        },
+        "momentVersion": 6
+    },
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "spaceName": "NodeRed Test",
+    "messageId": "5ac57691e4b01fb480a7d493",
+    "type": "message-annotation-edited",
+    "annotationId": "5ac57691e4b016de47756a6e",
+    "annotationService": "toscana-service-moment-identification-client-id",
+    "annotationType": "conversation-moment",
+    "event": {
+        "spaceName": "NodeRed Test",
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "annotationPayload": "{\"hidden\":false,\"spaceId\":\"5ac3a40fe4b0b569843a146b\",\"momentSummary\":{\"phrases\":[],\"mostRelevantMessage\":{\"messageId\":\"5ac57691e4b01fb480a7d493\",\"published\":1522890385417}},\"momentId\":\"d371dfee5d9aa30eafcabdd9dd656dce992ed2eb\",\"algorithm\":\"timegap\",\"participants\":[{\"authorId\":\"54f13685-35f7-468e-939e-28f8bed06a87\",\"messageCount\":3}],\"startMessage\":{\"messageId\":\"5ac57691e4b01fb480a7d493\",\"published\":1522890385417},\"lastUpdatedMessage\":{\"messageId\":\"5ac57856e4b0758fdb1d14af\",\"published\":1522890838960},\"momentVersion\":6}",
+        "messageId": "5ac57691e4b01fb480a7d493",
+        "annotationType": "conversation-moment",
+        "annotationId": "5ac57691e4b016de47756a6e",
+        "time": 1522890839388,
+        "type": "message-annotation-edited",
+        "userId": "toscana-service-moment-identification-client-id"
+    },
+    "_msgid": "25bf8b59.e2bb84"
+}
+    </pre>
+    <h5>message-annotation-removed</h5>
+    <p>This event is issued when an app has removed the annotation of a particular user message.</p>
+    <p>Example message</p>
+    <pre>
+        No example provided yet.
+    </pre>
+    <h5>space-members-added</h5>
+    <p>This event is issued when an user or an app has been added to this space. This can be usefull if the app needs to track to which spaces this app belongs to.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": [
+        "99b7f797-17ba-4666-a595-2668834822e5"
+    ],
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "spaceName": "NodeRed Test",
+    "type": "space-members-added",
+    "event": {
+        "spaceName": "NodeRed Test",
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "time": 1522891286786,
+        "type": "space-members-added",
+        "memberIds": [
+            "99b7f797-17ba-4666-a595-2668834822e5"
+        ]
+    },
+    "_msgid": "bad5605b.f904a"
+}
+    </pre>
+    <h5>space-members-removed</h5>
+    <p>This event is issued when an user or an app has been removed from this space. This can be usefull if the app needs to track to which spaces this app belongs to.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": [
+        "99b7f797-17ba-4666-a595-2668834822e5"
+    ],
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "spaceName": "NodeRed Test",
+    "type": "space-members-removed",
+    "event": {
+        "spaceName": "NodeRed Test",
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "time": 1522891359071,
+        "type": "space-members-removed",
+        "memberIds": [
+            "99b7f797-17ba-4666-a595-2668834822e5"
+        ]
+    },
+    "_msgid": "d6f846d9.d94ca8"
+}
+    </pre>
+    <h5><b>NEW</b> reaction-added</h5>
+    <p>This event is issued when an user or app has added a reaction (e.g. emoticons) to a particular user message.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": "👍",
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "type": "reaction-added",
+    "reactor": "54f13685-35f7-468e-939e-28f8bed06a87",
+    "relatedMessage": "5ac57915e4b0b65c47d9fb15",
+    "reactionType": "MESSAGE",
+    "event": {
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "reaction": "👍",
+        "time": 1522891206509,
+        "type": "reaction-added",
+        "userId": "54f13685-35f7-468e-939e-28f8bed06a87",
+        "objectId": "5ac57915e4b0b65c47d9fb15",
+        "objectType": "MESSAGE"
+    },
+    "_msgid": "3ba03d99.33bd92"
+}
+    </pre>
+    <h5><b>NEW</b> reaction-removed</h5>
+    <p>This event is issued when an user or app has removed a reaction (e.g. emoticons) to a particular user message.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": "👍",
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "type": "reaction-removed",
+    "reactor": "54f13685-35f7-468e-939e-28f8bed06a87",
+    "relatedMessage": "5ac57915e4b0b65c47d9fb15",
+    "reactionType": "MESSAGE",
+    "event": {
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "reaction": "👍",
+        "time": 1522891244379,
+        "type": "reaction-removed",
+        "userId": "54f13685-35f7-468e-939e-28f8bed06a87",
+        "objectId": "5ac57915e4b0b65c47d9fb15",
+        "objectType": "MESSAGE"
+    },
+    "_msgid": "c0f80069.f21ec"
+}
+    </pre>
+    <h5><b>NEW</b> space-updated</h5>
+    <p>This event is issued when the space settings have been updated by the space owner.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": {},
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "type": "space-updated",
+    "updater": "54f13685-35f7-468e-939e-28f8bed06a87",
+    "spaceProperties": {},
+    "updateCause": "other",
+    "event": {
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "spaceProperties": {},
+        "time": 1522891244443,
+        "type": "space-updated",
+        "userId": "54f13685-35f7-468e-939e-28f8bed06a87"
+    },
+    "_msgid": "63b84246.a1c8cc"
+}
+    </pre>
+    <h5><b>NEW</b> space-deleted</h5>
+    <p>This event is issued when the space has been deleted by the space owner.</p>
+    <p>Example message</p>
+    <pre>
+{
+    "payload": "54f13685-35f7-468e-939e-28f8bed06a87",
+    "error": null,
+    "spaceId": "5ac3a40fe4b0b569843a146b",
+    "type": "space-deleted",
+    "event": {
+        "spaceId": "5ac3a40fe4b0b569843a146b",
+        "time": 1522891432336,
+        "type": "space-deleted",
+        "userId": "54f13685-35f7-468e-939e-28f8bed06a87"
+    },
+    "_msgid": "90aceb87.51f7b8"
+}
+    </pre>
+    <h3>References</h3>
+    <ul>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/webhooks" target="_blank">Webhooks</a> - Reference Documentation for Webhooks</li>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+        <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+    </ul>
+
 </script>
 
-<script type="text/x-red" data-template-name="wws-webhook">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name">
-  </div>
-  <div class="form-row">
-    <label for="node-input-application"><i class="icon-tag"></i> WWS Application</label>
-    <input type="text" id="node-input-application" placeholder="Application">
-  </div>
-  <div class="form-row">
-    <label for="node-input-webhookPath"><i class="icon-tag"></i> Webhook Path</label>
-    <input type="text" id="node-input-webhookPath" placeholder="Webhook URL">
-  </div>
-  <div class="form-row">
-    <label for="node-input-webhookID"><i class="icon-tag"></i> Webhook ID</label>
-    <input type="text" id="node-input-webhookID" placeholder="Webhook ID">
-  </div>
-  <div class="form-row">
-    <label for="node-input-webhookSecret"><i class="icon-tag"></i> Webhook Secret</label>
-    <input type="text" id="node-input-webhookSecret" placeholder="Webhook Secret">
-  </div>
-</script>
-
-<script type="text/x-red" data-help-name="wws-webhook">
-  <p>A node that acts as a webhook endpoint for <a href="https://developer.watsonwork.ibm.com">IBM Watson Work Services</a>.</p>
+<script type="text/javascript">
+    RED.nodes.registerType('webhook',{
+        category: 'Watson Work',
+        color:"#11ABA5",
+        defaults: {
+            account: {type:"wws-credentials",required:true},
+            webhookSecret: {value:"", required:true},
+            webhookPath: {value:"/workspace/hook", required:true},
+            name: {value:""},
+            inputs: {value:0}
+        },
+        credentials: {
+            webhookSecret: {type: "text"}
+        },
+        inputs: 0,
+        outputs: 1,
+        icon: "wws.png",
+        label: function() {
+            if (this.name) {
+                return this.name;
+            } else {
+                return "["+this.webhookPath+"] webhook";
+            }
+        },
+        paletteLabel: "webhook",
+        labelStyle: function() {
+            return this.name?"node_label_italic":"";
+        }
+    });
 </script>

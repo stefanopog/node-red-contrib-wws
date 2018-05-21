@@ -1,61 +1,339 @@
-<script type="text/javascript">
-  RED.nodes.registerType("wws-message-post", {
-    category: "output",
-    color: "#A6BBCF",
-    defaults: {
-      name: { value: "" },
-      application: { value: "", type: "wws-application" },
-      space: { value: "" },
-      author: { value: "" }
-    },
-    inputs: 1,
-    outputs: 0,
-    icon: "bridge.png",
-    label: function() {
-      return this.name || "WWS Message Post";
-    },
-    align: "right",
-    oneditprepare: function() {
-      var devices;
-      $.getJSON('wws/spaces', function(spaces) {
-        console.log(spaces);
-        $.each(spaces, function(index, value) {
-          $('#node-input-space2').append($('<option>', { value: value.id }).text(value.title));
-        });
-      });
-      $('#node-input-space2').change(function() {
-        var spaceID = $("#node-input-space2 option:selected").first().val();
-        if(spaceID) {
-          $('#node-input-space').val(spaceID);
+<script type="text/x-red" data-template-name="appMessage">
+    <div class="form-row">
+        <label for="node-input-account"><i class="fa fa-user"></i> App Name</label>
+        <input type="text" id="node-input-account" class="form-control-lg">
+    </div>
+    <div class="form-row">
+        <label for="node-input-color" title="The banner color to be used when displaying a message within Watson Work. Leave it blank for default."><i class="fa fa-paint-brush"></i> Color</label>
+        <input type="text" id="node-input-color" placeholder="#11ABA5">
+    </div>
+    <div class="form-row">
+        <label for="node-input-avatar" title="The Name of the App or User who is posting this message."><i class="fa fa-address-card"></i> Avatar</label>
+        <input type="text" id="node-input-avatar" placeholder="My WWS APP">
+    </div>
+
+    <div class="form-row">
+            <label for="node-input-file" title="Use a profile foto for your app which should be displayed when messages are send to a space!"><i class="fa fa-camera"></i> Picture</label>
+            <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+            <!--Only .jpg files are currently accpeted by WWS -->
+                <input type="file" id="node-input-file" accept=".jpg">
+                <a id="node-input-upload-file" href="#" class="editor-button" style="position: absolute; right: 0px; top: 0px; cursor: not-allowed;"><i class="fa fa-upload"></i></a>
+            </div>
+    </div>
+    <div class="form-row" id="node-input-upload-file-status-success" style="color:green; display:none;">
+        <small class="form-text text-muted"><span>Photo has been successfully uploaded to Watson Work.</span></small>
+    </div>
+    <div class="form-row" id="node-input-upload-file-status-failure" style="color:red; display:none;">
+            <small class="form-text text-muted"><span>The request could not be processed. Please check the Debug Tab for further information!</span></small>
+        </div>
+    <div class="form-row">
+            <label for="node-input-spaceName" title="In case all incoming messages should be directed into a particular space, enter the space id here!"><i class="fa fa-cloud-upload"></i> Space ID</span></label>
+            <select id="node-input-spaceName"/>
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <style>
+            .avatar {
+                display: inline-block;
+                width: 32px;
+                height: 32px;
+                padding: 5px 20px 5px 20px;
+            }
+            
+            /* resize images */
+            .avatar img {
+                width: 100%;
+                height: auto;
+            }
+            .inline-div {
+                display: inline-block; 
+                position: relative; 
+                width: 70%;
+                height: auto;
+                vertical-align: top;
+            }
+            span.fontSm {
+                font-size: .75rem;
+            }
+            span.fontLg {
+                font-size: .875rem;
+            }
+            span.bold {
+                font-weight: 500;
+            }
+            p.appMessage {
+                border-style: solid; 
+                border-width: 0px 0px 0px 5px; 
+                border-color:#11ABA5;
+            }
+            span.marginLeft {
+                margin-left: 8px;
+            }
+            span.fontXl {
+                font-size: 16px;
+            }
+    </style>
+    <div class="form-row" id="avatar-div">
+        <h4 style="margin-top: 20px;">Message Preview</h4>
+        <div class="avatar">
+            <img src="#" alt="Profile Photo of the Watson Workspace App"/>
+        </div>
+        <div class="inline-div">
+            <p>
+                <span class="fontLg bold" id="preview-account"></span> <span class="fontSm">12:00 PM</span>
+            </p>
+            <p class="appMessage">
+                <span class="fontLg marginLeft" id="preview-avatar"></span><span class="fontLg bold">Message Title</span><br>
+                <span class="fontXl marginLeft">Message Content</span>
+            </p>
+        </div>
+    </div>
+    <input id="node-input-picture" type="hidden"/>
+    <input id="node-input-spaceId" type="hidden"/>
+    <div class="form-tips">
+		<h4>Tip</h4>
+		<p>In order to send messages to a space, a token needs to be generated. The status of the token can be easily checked from the nodes status field.</p>
+	</div>
+
+</script>
+
+<script type="text/x-red" data-help-name="appMessage">
+    <p>Node to send messages to a space - as app.</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload
+            <span class="property-type">string | markdown</span>
+        </dt>
+        <dd>The message to be posted to a space.</dd>
+        <dt class="optional">spaceId <span class="property-type">string</span></dt>
+        <dd> The space id to which the message should be posted to. The app must be a member of that space.</dd>
+        <dt class="optional">title <span class="property-type">string</span></dt>
+        <dd> The title (in bold) to be displayed above the message.</dd>
+        <dt class="optional">avatar <span class="property-type">string</span></dt>
+        <dd> The name of the avatar (app name) which is displayed as prefix to the title.</dd>
+        <dt class="optional">color <span class="property-type">hex</span></dt>
+        <dd> The <a href="https://www.google.de/search?q=%2311ABA5">color (in hex)</a> to be used as banner color to visualize the app message. Default is <code>#11ABA5</code></dd>
+    </dl>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+            <dt>payload
+                <span class="property-type">Object</span>
+            </dt>
+            <dd>The response from Watson Workspace<br/>
+                <pre>
+{
+    "id": "<messageId>",
+    "version": 1,
+    "type": "appMessage",
+    "created": "2018-05-21T17:30:43.330+0000",
+    "createdBy": "<userId>",
+    "annotations": [
+        {
+            "type": "generic",
+            "version": 1,
+            "color": "#11ABA5",
+            "text": "This is a test",
+            "annotationId": "<messageId>",
+            "created": "2018-05-21T17:30:43.330+0000",
+            "createdBy": "<userId>"
         }
-        console.log("Space Change");
-      });
-    }
-  });
+    ]
+}
+                    </pre>
+            </dd>
+    </dl>
+    <h3>Details</h3>
+    <p>This node sends messages (incl. minimal supported markdown) to a given space. Check the <a href="https://developer.watsonwork.ibm.com/docs/message/send-a-message-into-a-conversation" target="_blank">refernce manual</a> for further information.<br/>
+        Provide the following information:
+    </p>
+    <dl class="message-properties">
+        <dt>App Name</dt>
+            <dd>The configured name for a specific Watson Work App.</dd>
+        <dt class="optional">Color</dt>
+            <dd>Color of the banner which is shown vertically to a posted message. This can be overriden by <code>msg.color</code></dd>
+        <dt class="optional">Avatar</dt>
+            <dd>The short name of the application which is posting the message. It will be displayed next to the message title. This can be overriden by <code>msg.avatar</code></dd>
+        <dt class="optional">Picture</dt>
+            <dd>In case a custom profile photo should be shown next to a message, uplaod a JPEG file not larger than 200kB. You will receive a status message after you clicked the upload button.</dd>
+        <dt class="optional">Space ID</dt>
+            <dd>The space ID to which this message should be send to. This can be overriden by <code>msg.spaceId</code></dd>
+    </dl>
+    <h3>References</h3>
+    <ul>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/message/send-a-message-into-a-conversation" target="_blank">Messages</a> - Reference Documentation for sending Messages to Spaces</li>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+        <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+    </ul>
 </script>
 
-<script type="text/x-red" data-template-name="wws-message-post">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name">
-  </div>
-  <div class="form-row">
-    <label for="node-input-application"><i class="icon-tag"></i> WWS Application</label>
-    <input type="text" id="node-input-application" placeholder="WWS Application">
-  </div>
-  <div class="form-row">
-    <label for="node-input-space"><i class="icon-tag"></i> WWS Space</label>
-    <input type="text" id="node-input-space" placeholder="WWS Space">
-    <select id="node-input-space2" placeholder="WWS Space">
-      <option>Available Spaces</option>
-    </select>
-  </div>
-  <div class="form-row">
-    <label for="node-input-author"><i class="icon-tag"></i> Author Name</label>
-    <input type="text" id="node-input-author" placeholder="Author Name">
-  </div>
-</script>
+<script type="text/javascript">
+    RED.nodes.registerType('appMessage',{
+        category: 'Watson Work',
+        color:"#11ABA5",
+        defaults: {
+            account: {type:"wws-credentials",required:true},
+            color: {value:""},
+            avatar: {value:""},
+            picture: {value:""},
+            spaceId: {value:""},
+            name: {value:""}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "wws.png",
+        align: "right",
+        label: function() {
+        		return this.name || "send message as app";
+        },
+        paletteLabel: "message",
+        oneditprepare: function() {
+            function verifyInput(fileInputField) {
+                return fileInputField[0].files.length>0;
+            };
+            function toggleAvatarSection(url) {
+                if (!url) {
+                    $("#avatar-div").hide();
+                } else {
+                    $("#avatar-div .avatar img").attr("src", url);
+                    $("#avatar-div").show();
+                }
+            }
+            function activateUploadButton(toggle) {
+                if (toggle) {
+                    uploadButton.css("cursor", "pointer");
+                    uploadButton.removeClass("disabled");
+                } else {
+                    uploadButton.css("cursor", "not-allowed");
+                    uploadButton.addClass("disabled");
+                }
+            };
+            toggleAvatarSection($("#node-input-picture").val());
+            
+            //Input Account
+            var configNodeId = $("#node-input-account option:selected").val();
+            function addAppName(configNodeId) {
+                if ($("#node-input-account option:selected").html().length>0 && configNodeId !== "_ADD_" ) {
+                    $("#preview-account").html($("#node-input-account option:selected").html());
+                } else {
+                    $("#preview-account").html("");
+                }
+            }
+            addAppName(configNodeId);
+            $("#node-input-account").change(function(data,event) {
+                console.log("#node-input-account changed");
+                configNodeId = $("#node-input-account").val();
+                addAppName(configNodeId);
+                getSpaces(configNodeId);
+            });
 
-<script type="text/x-red" data-help-name="wws-message-post">
-  <p>A node that posts a message to a space in <a href="https://workspace.ibm.com">IBM Watson Workspace</a> via <a href="https://developer.watsonwork.ibm.com">IBM Watson Work Services</a>.</p>
+            //Input Color
+            var inputColor = $("#node-input-color");
+            function addColor() {
+                if (inputColor.val().length>0) {
+                    $("p.appMessage").css("border-color",inputColor.val());
+                } else {
+                    $("p.appMessage").removeAttr("style");
+                }
+            }
+            addColor();
+            inputColor.change(function() {
+                addColor();
+            });
+
+            //Input Avatar
+            var inputAvatar = $("#node-input-avatar");
+            function addAvatarName() {
+                if (inputAvatar.val().length>0) {
+                    $("#preview-avatar").html(inputAvatar.val() + " ");
+                } else {
+                    $("#preview-avatar").html("");
+                }
+            }
+            addAvatarName();
+            inputAvatar.change(function() {
+                addAvatarName();
+            });
+            
+            function getUploadFotoUrl() {
+                return "wws/app/"+ configNodeId +"/photo";
+            };
+            var fileInputField = $("#node-input-file");
+            fileInputField.change(function(event) {
+                activateUploadButton(verifyInput(fileInputField));
+                event.preventDefault();
+            });
+            
+            //Upload Button
+            var uploadButton = $("#node-input-upload-file");
+            uploadButton.addClass("disabled");
+            uploadButton.click(function(event) {
+                //Send form data
+                if (verifyInput(fileInputField)) {
+                    var data = new FormData();
+                    $.each(fileInputField[0].files, function(i, file) {
+                        data.append('file', file);
+                    });
+                    $.ajax({
+                        url: getUploadFotoUrl(),
+                        data: data,
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        method: "POST",
+                        type: "POST", // For jQuery < 1.9
+                        success: function(data){
+                            $("#node-input-upload-file-status-success").show();
+                            $("#node-input-upload-file-status-failure").hide();
+                            activateUploadButton(false);
+                            fileInputField.val("");
+                            if (data) {
+                                var result = JSON.parse(data);
+                                $("#node-input-picture").val(result.photoUrl);
+                                toggleAvatarSection(result.photoUrl);
+                            }
+                        },
+                        error: function(data) {
+                            $("#node-input-upload-file-status-success").hide();
+                            $("#node-input-upload-file-status-failure").show();
+                            activateUploadButton(false);
+                        }
+                    });
+                }
+                event.preventDefault();
+            });
+
+            //Input spaceId
+            var inputSpaceName = $("#node-input-spaceName");
+            function getSpaces(configNodeId) {
+                var found = false;
+                $.getJSON("wws/app/"+ configNodeId +"/spaces", function(spaces) {
+                    var optionList = "<option>Select space...</option>";
+                    $.each(spaces, function(index, value) {
+                        console.log("id=" + value.id + " title=" + value.title);
+                        if (value.id == $("#node-input-spaceId").val()) {
+                            found = true;
+                            optionList+="<option value="+ value.id +" selected>"+ value.title +"</option>";
+                        } else {
+                            optionList+="<option value="+ value.id +">"+ value.title +"</option>";
+                        }
+                    });
+                    console.log(optionList);
+                    inputSpaceName.html(optionList);
+                    if (!found) {
+                        $("#node-input-spaceId").val("");
+                    } 
+                });
+            };
+            getSpaces(configNodeId);
+            inputSpaceName.change(function(data,event) {
+                var spaceID = $("#node-input-spaceName option:selected").val();
+                if(spaceID) {
+                    $("#node-input-spaceId").val(spaceID);
+                }
+            });
+        }
+    });
 </script>

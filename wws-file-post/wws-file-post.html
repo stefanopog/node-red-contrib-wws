@@ -1,38 +1,140 @@
 <script type="text/javascript">
   RED.nodes.registerType("wws-file-post", {
-    category: "output",
-    color: "#A6BBCF",
+	category: 'Watson Work',
+	color:"#11ABA5",
     defaults: {
-      name: { value: "" },
-      application: { value: "", type: "wws-application" },
+      application: { type: "wws-credentials", required: true },
       space: { value: "" },
-      author: { value: "" }
+      author: { value: "" },
+      name: { value: "" }
     },
     inputs: 1,
     outputs: 0,
-    icon: "bridge.png",
+    icon: "wws.png",
     label: function() {
-      return this.name || "WWS File Post";
+      return this.name || "send file";
     },
-    align: "right"
+    paletteLabel: "file",
+    align: "right",
+    oneditprepare: function() {
+      //Input Account
+      var configNodeId = $("#node-input-application option:selected").val();
+      $("#node-input-application").change(function(data,event) {
+          console.log("#nnode-input-application changed");
+          configNodeId = $("#node-input-application").val();
+          getSpaces(configNodeId);
+      });
+
+      //Input space
+      var inputSpaceName = $("#node-input-spaceName");
+      function getSpaces(configNodeId) {
+          var found = false;
+          $.getJSON("wws/app/"+ configNodeId +"/spaces", function(spaces) {
+              var optionList = "<option>Select space...</option>";
+              $.each(spaces, function(index, value) {
+                  console.log("id=" + value.id + " title=" + value.title);
+                  if (value.id == $("#node-input-space").val()) {
+                      found = true;
+                      optionList+="<option value="+ value.id +" selected>"+ value.title +"</option>";
+                  } else {
+                      optionList+="<option value="+ value.id +">"+ value.title +"</option>";
+                  }
+              });
+              console.log(optionList);
+              inputSpaceName.html(optionList);
+              if (!found) {
+                  $("#node-input-space").val("");
+              } 
+          });
+      };
+      getSpaces(configNodeId);
+      inputSpaceName.change(function(data,event) {
+          var spaceID = $("#node-input-spaceName option:selected").val();
+          if(spaceID) {
+              $("#node-input-space").val(spaceID);
+          }
+      });
+
+    }
   });
 </script>
 
 <script type="text/x-red" data-template-name="wws-file-post">
   <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-spaceName"><i class="fa fa-cloud-upload"></i> Space ID</label>
+    <select id="node-input-spaceName"/>
+    <input type="hidden" id="node-input-space">
+  </div>
+  <div class="form-row">
     <label for="node-input-name"><i class="icon-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name">
-  </div>
-  <div class="form-row">
-    <label for="node-input-application"><i class="icon-tag"></i> WWS Application</label>
-    <input type="text" id="node-input-application" placeholder="WWS Application">
-  </div>
-  <div class="form-row">
-    <label for="node-input-space"><i class="icon-tag"></i> WWS Space</label>
-    <input type="text" id="node-input-space" placeholder="WWS Space">
   </div>
 </script>
 
 <script type="text/x-red" data-help-name="wws-file-post">
-  <p>A node that posts a file to a space in <a href="https://workspace.ibm.com">IBM Watson Workspace</a> via <a href="https://developer.watsonwork.ibm.com">IBM Watson Work Services</a>.</p>
+  <p>A node that posts a file to a space in <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt class="optional">file <span class="property-type"Object</span></dt>
+      <dd>The file which should be send to the space. Please check the details section about the required input format.</dd>
+      <dt class="optional">image <span class="property-type"Object</span></dt>
+      <dd>The image which should be send to the space including the preview. Please check the details section about the required input format. Either <code>file</code> OR <code>image</code> must be set otherwise an error will be thrown.</dd>
+      <dt class="optional">spaceId <span class="property-type">string</span></dt>
+      <dd>The identifier of the Space in Watson Workspace.</dd>
+      <dt class="optional">token <span class="property-type">string</span></dt>
+      <dd>Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace application(s) for this particular message.</dd>
+  </dl>
+  <h3>Details</h3>
+  <p>This node sends a file (or image) to Watson Workspace. Check the <a href="https://developer.watsonwork.ibm.com/docs/api-reference/files" target="_blank">Reference Documentation</a> for further information.<br/>
+      Provide the following information:
+  </p>
+  <dl class="message-properties">
+      <dt>App Name</dt>
+      <dd>The configured name for a specific Watson Work App.</dd>
+      <dt>Space ID</dt>
+      <dd>The identifier of the Space in Watson Workspace. Can be overriden with <code>msg.spaceId</code>.</dd>
+  </dl>
+  <p>
+    In order to send a buffer data-type in <code>msg.file</code>, it has to follow the following format:
+    <pre>
+{
+  "value" : "&lt;BUFFER&gt;",
+  "options" : {
+      "filename" : "&lt;filename&gt;",
+      "contentType" : "&lt;content-type&gt;",
+  }
+}
+    </pre>
+    So, the <code>&lt;BUFFER&gt;</code>, <code>&lt;filename&gt;</code> and <code>&lt;content-type&gt;</code> are the required data.
+  </p>
+  <p>
+    In order to send a buffer data-type in <code>msg.image</code>, it has to follow the following format:
+    <pre>
+{
+  "value" : "&lt;BUFFER&gt;",
+  "options" : {
+      "filename" : "&lt;filename&gt;",
+      "contentType" : "&lt;content-type&gt;",
+  },
+  "dimension" : {
+    "width" : "&lt;width&gt;",
+    "height" : "&lt;height&gt;",
+  }
+}
+    </pre>
+    So, the <code>&lt;BUFFER&gt;</code>, <code>&lt;filename&gt;</code> and <code>&lt;content-type&gt;</code> are the required data.<br/> <br/>
+    The dimension data is optional and can be added to present the image as preview and full screen within Watson Workspace.<br/>
+    If no dimension information is provided the image will be treated as normal file without any preview.
+  </p>
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/files" target="_blank">Files</a> - Reference Documentation for sending files (and images).</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
 </script>

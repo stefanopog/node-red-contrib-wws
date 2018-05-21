@@ -1,37 +1,85 @@
 <script type="text/javascript">
   RED.nodes.registerType("wws-graphql", {
-    category: "output",
-    color: "#A6BBCF",
+    category: 'Watson Work',
+    color:"#11ABA5",
     defaults: {
       name: { value: "" },
-      application: { value: "", type: "wws-application" },
-      query: { value: "" }
+      application: { value: "", type: "wws-credentials" }
     },
     inputs: 1,
     outputs: 1,
-    icon: "bridge.png",
+    icon: "wws.png",
     label: function() {
-      return this.name || "WWS GraphQL";
+      return this.name || "send GraphQL query";
     },
+    paletteLabel: "graphQL",
     align: "center"
   });
 </script>
 
 <script type="text/x-red" data-template-name="wws-graphql">
   <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+  <div class="form-row">
     <label for="node-input-name"><i class="icon-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name">
-  </div>
-  <div class="form-row">
-    <label for="node-input-application"><i class="icon-tag"></i> WWS Application</label>
-    <input type="text" id="node-input-application" placeholder="WWS Application">
-  </div>
-  <div class="form-row">
-    <label for="node-input-query"><i class="icon-tag"></i> GraphQL Query</label>
-    <input type="text" id="node-input-query" placeholder="GraphQL Query">
   </div>
 </script>
 
 <script type="text/x-red" data-help-name="wws-graphql">
-  <p>A node that sends a GraphQL request to <a href="https://developer.watsonwork.ibm.com">IBM Watson Work Services</a>.</p>
+  <p>A node that sends a GraphQL request to <a href="https://developer.watsonwork.ibm.com" target="_blank">IBM Watson Work Services</a>.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt>payload
+          <span class="property-type">string | graphQL</span>
+      </dt>
+      <dd>The query to be executed against Watson Work Servics.</dd>
+      <dt class="optional">operationName <span class="property-type">string</span></dt>
+      <dd>Defines the name of the operation.</dd>
+      <dt class="optional">variables <span class="property-type">object</span></dt>
+      <dd>Key-value map of variables to be used in a GraphQL query.</dd>
+      <dt class="optional">token <span class="property-type">string</span></dt>
+      <dd>Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace application(s) for this particular message.</dd>
+  </dl>
+  <h3>Details</h3>
+  <p>This node sends a <a href="https://graphql.org/learn/" target="_blank">qraphQl query</a> to Watson Work Services. This allows to extract additional information in the context of the application from Watson Work Services. Check the <a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphqL Tool</a> for further information.<br/>
+      Provide the following information:
+  </p>
+  <dl class="message-properties">
+      <dt>App Name</dt>
+          <dd>The configured name for a specific Watson Work App.</dd>
+  </dl>
+  <p>
+    In order to send a multi line query as payload to this node you might would like to make use of the new 
+    <a href="https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/template_strings" target="_blank">Template-Strings</a> using 
+    <code>Back-Ticks</code> or <a href="https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/template_strings" target="_blank">Grave accent</a>.
+    <br/>
+    Example:
+    <pre>
+msg.payload = `
+        {
+          me {
+            id
+            email
+            presence
+          }
+          spaces (first: 3) {
+            items {
+              title
+              updated
+            }
+          }
+        }`
+    </pre>
+  </p>
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
 </script>
