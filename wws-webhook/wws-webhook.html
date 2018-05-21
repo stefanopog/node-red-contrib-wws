@@ -1,4 +1,4 @@
-<script type="text/x-red" data-template-name="webhook">
+<script type="text/x-red" data-template-name="wws-webhook">
     <div class="form-row">
         <label for="node-input-account"><i class="fa fa-user"></i> App Name</label>
         <input type="text" id="node-input-account">
@@ -21,8 +21,8 @@
 	</div>
 </script>
 
-<script type="text/x-red" data-help-name="webhook">
-    <p>Node to receive webhook events published by Watson Work.</p>
+<script type="text/x-red" data-help-name="wws-webhook">
+    <p>Node to receive webhook events published by <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.</p>
     <h3>Instructions</h3>
     <p>
         Read the <a href="https://developer.watsonwork.ibm.com/docs/apps/prepare-your-app-to-run" target="_blank">following instructions</a> provided by the Watson Work Developer Team.</br>
@@ -369,7 +369,7 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('webhook',{
+    RED.nodes.registerType('wws-webhook',{
         category: 'Watson Work',
         color:"#11ABA5",
         defaults: {

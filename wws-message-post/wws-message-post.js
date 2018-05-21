@@ -237,5 +237,5 @@ module.exports = function(RED) {
         };
 
     }
-    RED.nodes.registerType("appMessage",WWSAppMessageNode);
+    RED.nodes.registerType("wws-message-post",WWSAppMessageNode);
 }

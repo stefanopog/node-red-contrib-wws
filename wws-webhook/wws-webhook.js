@@ -207,7 +207,7 @@ module.exports = function(RED) {
         }
     }
 
-    RED.nodes.registerType("webhook",WWSWebhookNode,{
+    RED.nodes.registerType("wws-webhook",WWSWebhookNode,{
         credentials: {
             webhookSecret: {type:"text"}
         }

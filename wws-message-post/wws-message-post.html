@@ -1,4 +1,4 @@
-<script type="text/x-red" data-template-name="appMessage">
+<script type="text/x-red" data-template-name="wws-message-post">
     <div class="form-row">
         <label for="node-input-account"><i class="fa fa-user"></i> App Name</label>
         <input type="text" id="node-input-account" class="form-control-lg">
@@ -99,8 +99,8 @@
 
 </script>
 
-<script type="text/x-red" data-help-name="appMessage">
-    <p>Node to send messages to a space - as app.</p>
+<script type="text/x-red" data-help-name="wws-message-post">
+    <p>Node to send messages to a space in <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.</p>
     <h3>Inputs</h3>
     <dl class="message-properties">
         <dt>payload
@@ -170,7 +170,7 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('appMessage',{
+    RED.nodes.registerType('wws-message-post',{
         category: 'Watson Work',
         color:"#11ABA5",
         defaults: {
