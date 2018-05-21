@@ -1,4 +1,4 @@
-node-red-contrib-sci-wws
+node-red-contrib-wws
 =====================
 
 A set of node-red nodes to interact with [IBM Watson Workspace](https://workspace.ibm.com/).
