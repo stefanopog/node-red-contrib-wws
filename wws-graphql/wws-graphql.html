@@ -4,7 +4,8 @@
     color:"#11ABA5",
     defaults: {
       name: { value: "" },
-      application: { value: "", type: "wws-credentials" }
+      application: { value: "", type: "wws-credentials" },
+      viewType: { value: "PUBLIC" }
     },
     inputs: 1,
     outputs: 1,
@@ -21,6 +22,10 @@
   <div class="form-row">
     <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
     <input type="text" id="node-input-application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-viewType"><i class="fa fa-eye"></i> View Type</label>
+    <input type="text" id="node-input-viewType" placeholder="PUBLIC,BETA">
   </div>
   <div class="form-row">
     <label for="node-input-name"><i class="icon-tag"></i> Name</label>
@@ -50,6 +55,8 @@
   <dl class="message-properties">
       <dt>App Name</dt>
           <dd>The configured name for a specific Watson Work App.</dd>
+      <dt>View Type</dt>
+          <dd>use <code>PUBLIC,BETA</code> to use pre productive features like action fulfillments which are not currently available to the public.</dd>    
   </dl>
   <p>
     In order to send a multi line query as payload to this node you might would like to make use of the new 

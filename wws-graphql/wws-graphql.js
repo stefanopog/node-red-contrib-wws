@@ -5,6 +5,7 @@ module.exports = function(RED) {
   function wwsGraphQLNode(config) {
     RED.nodes.createNode(this, config);
     this.application = RED.nodes.getNode(config.application);
+    this.viewType = config.viewType;
     var node = this;
 
     //Check for token on start up
@@ -79,7 +80,8 @@ module.exports = function(RED) {
       uri: uri,
       headers: {
         "Authorization": "Bearer " + accessToken,
-        "X-RequestId": requestId
+        "X-RequestId": requestId,
+        "x-graphql-view": this.viewType
       },
       json: true,
       body: {
