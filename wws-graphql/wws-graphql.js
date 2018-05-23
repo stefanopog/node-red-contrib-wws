@@ -36,7 +36,7 @@ module.exports = function(RED) {
       var bearerToken = msg.token || accessToken.token.access_token;
       var host = this.application.api;
 
-      wwsGraphQL(bearerToken, host, msg._msgid, msg.payload, msg.operationName, msg.variables).then((res) => {
+      wwsGraphQL(bearerToken, host, msg._msgid, msg.payload, msg.operationName, msg.variables, this.viewType).then((res) => {
         this.status({ fill: "green", shape: "dot", text: "Sending query..." });
         if (res.error) {
           msg.payload = res.error;
@@ -67,7 +67,7 @@ module.exports = function(RED) {
   RED.nodes.registerType("wws-graphql", wwsGraphQLNode);
 
   // Helper functions
-  function wwsGraphQL(accessToken, host, requestId, query, operationName, variables) {
+  function wwsGraphQL(accessToken, host, requestId, query, operationName, variables, viewType) {
     var uri = host + "/graphql";
     if (operationName) {
       uri +="?operationName="+operationName; 
@@ -81,7 +81,7 @@ module.exports = function(RED) {
       headers: {
         "Authorization": "Bearer " + accessToken,
         "X-RequestId": requestId,
-        "x-graphql-view": this.viewType
+        "x-graphql-view": viewType
       },
       json: true,
       body: {
