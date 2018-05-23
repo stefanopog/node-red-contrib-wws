@@ -38,8 +38,8 @@ module.exports = function(RED) {
 
       wwsGraphQL(bearerToken, host, msg._msgid, msg.payload, msg.operationName, msg.variables, this.viewType).then((res) => {
         this.status({ fill: "green", shape: "dot", text: "Sending query..." });
-        if (res.error) {
-          msg.payload = res.error;
+        if (res.errors) {
+          msg.payload = res.errors;
         } else {
           msg.payload = res.data;
         }
