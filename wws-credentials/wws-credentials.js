@@ -6,6 +6,7 @@ module.exports = function(RED) {
     const http = require("follow-redirects").http;
     const https = require("follow-redirects").https;
     const getRawBody = require('raw-body');
+    const crypto = require('crypto');
     const rp = require("request-promise-native");
 
 
@@ -53,12 +54,18 @@ module.exports = function(RED) {
             methods: {
                 onObtain: function(transition, statusNode) {
                     let tokenConfig = {};
-                    
                     return new Promise((resolve, reject) => {
                         oauth2.clientCredentials.getToken(tokenConfig)
                             .then((result) => {
                                 this.appToken = oauth2.accessToken.create(result);
-                                RED.settings.set(node.id, this.appToken.token.access_token);
+                                var oathConfig = getOAuthConfig(node.id);
+                                if (!oathConfig) {
+                                    oathConfig = createOAuthConfig(node.id);
+                                }
+                                oathConfig.app = {
+                                    token: this.appToken.token.access_token
+                                }
+                                storeOAuthConfig(node.id, oathConfig);
                                 node.log(JSON.stringify(this.appToken));
                                 if (statusNode) {
                                     statusNode.status({fill: "green", shape: "dot", text: "token available"});
@@ -72,12 +79,19 @@ module.exports = function(RED) {
                     });
                 },
                 onRenew: function(transition, statusNode) {
-                		let tokenConfig = {};
+                	let tokenConfig = {};
                     return new Promise((resolve, reject) => {
                         oauth2.clientCredentials.getToken(tokenConfig)
                         .then((result) => {
                             this.appToken = oauth2.accessToken.create(result);
-                            RED.settings.set(node.id, this.appToken.token.access_token);
+                            var oathConfig = getOAuthConfig(node.id);
+                            if (!oathConfig) {
+                                oathConfig = createOAuthConfig(node.id);
+                            }
+                            oathConfig.app = {
+                                token: this.appToken.token.access_token
+                            }
+                            storeOAuthConfig(node.id, oathConfig);
                             node.log(JSON.stringify(this.appToken));
                             node.context().global.set(node.id, this);
                             if (statusNode) {
@@ -130,21 +144,45 @@ module.exports = function(RED) {
                 return accessToken;
             }
         };
-        this.getSpaces = () => {
-            var query = "query getSpaces { spaces(first: 50) { items { id title } } }";
-      
-            return this.verifyAccessToken().then((auth) => {
-                //FIXME: addHelper Method wwsGraphQL, dial with token (accessToken.token.access_token)
-              return wwsGraphQL(auth.accessToken, query, "", "").then((response) => {
-                var spaces = response.data.spaces.items;
-                return spaces;
-              }).catch(function(err) {
-                console.log("Error while getting list of spaces." + err)
-              });
-            }).catch(function(err) {
-              console.log("Error while getting access token." + err)
+        //OAuth Flow on behalf of the user
+        this.getAuthorizationUrl = function(protocol, hostname, port) {
+            let callbackUrl = protocol + '//' + hostname + (port ? ':' + port : '')
+                + '/oauth2/node/' + this.id + '/auth/callback';
+            let csrfToken = crypto.randomBytes(18).toString('base64').replace(/\//g, '-').replace(/\+/g, '_');
+            RED.log.info(csrfToken);
+            var callback = {
+                callbackUrl: callbackUrl,
+                state: csrfToken
+            }
+            var oathConfig = getOAuthConfig(node.id);
+            if (!oathConfig) {
+                oathConfig = createOAuthConfig(node.id);
+            }
+            if (oathConfig.user.callback) {
+                oathConfig.user.callback=callback;
+            } else {
+                oathConfig.user = {
+                    callback: callback
+                }
+            }
+            storeOAuthConfig(node.id, oathConfig);
+            node.log(JSON.stringify(oathConfig));
+            return oauth2.authorizationCode.authorizeURL({
+                client_id: credentials.client.id,
+                redirect_uri: callbackUrl,
+                scope: node.scope,
+                state: csrfToken
             });
+        };
+        this.getUserAccessToken = (id) => {
+            var oathConfig = getOAuthConfig(id);
+            var token = {};
+            if (oathConfig.user.token) {
+                token = oathConfig.user.token;
+            }
+            return token;
         }
+
         node.getStateMachine().obtain();
     };
     RED.nodes.registerType("wws-credentials",WWSNode, {
@@ -153,12 +191,60 @@ module.exports = function(RED) {
             clientSecret: {type: "password"}
         }
     });
+    //HTTP Endpoint to provide a redirect URL for callback
+    RED.httpAdmin.get('/wws/app/:id/auth/url', (req, res) => {
+        RED.log.log("/auth/url");
+        
+        if (!req.params.id || !req.query.protocol || !req.query.hostname) {
+            res.sendStatus(400);
+            return;
+        }
+
+        var accountConfig = RED.nodes.getNode(req.params.id);
+
+        if (!node) {
+            res.sendStatus(404);
+            return;
+        }
+
+        res.send({
+            'url': accountConfig.getAuthorizationUrl(req.query.protocol, req.query.hostname, req.query.port)
+        });
+    });
+    //HTTP Endpoint to OAuth Callback URL
+    RED.httpAdmin.get('/wws/app/:id/auth/callback', (req, res) => {
+        if (!req.params.id) {
+            res.sendStatus(400);
+            return;
+        }
+
+        let node = RED.nodes.getNode(req.params.id);
+        if (!node) {
+            res.sendStatus(404);
+            return;
+        }
+        var oathConfig = getOAuthConfig(req.params.id);
+        var token = "";
+        if (oathConfig) {
+            token = oathConfig.user.callback.state;
+        }
+        if (token != req.query.state) {
+            res.sendStatus(401);
+            return;
+        }
+        var token = getUserToken(req.query.code, oathConfig.user.callback.callbackUrl);
+        var oathConfig = getOAuthConfig(req.params.id);
+        oathConfig.user.token = token;
+        storeOAuthConfig(req.params.id, oathConfig);
+        res.sendStatus(200);
+    });
+
     // HTTP Endpoint to Get List of Spaces
     RED.httpAdmin.get('/wws/app/:id/spaces', RED.auth.needsPermission('wws.read'), function(req, res) {
         var accountConfig = RED.nodes.getNode(req.params.id);
-        var bearerToken = RED.settings.get(req.params.id);
+        var oathConfig = getOAuthConfig(req.params.id);
+        var bearerToken = oathConfig.app.token;
         var query = "query getSpaces { spaces(first: 50) { items { id title } } }";
-        console.log("#################");
         console.log(JSON.stringify(accountConfig));
         var host = accountConfig.api;
 
@@ -190,7 +276,8 @@ module.exports = function(RED) {
     // HTTP Endpoint to add the app photo
     RED.httpAdmin.post('/wws/app/:id/photo', (req, res) => {
         var accountConfig = RED.nodes.getNode(req.params.id);
-        var bearerToken = RED.settings.get(req.params.id);
+        var oathConfig = getOAuthConfig(req.params.id);
+        var bearerToken = oathConfig;
 
         var contentType = req.headers["content-type"];
         var contentLength = req.headers['content-length'];
@@ -268,4 +355,35 @@ module.exports = function(RED) {
         })
 
     });
+    function getOAuthConfig(id) {
+        return RED.settings.get(id);
+    }
+    
+    function createOAuthConfig(id) {
+        var oathConfig = {};
+        RED.settings.set(id, oauthConfig);
+        return oauthConfig;
+    }
+
+    function storeOAuthConfig(id, oathConfig) {
+        RED.settings.set(id, oauthConfig);
+    }
+
+    function getUserToken(code, redirectUrl) {
+        let tokenConfig = {
+            code: code,
+            redirect_uri: redirectUrl
+        };
+        return new Promise((resolve, reject) => {
+            oauth2.authorizationCode.getToken(tokenConfig)
+                .then((result) => {
+                    return oauth2.accessToken.create(result);
+                    resolve();
+                })
+                .catch((error) => {
+                    node.error('Obtaining Access Token Failed: ' + error.message, error);
+                    reject(error);
+                });
+        });
+    }
 }
