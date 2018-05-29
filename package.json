@@ -8,7 +8,8 @@
         "javascript-state-machine": "^3.0.1",
         "follow-redirects": "^1.3.0",
         "request-promise-native": "^1.0.5",
-        "request": "^2.87.0"
+        "request": "^2.87.0",
+        "crypto": "^1.0.1"
     },
     "repository": {
         "type": "git",
@@ -26,10 +27,11 @@
     "node-red": {
         "nodes": {
             "wws-credentials": "wws-credentials/wws-credentials.js",
+            "wws-webhook:": "wws-webhook/wws-webhook.js",
+            "wws-message-post": "wws-message-post/wws-message-post.js",
             "wws-file-post": "wws-file-post/wws-file-post.js",
             "wws-graphql": "wws-graphql/wws-graphql.js",
-            "wws-message-post": "wws-message-post/wws-message-post.js",
-            "wws-webhook:": "wws-webhook/wws-webhook.js"
+            "wws-authorize": "wws-authorize/wws-authorize.js"
         }
     },
     "contributors": [

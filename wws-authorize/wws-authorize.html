@@ -1,0 +1,208 @@
+<script type="text/x-red" data-template-name="wws-authorize">
+    <div class="form-row">
+        <label for="node-input-account"><i class="fa fa-user"></i> App Name</label>
+        <input type="text" id="node-input-account" class="form-control-lg">
+    </div>
+    <div class="form-row">
+        <label for="node-input-scope"><i class="fa fa-lock"></i> Scope</label>
+        <input type="text" id="node-input-scope" placeholder="Access Level">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label>&nbsp;</label>
+        <a class="btn" id="node-user-authenticate" href="#" target="_blank">Authenticate to initialize token</a>
+    </div>
+    <div class="form-row">
+            <label>&nbsp;</label>
+            <a class="btn" id="node-user-revoke" href="#">Revoke user</a>
+    </div>
+    <input id="node-input-user" type="hidden"/>
+    <div class="form-tips" id="userInformation">
+
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-authorize">
+    <p>Node to create an user access token for <a href="https://workspace.ibm.com">IBM Watson Workspace</a> to authorize an app on behalf of a user.</p>
+    <h3>Inputs</h3>
+
+    <h3>Outputs</h3>
+
+    <h3>Details</h3>
+
+    <h3>Reference</h3>
+
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('wws-authorize',{
+        category: 'Watson Work',
+        color:"#11ABA5",
+        defaults: {
+            account: {type:"wws-credentials",required:true},
+            scope: {value:"read+write+ibmid"},
+            name: {value:""}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "wws.png",
+        align: "left",
+        label: function() {
+        		return this.name || "user token";
+        },
+        paletteLabel: "token",
+        oneditprepare: function() {
+            var hasUserToken = false;
+            let disableStartAuthenticationButton = function() {
+                $('#node-user-authenticate')
+                    .addClass('disabled')
+                    .click(function(event) {
+                        event.preventDefault();
+                    });
+            };
+            let enableStartAuthenticationButton = function() {
+                $('#node-user-authenticate')
+                    .removeClass('disabled');
+                $('#userInformation').hide();
+                $('#node-user-authenticate').show();
+                $('#node-user-revoke').hide();
+            };
+            let showUserInformation = function() {
+                $('#userInformation').html(html);
+                $('#userInformation').show();
+                $('#node-user-authenticate').hide();
+                $('#node-user-revoke').show();
+            };
+            let hideUserInformation = function(account) {
+                getCallbackUrl(account);
+                showAuthorizeButton(account);
+                $('#userInformation').hide();
+                $('#node-user-authenticate').show();
+                $('#node-user-revoke').hide();
+            };
+            let toggleUserInformation = function(hasUserToken, account) {
+                if (hasUserToken) {
+                    showUserInformation();
+                } else {
+                    hideUserInformation(account);
+                }
+
+            };
+            let queryUserInformation = function(account, toggleUserInformation) {
+                success = false;
+                $.getJSON("wws/app/"+ account +"/user", function(user,status) {
+                    console.log("Status: " + status);
+                    if (status === "success") {
+                        var html = "<h4>User Information</h4>";
+                        html+="<p>"+user.displayName+" ("+user.userId+")</p>";
+                        html+="<p><b>Access Rights</b></p>";
+                        html+="<ul>";
+                        $('node-input-user').val(user.userId);
+                        $.each(user.scope, function(index, value) {
+                            html+="<li>"+value+"</li>";
+                        });
+                        html+="</ul>";
+                        console.log(html);
+                        success = true;
+                    }
+                }).fail(( jqxhr, textStatus, error ) => {
+                            var err = textStatus + ", " + error;
+                            console.log( "Request Failed: " + err );
+                }).always(()=> {
+                    toggleUserInformation(success, account);
+                });
+            }
+            let searchForUserInformation = function() {
+                let releaseInterval = (intervalObj) => {
+                    clearInterval(intervalObj);
+                };
+                var hasToken = $('#userInformation > h4');
+                if (!hasUserToken) {
+                    const intervalObj = setInterval(() => {
+                        queryUserInformation(account, toggleUserInformation);
+                        console.log("Execution Status: " + hasUserToken);
+                        if (hasUserToken) {
+                            releaseInterval(intervalObj);
+                        };
+                    }, 2000);
+                };
+            }
+
+            let getCallbackUrl = function(account) {
+
+                let currentUri = window.location;
+                var scope = $('#node-input-scope').val();
+                var account = $('#node-input-account').val();
+                $.getJSON('/wws/app/' + account + '/auth/url', {
+                        protocol: currentUri.protocol,
+                        hostname: currentUri.hostname,
+                        port: currentUri.port,
+                        scope: scope
+                    }, function(response) {
+                    if (response.url) {
+                        $('#node-user-authenticate').attr('href', response.url);
+                    } else {
+                        disableStartAuthenticationButton();
+                    }
+                })
+                .fail(function() {
+                    disableStartAuthenticationButton();
+                });
+            }
+
+            //Account
+            var account = $("#node-input-account option:selected").val();
+            function showAuthorizeButton(account) {
+                if ($("#node-input-account option:selected").html().length>0 && account !== "_ADD_" ) {
+                    //todo execute remove user from cache
+                    enableStartAuthenticationButton();
+                } else {
+                    disableStartAuthenticationButton();
+                }
+            }
+            showAuthorizeButton(account);
+            $("#node-input-account").change(function(data,event) {
+                console.log("#node-input-account changed");
+                account = $("#node-input-account").val();
+                var hasUserToken = true;
+                queryUserInformation(account, hasUserToken);
+                console.log("Has User Token?:" + hasUserToken);
+                if (!hasUserToken) {
+                    getCallbackUrl(account);
+                    showAuthorizeButton(account);
+
+                }
+            });
+            /*
+            //AuthorizeAsUserButton
+            var authenticatButton = $('#node-user-authenticate');
+            authenticatButton.click(function(event) {
+                $('#node-user-authenticate').hide();
+            });
+            */
+            //Query user information
+            var checkUserInformation = false;
+            var account = $('#node-input-account').val();
+            var hasUserToken = true;
+            queryUserInformation(account, hasUserToken);
+            if (hasUserToken) {
+                getCallbackUrl(account);
+                checkUserInformation=true;
+            }
+            
+            var revokeButton = $('#node-user-revoke');
+            revokeButton.click(function(event) {
+                $('#userInformation').hide();
+                $('#node-user-authenticate').show();
+                $('#node-user-revoke').hide();
+                getCallbackUrl(account);
+                checkUserInformation=true;
+                searchForUserInformation(checkUserInformation);
+            });
+            searchForUserInformation(checkUserInformation);
+        }
+    });
+</script>

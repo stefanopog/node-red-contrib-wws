@@ -16,6 +16,7 @@ module.exports = function(RED) {
             return typeof value == 'string' && value.length > 0 ? value : defaultValue;
         }
         this.accountName = config.accountName;
+        this.name = config.accountName;
         if (!this.credentials.clientId) {
             this.error("No WWS credentials found!");
         }
@@ -27,7 +28,7 @@ module.exports = function(RED) {
         this.revokePath = stringOrDefault(config.revokePath, undefined);
         this.authorizePath = stringOrDefault(config.authorizePath, undefined);
 
-        var node = this;
+        const node = this;
         const credentials = {
             client: {
                 id: node.credentials.clientId,
@@ -42,6 +43,16 @@ module.exports = function(RED) {
             }
         };
         const oauth2 = OAuth2.create(credentials);
+        var oauthConfig = getOAuthConfig(this.id);
+        if (!oauthConfig) {
+            RED.log.info("Creating new oauthConfig");
+            createOAuthConfig(this.id);
+            oauthConfig = getOAuthConfig(this.id);
+        }
+        if (!oauthConfig.credentials) {
+            oauthConfig.credentials = credentials;
+            storeOAuthConfig(node.id, oauthConfig);
+        }
         const fsm = new StateMachine({
             init: 'no_token',
             transitions: [
@@ -58,15 +69,14 @@ module.exports = function(RED) {
                         oauth2.clientCredentials.getToken(tokenConfig)
                             .then((result) => {
                                 this.appToken = oauth2.accessToken.create(result);
-                                var oathConfig = getOAuthConfig(node.id);
-                                if (!oathConfig) {
-                                    oathConfig = createOAuthConfig(node.id);
+                                var oauthConfig = getOAuthConfig(node.id);
+                                if (!oauthConfig) {
+                                    oauthConfig = createOAuthConfig(node.id);
                                 }
-                                oathConfig.app = {
+                                oauthConfig.app = {
                                     token: this.appToken.token.access_token
                                 }
-                                storeOAuthConfig(node.id, oathConfig);
-                                node.log(JSON.stringify(this.appToken));
+                                storeOAuthConfig(node.id, oauthConfig);
                                 if (statusNode) {
                                     statusNode.status({fill: "green", shape: "dot", text: "token available"});
                                 }
@@ -84,14 +94,14 @@ module.exports = function(RED) {
                         oauth2.clientCredentials.getToken(tokenConfig)
                         .then((result) => {
                             this.appToken = oauth2.accessToken.create(result);
-                            var oathConfig = getOAuthConfig(node.id);
-                            if (!oathConfig) {
-                                oathConfig = createOAuthConfig(node.id);
+                            var oauthConfig = getOAuthConfig(node.id);
+                            if (!oauthConfig) {
+                                oauthConfig = createOAuthConfig(node.id);
                             }
-                            oathConfig.app = {
+                            oauthConfig.app = {
                                 token: this.appToken.token.access_token
                             }
-                            storeOAuthConfig(node.id, oathConfig);
+                            storeOAuthConfig(node.id, oauthConfig);
                             node.log(JSON.stringify(this.appToken));
                             node.context().global.set(node.id, this);
                             if (statusNode) {
@@ -118,16 +128,7 @@ module.exports = function(RED) {
                 },
                 getAccessToken: function() {
                     return this.appToken;
-                }/*,
-                onEnterHasToken: function() {
-                    node.status({fill: "green", shape: "dot", text: "has token"});
-                },
-                onEnterTokenExpired: function() {
-                    node.status({fill: "red", shape: "dot", text: "expired token"});
-                },
-                onEnterNoToken: function() {
-                    node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
-                }*/
+                }
             }
         });
         this.getStateMachine = function() {
@@ -145,50 +146,86 @@ module.exports = function(RED) {
             }
         };
         //OAuth Flow on behalf of the user
-        this.getAuthorizationUrl = function(protocol, hostname, port) {
-            let callbackUrl = protocol + '//' + hostname + (port ? ':' + port : '')
-                + '/oauth2/node/' + this.id + '/auth/callback';
-            let csrfToken = crypto.randomBytes(18).toString('base64').replace(/\//g, '-').replace(/\+/g, '_');
-            RED.log.info(csrfToken);
-            var callback = {
-                callbackUrl: callbackUrl,
-                state: csrfToken
+        this.getAuthorizationUrl = function(protocol, hostname, port, scope) {
+            let callback = {
+                callbackUrl: protocol + '//' + hostname + (port ? ':' + port : '') + '/wws/app/' + this.id + '/auth/callback',
+                scope: scope,
+                state: crypto.randomBytes(18).toString('base64').replace(/\//g, '-').replace(/\+/g, '_')
             }
-            var oathConfig = getOAuthConfig(node.id);
-            if (!oathConfig) {
-                oathConfig = createOAuthConfig(node.id);
+            var oauthConfig = getOAuthConfig(this.id);
+            if (!oauthConfig) {
+                return;
             }
-            if (oathConfig.user.callback) {
-                oathConfig.user.callback=callback;
-            } else {
-                oathConfig.user = {
-                    callback: callback
-                }
-            }
-            storeOAuthConfig(node.id, oathConfig);
-            node.log(JSON.stringify(oathConfig));
+            oauthConfig.callback=callback;
+            let credentials = oauthConfig.credentials;
+            storeOAuthConfig(this.id, oauthConfig);
             return oauth2.authorizationCode.authorizeURL({
                 client_id: credentials.client.id,
-                redirect_uri: callbackUrl,
-                scope: node.scope,
-                state: csrfToken
+                redirect_uri: callback.callbackUrl,
+                scope: callback.scope,
+                state: callback.state
             });
         };
-        this.getUserAccessToken = (id) => {
-            var oathConfig = getOAuthConfig(id);
-            var token = {};
-            if (oathConfig.user.token) {
-                token = oathConfig.user.token;
-            }
-            return token;
-        }
+        this.on('close', function(removed, done) {
+            RED.log.info("Close Event called");
+            if (removed) {
+                // This node has been deleted
+                RED.log.info("Deleting node "+ this.name +"["+this.id+"] from persistent cache....");
+                //Workaround as no remove(key) is exposed.
+                var oauthConfig = {};
+                storeOAuthConfig(this.id, oauthConfig);
+            } else {
+                // This node is being restarted
+                //TODO: stop any active polling!
 
+            }
+            done();
+        });
         node.getStateMachine().obtain();
     };
     RED.nodes.registerType("wws-credentials",WWSNode, {
         credentials: {
             clientId: {type: "text"},
             clientSecret: {type: "password"}
+        }
+    });
+
+    /*
+    // Http Endpoint to display token user
+    RED.httpAdmin.get('/wws/app/:id/user/:user/remove', (req, res) => {
+        var oauthConfig = getOAuthConfig(req.params.id);
+        delete  oauthConfig.user;
+        if (oauthConfig.deleteUser(req.params.user)) {
+            RED.log.info("User " + req.params.user + " successfully revoked!" );
+        } else {
+            RED.log.info("Could not revoke user " + req.params.user + ". Not found!" );
+        }
+        storeOAuthConfig(req.params.id, oauthConfig);
+        if (oauthConfig.user.token) {
+            res.sendStatus(200);
+        } else {
+            res.sendStatus(404);
+            return;
+        }
+    });
+    */
+
+    // Http Endpoint to display token user
+    RED.httpAdmin.get('/wws/app/:id/user', (req, res) => {
+        var oauthConfig = getOAuthConfig(req.params.id);
+        console.log(JSON.stringify(oauthConfig.user.token));
+        if (oauthConfig && oauthConfig.user && oauthConfig.user.token) {
+            var token = oauthConfig.user.token;
+            var body = {
+                displayName: token.displayName,
+                userId: token.id,
+                scope: token.scope.trim().split(" ")
+            }
+            console.log(JSON.stringify(body));
+            res.json(body);
+        } else {
+            res.sendStatus(404);
+            return;
         }
     });
     //HTTP Endpoint to provide a redirect URL for callback
@@ -199,8 +236,12 @@ module.exports = function(RED) {
             res.sendStatus(400);
             return;
         }
-
-        var accountConfig = RED.nodes.getNode(req.params.id);
+        var scope = "";
+        if (req.query.scope) {
+            scope = req.query.scope;
+            RED.log.log("Requested scope:" + scope);
+        }
+        var node = RED.nodes.getNode(req.params.id);
 
         if (!node) {
             res.sendStatus(404);
@@ -208,7 +249,7 @@ module.exports = function(RED) {
         }
 
         res.send({
-            'url': accountConfig.getAuthorizationUrl(req.query.protocol, req.query.hostname, req.query.port)
+            'url': node.getAuthorizationUrl(req.query.protocol, req.query.hostname, req.query.port, scope)
         });
     });
     //HTTP Endpoint to OAuth Callback URL
@@ -218,34 +259,39 @@ module.exports = function(RED) {
             return;
         }
 
-        let node = RED.nodes.getNode(req.params.id);
-        if (!node) {
+        var oauthConfig = getOAuthConfig(req.params.id);
+        var token = "";
+        if (oauthConfig) {
+            token = oauthConfig.callback.state;
+        } else {
             res.sendStatus(404);
             return;
-        }
-        var oathConfig = getOAuthConfig(req.params.id);
-        var token = "";
-        if (oathConfig) {
-            token = oathConfig.user.callback.state;
         }
         if (token != req.query.state) {
             res.sendStatus(401);
             return;
         }
-        var token = getUserToken(req.query.code, oathConfig.user.callback.callbackUrl);
-        var oathConfig = getOAuthConfig(req.params.id);
-        oathConfig.user.token = token;
-        storeOAuthConfig(req.params.id, oathConfig);
-        res.sendStatus(200);
+        getUserToken(oauthConfig.credentials, req.query.code, req.query.scope, oauthConfig.callback.callbackUrl)
+        .then((response) => {
+            var oauthConfig = getOAuthConfig(req.params.id);
+            RED.log.info("User Token: " + JSON.stringify(response.token));
+            oauthConfig.user = {
+                token: response.token
+            };
+            storeOAuthConfig(req.params.id, oauthConfig);
+            res.sendStatus(200);
+        }).catch((failure) => {
+            res.status(failure.status);
+            res.json(failure);
+        });
     });
 
     // HTTP Endpoint to Get List of Spaces
     RED.httpAdmin.get('/wws/app/:id/spaces', RED.auth.needsPermission('wws.read'), function(req, res) {
         var accountConfig = RED.nodes.getNode(req.params.id);
-        var oathConfig = getOAuthConfig(req.params.id);
-        var bearerToken = oathConfig.app.token;
+        var oauthConfig = getOAuthConfig(req.params.id);
+        var bearerToken = oauthConfig.app.token;
         var query = "query getSpaces { spaces(first: 50) { items { id title } } }";
-        console.log(JSON.stringify(accountConfig));
         var host = accountConfig.api;
 
         function getSpaces(host, bearerToken, query) {
@@ -276,9 +322,11 @@ module.exports = function(RED) {
     // HTTP Endpoint to add the app photo
     RED.httpAdmin.post('/wws/app/:id/photo', (req, res) => {
         var accountConfig = RED.nodes.getNode(req.params.id);
-        var oathConfig = getOAuthConfig(req.params.id);
-        var bearerToken = oathConfig;
-
+        var oauthConfig = getOAuthConfig(req.params.id);
+        var bearerToken;
+        if (oauthConfig.user && oauthConfig.user.token) {
+            bearerToken = oauthConfig.user.token.access_token;
+        }
         var contentType = req.headers["content-type"];
         var contentLength = req.headers['content-length'];
 
@@ -356,32 +404,39 @@ module.exports = function(RED) {
 
     });
     function getOAuthConfig(id) {
-        return RED.settings.get(id);
+        var oauthConfig = RED.settings.get(id);
+        if (!oauthConfig) {
+            oauthConfig = undefined;
+        }
+        return oauthConfig;
     }
     
     function createOAuthConfig(id) {
-        var oathConfig = {};
+        var oauthConfig = {};
         RED.settings.set(id, oauthConfig);
         return oauthConfig;
     }
 
-    function storeOAuthConfig(id, oathConfig) {
+    function storeOAuthConfig(id, oauthConfig) {
+        RED.log.info(JSON.stringify(oauthConfig));
         RED.settings.set(id, oauthConfig);
     }
 
-    function getUserToken(code, redirectUrl) {
+    function getUserToken(credentials, code, scope, redirectUrl) {
+        const oauth2 = OAuth2.create(credentials);
         let tokenConfig = {
             code: code,
+            scope: scope,
             redirect_uri: redirectUrl
         };
         return new Promise((resolve, reject) => {
             oauth2.authorizationCode.getToken(tokenConfig)
                 .then((result) => {
-                    return oauth2.accessToken.create(result);
-                    resolve();
+                    var token = oauth2.accessToken.create(result);
+                    resolve(token);
                 })
                 .catch((error) => {
-                    node.error('Obtaining Access Token Failed: ' + error.message, error);
+                    RED.log.error('Obtaining Access Token Failed: ' + error.message, error);
                     reject(error);
                 });
         });

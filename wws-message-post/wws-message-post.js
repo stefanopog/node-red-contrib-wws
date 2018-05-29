@@ -19,7 +19,6 @@ module.exports = function(RED) {
         //Get the account config node
         this.accountConfig = RED.nodes.getNode(this.account);
         this.accountConfigCredentials = RED.nodes.getCredentials(this.account);
-        
         var node = this;
         //Check for token on start up
         const tokenFsm = node.accountConfig.getStateMachine();
