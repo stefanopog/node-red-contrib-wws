@@ -305,7 +305,7 @@ module.exports = function(RED) {
             console.log(options);
             return rp(options);
         }
-        if (bearerToken) {
+        if (bearerToken && accountConfig) {
             getSpaces(host, bearerToken, query).then((response) => {
                 var spaces = response.data.spaces.items;
                 console.log("SPACES: ", spaces);
