@@ -16,12 +16,14 @@ module.exports = function(RED) {
         this.accountConfig = RED.nodes.getNode(this.account);
         this.accountConfigCredentials = RED.nodes.getCredentials(this.account);
         this.webhookPath = config.webhookPath;
-        const appId = this.accountConfigCredentials.clientId
-        var node = this;
-        if (!node.credentials.webhookSecret) {
-            this.error("Missing Webhook Secret!");
+        if (this.accountConfigCredentials) {
+            const appId = this.accountConfigCredentials.clientId;
         }
 
+        if (!this.credentials.webhookSecret) {
+            this.error("Missing Webhook Secret!");
+        }
+        var node = this;
         this.on("close",function() {
             //Remove webhook when deleted
             RED.httpNode._router.stack.forEach(function(route,i,routes) {
