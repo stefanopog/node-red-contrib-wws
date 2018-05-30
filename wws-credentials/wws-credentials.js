@@ -73,9 +73,7 @@ module.exports = function(RED) {
                                 if (!oauthConfig) {
                                     oauthConfig = createOAuthConfig(node.id);
                                 }
-                                oauthConfig.app = {
-                                    token: this.appToken.token.access_token
-                                }
+                                oauthConfig.app = this.appToken;
                                 storeOAuthConfig(node.id, oauthConfig);
                                 if (statusNode) {
                                     statusNode.status({fill: "green", shape: "dot", text: "token available"});
@@ -84,7 +82,10 @@ module.exports = function(RED) {
                             })
                             .catch((error) => {
                                 node.error("Obtaining Access Token Failed: " + error.message, error);
-                                reject(error);
+                                if (statusNode) {
+                                    statusNode.status({fill: "red", shape: "dot", text: "error"});
+                                }
+                                resolve();
                             });
                     });
                 },
@@ -98,9 +99,7 @@ module.exports = function(RED) {
                             if (!oauthConfig) {
                                 oauthConfig = createOAuthConfig(node.id);
                             }
-                            oauthConfig.app = {
-                                token: this.appToken.token.access_token
-                            }
+                            oauthConfig.app = this.appToken;
                             storeOAuthConfig(node.id, oauthConfig);
                             node.log(JSON.stringify(this.appToken));
                             node.context().global.set(node.id, this);
@@ -111,7 +110,7 @@ module.exports = function(RED) {
                         })
                         .catch((error) => {
                             node.error("Access Token Renew Failed: " + error.message, error);
-                            reject(error);
+                            done();
                             fsm.failed(statusNode);
                         });
                     });
@@ -190,30 +189,24 @@ module.exports = function(RED) {
         }
     });
 
-    /*
-    // Http Endpoint to display token user
+    
+    // Http Endpoint to remove user
     RED.httpAdmin.get('/wws/app/:id/user/:user/remove', (req, res) => {
         var oauthConfig = getOAuthConfig(req.params.id);
-        delete  oauthConfig.user;
-        if (oauthConfig.deleteUser(req.params.user)) {
+        if (oauthConfig.user) {
+            delete  oauthConfig.user;
             RED.log.info("User " + req.params.user + " successfully revoked!" );
         } else {
             RED.log.info("Could not revoke user " + req.params.user + ". Not found!" );
         }
         storeOAuthConfig(req.params.id, oauthConfig);
-        if (oauthConfig.user.token) {
-            res.sendStatus(200);
-        } else {
-            res.sendStatus(404);
-            return;
-        }
+        res.sendStatus(200);
     });
-    */
+    
 
     // Http Endpoint to display token user
     RED.httpAdmin.get('/wws/app/:id/user', (req, res) => {
         var oauthConfig = getOAuthConfig(req.params.id);
-        console.log(JSON.stringify(oauthConfig.user.token));
         if (oauthConfig && oauthConfig.user && oauthConfig.user.token) {
             var token = oauthConfig.user.token;
             var body = {
@@ -221,7 +214,6 @@ module.exports = function(RED) {
                 userId: token.id,
                 scope: token.scope.trim().split(" ")
             }
-            console.log(JSON.stringify(body));
             res.json(body);
         } else {
             res.sendStatus(404);
@@ -290,7 +282,10 @@ module.exports = function(RED) {
     RED.httpAdmin.get('/wws/app/:id/spaces', RED.auth.needsPermission('wws.read'), function(req, res) {
         var accountConfig = RED.nodes.getNode(req.params.id);
         var oauthConfig = getOAuthConfig(req.params.id);
-        var bearerToken = oauthConfig.app.token;
+        var bearerToken;
+        if (oauthConfig.app) {
+            bearerToken = oauthConfig.app.token.access_token;
+        }
         var query = "query getSpaces { spaces(first: 50) { items { id title } } }";
         var host = accountConfig.api;
 
@@ -310,14 +305,18 @@ module.exports = function(RED) {
             console.log(options);
             return rp(options);
         }
+        if (bearerToken) {
+            getSpaces(host, bearerToken, query).then((response) => {
+                var spaces = response.data.spaces.items;
+                console.log("SPACES: ", spaces);
+                res.json(spaces);
+              }).catch((err) => {
+                console.log("Error while getting list of spaces.", err);
+            });
+        } else {
+            res.json({});
+        }
 
-        getSpaces(host, bearerToken, query).then((response) => {
-            var spaces = response.data.spaces.items;
-            console.log("SPACES: ", spaces);
-            res.json(spaces);
-          }).catch((err) => {
-            console.log("Error while getting list of spaces.", err);
-        });
     });
     // HTTP Endpoint to add the app photo
     RED.httpAdmin.post('/wws/app/:id/photo', (req, res) => {

@@ -38,6 +38,7 @@
 </script>
 
 <script type="text/javascript">
+    var poller;
     RED.nodes.registerType('wws-authorize',{
         category: 'Watson Work',
         color:"#11ABA5",
@@ -55,7 +56,6 @@
         },
         paletteLabel: "token",
         oneditprepare: function() {
-            var hasUserToken = false;
             let disableStartAuthenticationButton = function() {
                 $('#node-user-authenticate')
                     .addClass('disabled')
@@ -71,17 +71,16 @@
                 $('#node-user-revoke').hide();
             };
             let showUserInformation = function() {
-                $('#userInformation').html(html);
                 $('#userInformation').show();
                 $('#node-user-authenticate').hide();
                 $('#node-user-revoke').show();
             };
             let hideUserInformation = function(account) {
-                getCallbackUrl(account);
                 showAuthorizeButton(account);
                 $('#userInformation').hide();
                 $('#node-user-authenticate').show();
                 $('#node-user-revoke').hide();
+
             };
             let toggleUserInformation = function(hasUserToken, account) {
                 if (hasUserToken) {
@@ -91,7 +90,16 @@
                 }
 
             };
-            let queryUserInformation = function(account, toggleUserInformation) {
+            let hasUserToken = () => {
+                var userInformation = $('#userInformation > h4');
+                console.log("userInformation: " + JSON.stringify(userInformation));
+                if (userInformation && userInformation.length>0) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            let queryUserInformation = function(account) {
                 success = false;
                 $.getJSON("wws/app/"+ account +"/user", function(user,status) {
                     console.log("Status: " + status);
@@ -106,28 +114,29 @@
                         });
                         html+="</ul>";
                         console.log(html);
+                        $('#userInformation').html(html);
                         success = true;
                     }
                 }).fail(( jqxhr, textStatus, error ) => {
                             var err = textStatus + ", " + error;
                             console.log( "Request Failed: " + err );
-                }).always(()=> {
+                }).always((user, textStatus, xhr) => {
                     toggleUserInformation(success, account);
                 });
             }
-            let searchForUserInformation = function() {
+            let searchForUserInformation = function(account) {
                 let releaseInterval = (intervalObj) => {
+                    poller = undefined;
                     clearInterval(intervalObj);
                 };
-                var hasToken = $('#userInformation > h4');
-                if (!hasUserToken) {
+                if (!poller && !hasUserToken()) {
                     const intervalObj = setInterval(() => {
-                        queryUserInformation(account, toggleUserInformation);
-                        console.log("Execution Status: " + hasUserToken);
-                        if (hasUserToken) {
+                        queryUserInformation(account);
+                        if (hasUserToken()) {
                             releaseInterval(intervalObj);
                         };
-                    }, 2000);
+                    }, 1000);
+                    poller = intervalObj;
                 };
             }
 
@@ -153,28 +162,33 @@
                 });
             }
 
+
             //Account
             var account = $("#node-input-account option:selected").val();
             function showAuthorizeButton(account) {
-                if ($("#node-input-account option:selected").html().length>0 && account !== "_ADD_" ) {
+                var selectAccount = $("#node-input-account option:selected").html();
+                if (selectAccount && selectAccount.length>0 && account !== "_ADD_" ) {
                     //todo execute remove user from cache
                     enableStartAuthenticationButton();
                 } else {
                     disableStartAuthenticationButton();
                 }
             }
-            showAuthorizeButton(account);
             $("#node-input-account").change(function(data,event) {
                 console.log("#node-input-account changed");
                 account = $("#node-input-account").val();
-                var hasUserToken = true;
-                queryUserInformation(account, hasUserToken);
-                console.log("Has User Token?:" + hasUserToken);
-                if (!hasUserToken) {
-                    getCallbackUrl(account);
-                    showAuthorizeButton(account);
-
+                console.log("account: "+account);
+                if (account !== "_ADD_") {
+                    searchForUserInformation(account);
+                    console.log("Has User Token?" + hasUserToken());
+                    if (!hasUserToken()) {
+                        getCallbackUrl(account);
+                        showAuthorizeButton(account);
+                    }
+                } else {
+                    clearCurrentUser();
                 }
+
             });
             /*
             //AuthorizeAsUserButton
@@ -183,26 +197,59 @@
                 $('#node-user-authenticate').hide();
             });
             */
+           /*
             //Query user information
             var checkUserInformation = false;
             var account = $('#node-input-account').val();
-            var hasUserToken = true;
-            queryUserInformation(account, hasUserToken);
-            if (hasUserToken) {
+            queryUserInformation(account);
+            if (hasUserToken()) {
                 getCallbackUrl(account);
                 checkUserInformation=true;
             }
-            
-            var revokeButton = $('#node-user-revoke');
-            revokeButton.click(function(event) {
+            */
+           let removeUser = () => {
+                var userId = $('node-input-user').val();
+                return $.getJSON("wws/app/"+ account +"/user/"+ userId +"/remove").done((data, textStatus, xhr) => {
+                    console.log("data: " + JSON.stringify(data));
+                    console.log("textStatus: " + JSON.stringify(textStatus));
+                    console.log("status: " + JSON.stringify(xhr));
+                }).fail(( xhr, textStatus, error ) => {
+                    console.log("xhr: " + JSON.stringify(xhr));
+                    console.log("textStatus: " + JSON.stringify(textStatus));
+                    console.log("error: " + JSON.stringify(error));
+                    var err = textStatus + ", " + error;
+                    console.log( "Request Failed: " + err );
+                }).always((data, textStatus, xhr) => {
+                    console.log("data: " + JSON.stringify(data));
+                    console.log("textStatus: " + JSON.stringify(textStatus));
+                    console.log("status: " + JSON.stringify(xhr));
+                });
+           }
+            let clearCurrentUser = () => {
+                $('#userInformation').html("<p>No user information has been provided yet!</p>");
                 $('#userInformation').hide();
                 $('#node-user-authenticate').show();
                 $('#node-user-revoke').hide();
                 getCallbackUrl(account);
-                checkUserInformation=true;
-                searchForUserInformation(checkUserInformation);
+            }
+            var revokeButton = $('#node-user-revoke');
+            revokeButton.click(function(event) {
+                clearCurrentUser();
+                removeUser().then(() => {
+                    searchForUserInformation(account);
+                })
             });
-            searchForUserInformation(checkUserInformation);
+            /*searchForUserInformation(account);*/
+        },
+        oneditsave: function() {
+            clearInterval(poller);
+        },
+        oneditcancel: function() {
+            console.log("Clearing interval with ID " + poller);
+            clearInterval(poller);
+        },
+        oneditdelete: function() {
+            clearInterval(poller);
         }
     });
 </script>
