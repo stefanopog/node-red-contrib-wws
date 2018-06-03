@@ -21,7 +21,7 @@ module.exports = function(RED) {
         this.accountConfigCredentials = RED.nodes.getCredentials(this.account);
         var node = this;
         //Check for token on start up
-        const tokenFsm;
+        var tokenFsm;
         if (!node.accountConfig || !node.accountConfig.getStateMachine()) {
             node.error("Please configure your account information first!");
             tokenFsm = {};
