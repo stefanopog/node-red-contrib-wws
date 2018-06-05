@@ -1,6 +1,6 @@
 {
     "name": "node-red-contrib-wws",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Node-RED nodes to integrate with IBM Watson Workspace",
     "dependencies": {
         "body-parser": "^1.18.2",
@@ -33,7 +33,8 @@
         }
     },
     "contributors": [
-    		"Arne Sutor <arne.sutor@de.ibm.com> (https://www.ibm.com/collaboration/collaboration-tools/watson-work/workspace)",
+    		"Arne Sutor <arne.sutor@de.ibm.com>",
+    		"Stefano Pogliani <stefano.pogliani@fr.ibm.com>",
     		"Benedikt Müller <benedikt.mueller@de.ibm.com>"
     ]
 }

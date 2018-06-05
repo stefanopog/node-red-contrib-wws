@@ -1,21 +1,37 @@
 <script type="text/javascript">
   RED.nodes.registerType("wws-graphql", {
     category: 'Watson Work',
-    color:"#11ABA5",
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "center",
     defaults: {
-      name: { value: "" },
-      application: { value: "", type: "wws-credentials" },
-      viewType: { value: "PUBLIC" }
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        type: "wws-credentials"
+      },
+      wwsBetaFeatures: {
+        value: false
+      },
+      wwsExperimentalFeatures: {
+        value: false
+      }
     },
     inputs: 1,
     outputs: 1,
-    icon: "wws.png",
-    label: function() {
+    label: function () {
       return this.name || "send GraphQL query";
     },
-    paletteLabel: "graphQL",
-    align: "center"
+    paletteLabel: "graphQL"
   });
+
+  function updateWwsBetaFeatures() {
+  }
+
+  function updateWwsExperimentalFeatures() {
+  }
 </script>
 
 <script type="text/x-red" data-template-name="wws-graphql">
@@ -23,10 +39,21 @@
     <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
     <input type="text" id="node-input-application">
   </div>
-  <div class="form-row">
-    <label for="node-input-viewType"><i class="fa fa-eye"></i> View Type</label>
-    <input type="text" id="node-input-viewType" placeholder="PUBLIC,BETA">
+
+  <hr />
+  <label><b>API Features</b></label>
+
+  <div class="form-row" id="wwsBetaFeaturesRow">
+    <input type="checkbox"  name="wwsBetaFeatures" id="node-input-wwsBetaFeatures" onchange="updateWwsBetaFeatures()" style="width:10%"></input>
+    <label for="node-input-wwsBetaFeatures" style="width:200px">BETA ?</label>
   </div>
+
+  <div class="form-row" id="wwsExperimentalFeaturesRow">
+    <input type="checkbox"  name="wwsExperimentalFeatures" id="node-input-wwsExperimentalFeatures" onchange="updateWwsExperimentalFeatures()" style="width:10%"></input>
+    <label for="node-input-wwsExperimentalFeatures" style="width:200px">EXPERIMENTAL ?</label>
+  </div>
+  <hr />
+
   <div class="form-row">
     <label for="node-input-name"><i class="icon-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name">
@@ -90,3 +117,170 @@ msg.payload = `
       <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
+
+<script type="text/javascript">
+  RED.nodes.registerType("wws-validateActions", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "center",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      wwsReferralMessageId: {
+        value: "",
+        required: true
+      },
+      wwsActionsList: {
+        value : "",
+        required: true
+      },
+      wwsActionId: {
+        value : "",
+        required: true
+      },
+      outputs: {
+        //
+        //  this is the same "outputs" variable that is used to define the number of outputs of the node instance
+        //  It is promoted here in order to make sure it can be programmatically modified
+        //
+        value:1
+      }
+    },
+    inputs: 1,
+    outputs: 1,
+    outputLabels: function(index) { 
+      //
+      //  This function dynamically assigns a label to each of the output.
+      //  The label assigned to each output reflects the value entered in the wwsActionsList input
+      //  An additional label is generated for the last output, to cover the "OTHERWISE" case
+      //
+      var actions = this.wwsActionsList; 
+      var A_actions = actions.split(',');
+      if (index === A_actions.length) {
+        return 'Otherwise';
+      } else {
+        return A_actions[index].trim(); 
+      }
+    },
+    label: function () {
+      return this.name || "Validate Action";
+    },
+    paletteLabel: "Validate Action",
+    oneditsave: updateWwsActionsList
+  });
+
+
+  function updateWwsActionsList() {
+    //
+    //  Get the value from the input field
+    //
+    var actions = $("#node-input-wwsActionsList").val();
+    //
+    //  create an array out of the string
+    //
+    var A_actions = actions.split(',');
+    var B_actions = [];
+    //
+    //  Prune empty elements and trim others
+    //
+    for (let i=0; i < A_actions.length; i++) {
+      A_actions[i] = A_actions[i].trim();
+      if (A_actions[i].length !== 0) {
+        B_actions.push(A_actions[i])
+      }
+    }
+    //
+    //  Update the number of outputs of the node
+    //  NOTE : "this.outputs" works because this method is called by the "oneditsave".
+    //
+    this.outputs = B_actions.length + 1;
+    //
+    //  Replace the original value from the input field with a sanitized version
+    //
+    $("#node-input-wwsActionsList").val(B_actions.join(', '));
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-validateActions">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsReferralMessageId"><i class="fa fa-eye"></i> Referral MsgId</label>
+    <input type="text" id="node-input-wwsReferralMessageId" placeholder="the Id of the message">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsActionId"><i class="fa fa-eye"></i> Action Id</label>
+    <input type="text" id="node-input-wwsActionId" placeholder="incoming Action Id">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsActionsList"><i class="fa fa-eye"></i> Recognized Actions</label>
+    <input type="text" id="node-input-wwsActionsList" placeholder="comma-separated list of actions">
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-validateActions">
+  <p>This node provides a mean to filter a set of Actions identified by <a href="https://developer.watsonwork.ibm.com" target="_blank">IBM Watson Work Services</a>.</p>
+  <p>Normally this node is deployed after the Webhook node and once you want to filter <b>annotations</b> whose <code>annotationType = "actionSelected"</code>. <p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt>wwsActionId <span class="property-type">string</span></dt>
+      <dd>The name of the Action from the webhook.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsActionId</code></dd>
+
+      <dt>wwsActionsList <span class="property-type">comma-separated string</span></dt>
+      <dd>Defines a list of possible Actions this node should be able to validate.
+        <br>
+        This is a comma-separated list of values; each value can be a fully defined name or a string containing wildcards (such as <code>*alfa*, alfa*beta*</code> etc).
+        <br>
+        Wildcards are often useful for actions issued by buttons or links in <a href="https://developer.watsonwork.ibm.com/docs/tutorials/action-fulfillment" target="_blank">Action Fulfillment</a>.
+        <br>
+        <b>Slash Commands</b> strings are also recognized and they must be prefixed by the <code> / (slash)</code> character.<br>
+        <p>
+          <b>Note:</b><br>
+          The node will automatically generate as many outputs as the number of items in <code>wwsActionsList</code> <b>PLUS ONE</b>. <br>
+          Each output corresponds to one item in <code>wwsActionsList</code>; the additional output corresponds to an <i>otherwise</i> situation, i.e. when 
+          the <code>wwsActionId</code> does not match any item in <code>wwsActionsList</code>.<br>
+          The label associated with each output is set to be the value of the corresponding item from <code>wwsActionsLis</code><br>
+          <img src="/icons/node-red-contrib-wws/wws-action-desc.png" />
+      </dd>
+
+      <dt>wwsReferralMessageId <span class="property-type">string</span></dt>
+      <dd>The ID of the message to which the ActionId refers to. This information comes from the webhook.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsActionId</code>
+      </dd>
+  </dl>
+  <h3>Details</h3>
+  <p>In case the incoming <code>wwsActionId</code> matches one of the items listed in <code>wwsActionsList</code>, the node executes its processing.
+    <ul>
+    <li>If the <code>wwsActionId</code> corresponds to a <b>Slash Command</b>, then the incoming <code>msg</code> (coming normally from the Webook) is passed untouched to the output 
+    corresponding to the <b>Slash Command</b> from <code>wwsActionsList</code>.</li>
+    <li>If the <code>wwsActionId</code> corresponds to an Action, then a GraphQL query is issued to get the original annotation corresponding to the <b>wwsActionId</b>. Then this 
+    annotation is posted as <code>msg.payload</code> for the output corresponding to the <b>Slash Command</b> from <code>wwsActionsList</code>.</li>
+    <li>If the <code>wwsActionId</code> does not correspond to any value inside <code>wwsActionslist</code>, the the original <code>msg</code> is passed untouched to the output 
+      corresponding to the <b>otheriwse condition</b> (the last output).</li>
+    </ul>
+  </p>
+  </dl>
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
