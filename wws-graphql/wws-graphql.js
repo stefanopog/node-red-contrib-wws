@@ -13,11 +13,13 @@ module.exports = function (RED) {
     //Check for token on start up
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
+      node.status({fill:"red", shape:"dot", text:"Please configure your account information first!"});
       node.error("Please configure your account information first!");
+      return;
     }
-    if (!_isInitialized()) {
+    if (!_isInitialized(tokenFsm)) {
       const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
+        if (_isInitialized(tokenFsm)) {
           clearInterval(intervalObj);
         };
       }, 2000);
@@ -59,7 +61,7 @@ module.exports = function (RED) {
         console.log("Error while posting GraphQL query to WWS.", err);
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
       });
-      setTimeout(() => {_isInitialized(); }, 2000);
+      setTimeout(() => {_isInitialized(tokenFsm); }, 2000);
     });
   }
 
@@ -79,9 +81,9 @@ module.exports = function (RED) {
       node.status({fill:"red", shape:"dot", text:"No Account Info"});
       node.error("Please configure your account information first!");
     }
-    if (!_isInitialized()) {
+    if (!_isInitialized(tokenFsm)) {
       const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
+        if (_isInitialized(tokenFsm)) {
           clearInterval(intervalObj);
         };
       }, 2000);
@@ -145,10 +147,11 @@ module.exports = function (RED) {
       var selectedRule = -1;
       for (let i=0; i < actionList.length; i++) {
         if (matchRuleShort(actionId, actionList[i].trim())) {
-            selectedRule = i;
+          selectedRule = i;
           break;
         }
       }
+      console.log('Selected Rule is : ' + selectedRule + ' (over ' + actionList.length + ')');
       if (selectedRule === -1) {
         //
         //  Build an output array of messages where all the messages are NULL except the Last one
@@ -163,6 +166,7 @@ module.exports = function (RED) {
         return;
       }
 
+      console.log('processing .....');
       //
       //  At this point, we know that we are trying to match an ActionId which is in the list
       //
@@ -184,7 +188,8 @@ module.exports = function (RED) {
           //  
           //  Sends the output array
           //
-          node.send(outArray);        
+          node.send(outArray);  
+          return;      
       }
       //
       //  If the ActionId is not a SLASH Command, then we need to get the one annotation from the referralMsessageId which
@@ -254,7 +259,7 @@ module.exports = function (RED) {
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
         node.error('Error while posting GraphQL query to WWS.', msg);
       });
-      setTimeout(() => {_isInitialized();}, 2000);
+      setTimeout(() => {_isInitialized(tokenFsm);}, 2000);
     });
   }
 
