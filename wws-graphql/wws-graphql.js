@@ -15,10 +15,10 @@ module.exports = function (RED) {
     if (!tokenFsm) {
       node.error("Please configure your account information first!");
     }
-    if (!this.isInitialized()) {
+    if (!_isInitialized()) {
       const intervalObj = setInterval(() => {
-        if (this.isInitialized()) {
-          this.releaseInterval(intervalObj);
+        if (_isInitialized()) {
+          clearInterval(intervalObj);
         };
       }, 2000);
     };
@@ -59,7 +59,7 @@ module.exports = function (RED) {
         console.log("Error while posting GraphQL query to WWS.", err);
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
       });
-      setTimeout(() => {node.isInitialized(); }, 2000);
+      setTimeout(() => {_isInitialized(); }, 2000);
     });
   }
 
@@ -79,10 +79,10 @@ module.exports = function (RED) {
       node.status({fill:"red", shape:"dot", text:"No Account Info"});
       node.error("Please configure your account information first!");
     }
-    if (!this.isInitialized()) {
+    if (!_isInitialized()) {
       const intervalObj = setInterval(() => {
-        if (this.isInitialized()) {
-          this.releaseInterval(intervalObj);
+        if (_isInitialized()) {
+          clearInterval(intervalObj);
         };
       }, 2000);
     };
@@ -254,7 +254,7 @@ module.exports = function (RED) {
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
         node.error('Error while posting GraphQL query to WWS.', msg);
       });
-      setTimeout(() => {node.isInitialized();}, 2000);
+      setTimeout(() => {_isInitialized();}, 2000);
     });
   }
 
@@ -329,7 +329,7 @@ module.exports = function (RED) {
   //  End of code coming form the following article : https://stackoverflow.com/questions/26246601/wildcard-string-comparison-in-javascript
   //  
 
-  this.isInitialized = () => {
+  function _isInitialized() {
     var initialized = false;
     if (tokenFsm.getAccessToken()) {
       node.status({fill: "green", shape: "dot", text: "token available"});
@@ -339,7 +339,4 @@ module.exports = function (RED) {
     }
     return initialized;
   };
-  this.releaseInterval = (intervalObj) => {
-    clearInterval(intervalObj);
-  };
-}
+};
