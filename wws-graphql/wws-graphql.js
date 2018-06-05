@@ -10,6 +10,17 @@ module.exports = function (RED) {
     this.application = RED.nodes.getNode(config.application);
     var node = this;
 
+    function _isInitialized() {
+      var initialized = false;
+      if (tokenFsm.getAccessToken()) {
+        node.status({fill: "green", shape: "dot", text: "token available"});
+        initialized = true;
+      } else {
+        node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
+      }
+      return initialized;
+    };
+      
     //Check for token on start up
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
@@ -17,9 +28,9 @@ module.exports = function (RED) {
       node.error("Please configure your account information first!");
       return;
     }
-    if (!_isInitialized(tokenFsm)) {
+    if (!_isInitialized()) {
       const intervalObj = setInterval(() => {
-        if (_isInitialized(tokenFsm)) {
+        if (_isInitialized()) {
           clearInterval(intervalObj);
         };
       }, 2000);
@@ -61,7 +72,7 @@ module.exports = function (RED) {
         console.log("Error while posting GraphQL query to WWS.", err);
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
       });
-      setTimeout(() => {_isInitialized(tokenFsm); }, 2000);
+      setTimeout(() => {_isInitialized(); }, 2000);
     });
   }
 
@@ -74,16 +85,26 @@ module.exports = function (RED) {
     this.application = RED.nodes.getNode(config.application);
     var node = this;
 
-    //Check for token on start up
+    function _isInitialized() {
+      var initialized = false;
+      if (tokenFsm.getAccessToken()) {
+        node.status({fill: "green", shape: "dot", text: "token available"});
+        initialized = true;
+      } else {
+        node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
+      }
+      return initialized;
+    };
+      //Check for token on start up
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
       console.log("No Account Info");
       node.status({fill:"red", shape:"dot", text:"No Account Info"});
       node.error("Please configure your account information first!");
     }
-    if (!_isInitialized(tokenFsm)) {
+    if (!_isInitialized()) {
       const intervalObj = setInterval(() => {
-        if (_isInitialized(tokenFsm)) {
+        if (_isInitialized()) {
           clearInterval(intervalObj);
         };
       }, 2000);
@@ -259,7 +280,7 @@ module.exports = function (RED) {
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
         node.error('Error while posting GraphQL query to WWS.', msg);
       });
-      setTimeout(() => {_isInitialized(tokenFsm);}, 2000);
+      setTimeout(() => {_isInitialized();}, 2000);
     });
   }
 
@@ -333,15 +354,4 @@ module.exports = function (RED) {
   //
   //  End of code coming form the following article : https://stackoverflow.com/questions/26246601/wildcard-string-comparison-in-javascript
   //  
-
-  function _isInitialized() {
-    var initialized = false;
-    if (tokenFsm.getAccessToken()) {
-      node.status({fill: "green", shape: "dot", text: "token available"});
-      initialized = true;
-    } else {
-      node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
-    }
-    return initialized;
-  };
 };
