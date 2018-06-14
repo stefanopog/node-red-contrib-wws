@@ -75,7 +75,7 @@
       <dt class="optional">variables <span class="property-type">object</span></dt>
       <dd>Key-value map of variables to be used in a GraphQL query.</dd>
       
-      <dt class="optional">token <span class="property-type">string</span></dt>
+      <dt class="optional">wwsToken <span class="property-type">string</span></dt>
       <dd>Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace application(s) for this particular message.</dd>
   </dl>
   <h3>Details</h3>
@@ -122,6 +122,7 @@ msg.payload = `
 </script>
 
 <script type="text/javascript">
+  var parExp = /(.*?)\s\((.*?)\)/;
   RED.nodes.registerType("wws-validateActions", {
     category: 'Watson Work',
     icon: "wws.png",
@@ -169,7 +170,12 @@ msg.payload = `
       if (index === A_actions.length) {
         return 'Otherwise';
       } else {
-        return A_actions[index].trim(); 
+        var tt = A_actions[index].trim().match(parExp);
+        if (tt) {
+          return tt[1];
+        } else {
+          return A_actions[index].trim();
+        }
       }
     },
     label: function () {
@@ -253,11 +259,21 @@ msg.payload = `
         <b>Slash Commands</b> strings are also recognized and they must be prefixed by the <code> / (slash)</code> character.<br>
         <p>
           <b>Note:</b><br>
+          Each item may be qualified by the information related to the <b>lens</b> possibly asssociated to the <code>wwsActionId</code>.<br />
+          In this case the syntax for <code>wwsActionList</code> will be the following: <br />
+          <code>actionName (lens)</code><br />
+          wwhere the name of the <b>lens</b> appears within the parenthesis and precedes the <code>comma</code> introducing the next item.<br />
+          In these situations, the node will automatically fetch the <b>annotation</b> corresponding to the <b>lens</b> and the output will contain, as <b>payload</b>, 
+          the <b>annotation</b> that was just retrieved. 
+        </p>
+        <p>
+          <b>Note:</b><br>
           The node will automatically generate as many outputs as the number of items in <code>wwsActionsList</code> <b>PLUS ONE</b>. <br>
-          Each output corresponds to one item in <code>wwsActionsList</code>; the additional output corresponds to an <i>otherwise</i> situation, i.e. when 
+          Each output corresponds to an item in <code>wwsActionsList</code>; the additional output corresponds to an <i>otherwise</i> situation, i.e. when 
           the <code>wwsActionId</code> does not match any item in <code>wwsActionsList</code>.<br>
           The label associated with each output is set to be the value of the corresponding item from <code>wwsActionsLis</code><br>
-          <img src="/icons/node-red-contrib-wws/wws-action-desc.png" />
+        </p>
+        <img src="icons/node-red-contrib-wws/wws-action-desc.png" />
       </dd>
 
       <dt>wwsReferralMessageId <span class="property-type">string</span></dt>
@@ -268,10 +284,10 @@ msg.payload = `
   <h3>Details</h3>
   <p>In case the incoming <code>wwsActionId</code> matches one of the items listed in <code>wwsActionsList</code>, the node executes its processing.
     <ul>
-    <li>If the <code>wwsActionId</code> corresponds to a <b>Slash Command</b>, then the incoming <code>msg</code> (coming normally from the Webook) is passed untouched to the output 
-    corresponding to the <b>Slash Command</b> from <code>wwsActionsList</code>.</li>
-    <li>If the <code>wwsActionId</code> corresponds to an Action, then a GraphQL query is issued to get the original annotation corresponding to the <b>wwsActionId</b>. Then this 
-    annotation is posted as <code>msg.payload</code> for the output corresponding to the <b>Slash Command</b> from <code>wwsActionsList</code>.</li>
+    <li>If the <code>wwsActionId</code> does not have a <b>lens</b> assigned to the corresponding match in the <code>wwsActionsList</code>, then the incoming <code>msg</code> (coming normally from the Webook) is passed untouched to the output 
+    corresponding to the <b>action</b> from <code>wwsActionsList</code>.</li>
+    <li>If the <code>wwsActionId</code> corresponds to an Action with an associated <b>lens</b>, then a GraphQL query is issued to get the original annotation 
+      corresponding to the <b>wwsActionId</b>. Then this annotation is posted as <code>msg.payload</code> for the output corresponding to the <b>action</b> from <code>wwsActionsList</code>.</li>
     <li>If the <code>wwsActionId</code> does not correspond to any value inside <code>wwsActionslist</code>, the the original <code>msg</code> is passed untouched to the output 
       corresponding to the <b>otheriwse condition</b> (the last output).</li>
     </ul>
@@ -286,4 +302,691 @@ msg.payload = `
       <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
+
+
+<script type="text/javascript">
+  RED.nodes.registerType("wws-getTemplate", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "center",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      wwsTemplateId: {
+        value: "",
+        required: true
+      }    
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function () {
+      return this.name || "Get Template";
+    },
+    paletteLabel: "Get Template",
+    oneditsave: updateGetTemplate
+  });
+
+
+  function updateGetTemplate() {
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-getTemplate">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsTemplateId"><i class="fa fa-eye"></i> Template Id</label>
+    <input type="text" id="node-input-wwsTemplateId" placeholder="Template Id, i.e. 5b101230e4b09834e0e434d7">
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-getTemplate">
+  <p>This node provides a tool to easily retrieve all the informations for a Template.
+    <p>This node <b>ONLY WORKS WITH an AUTHORIZE-AS-USER</b>.   
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt>wwsTemplateId <span class="property-type">string</span></dt>
+      <dd>The ID for the space whose information are to be retrieved.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code></dd>
+
+  </dl>
+  <h3>Details</h3>
+  <dl>
+  <p>In case the operation terminates succesfully, the output will be similar to this one:
+    <br />
+    <img src="icons/node-red-contrib-wws/wws-template-desc1.png" />
+    <img src="icons/node-red-contrib-wws/wws-template-desc2.png" />
+  </p>
+  </dl>
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
+<script type="text/javascript">
+  RED.nodes.registerType("wws-getTemplatedSpace", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "center",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      wwsSpaceId: {
+        value: "",
+        required: true
+      }    },
+    inputs: 1,
+    outputs: 1,
+    label: function () {
+      return this.name || "Get Templated Space";
+    },
+    paletteLabel: "Get Templated Space",
+    oneditsave: updateGetTemplatedSpace
+  });
+
+
+  function updateGetTemplatedSpace() {
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-getTemplatedSpace">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsSpaceId"><i class="fa fa-eye"></i> Space Id</label>
+    <input type="text" id="node-input-wwsSpaceId" placeholder="Space Id, i.e. 5b101230e4b09834e0e434d7">
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-getTemplatedSpace">
+  <p>This node provides a tool to easily retrieve all the informations for a Space coming from a Template.   <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt>wwsSpaceId <span class="property-type">string</span></dt>
+      <dd>The ID for the space whose information are to be retrieved.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsSpaceId</code></dd>
+
+  </dl>
+  <h3>Details</h3>
+  <dl>
+  <p>In case the operation terminates succesfully, the output will be similar to this one:
+    <br />
+    <img src="icons/node-red-contrib-wws/wws-get-desc1.png" />
+    <img src="icons/node-red-contrib-wws/wws-get-desc2.png" />
+    <img src="icons/node-red-contrib-wws/wws-get-desc3.png" />
+    <img src="icons/node-red-contrib-wws/wws-get-desc4.png" />
+    <p>
+      <b>Note : </b><p>
+        The result provides additional information about each of the property and about the status. More precisely: 
+        <ul>
+          <li><code>Properties</code><br />
+            The <b>type</b>, <b>displayName</b> and <b>valueDisplayName</b> are also provided
+          </li>
+          <li><code>status</code><br />
+            The <b>statusValueName</b> is also provided
+          </li>
+        </ul>
+      Any inconsistency in the names or values of properties or in the value of the status will automatically produce a <code>node.error</code>
+  </p>
+  </dl>
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
+<script type="text/javascript">
+  RED.nodes.registerType("wws-updateTemplatedSpace", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "center",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      wwsSpaceId: {
+        value: "",
+        required: true
+      },    
+      wwsMemberList: {
+        value: "",
+        required: true
+      },   
+      wwsPropertyList: {
+        value: "",
+        required: true
+      },    
+      wwsNewStatus: {
+        value: "",
+        required: true
+      }    
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function () {
+      return this.name || "Update Space";
+    },
+    paletteLabel: "Update Space",
+    oneditsave: updateUpdateTemplatedSpace
+  });
+
+
+  function updateUpdateTemplatedSpace() {
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-updateTemplatedSpace">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsSpaceId"><i class="fa fa-vcard"></i> Space Id</label>
+    <input type="text" id="node-input-wwsSpaceId" placeholder="Space Id, i.e. 5b101230e4b09834e0e434d7">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsMemberList"><i class="fa fa-users"></i> Members</label>
+    <input type="text" id="node-input-wwsMemberList" placeholder="person-id, person-id...">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsPropertyList"><i class="fa fa-gears"></i> Properties</label>
+    <input type="text" id="node-input-wwsPropertyList" placeholder="propName1 = value1, propName2 = (value2), ...">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsNewStatus"><i class="fa fa-vcard-o"></i> New Status</label>
+    <input type="text" id="node-input-wwsNewStatus" placeholder=".....">
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-updateTemplatedSpace">
+  <p>This node provides a tool to easily update a Space coming from a Template. It allows to easily change the <code>status</code> and any of the <code>properties</code> of the space
+    as well as to <b>add members</b>. 
+  </p>
+  <p>
+      The main characteristics of this node is that the names and the values of the <b>properties</b> and of the <b>status</b> are entered using their textual representation.
+      <br />
+      When using <b>graphQL</b> the names of the properties, the values of properties of type LIST and the values of the status need to be provides using <b>their internal ID format</b>; 
+      this node allows the user to enter everything as <b>text</b>; its internal code translate the text into IDs and generates errors when an association is not found.
+  </p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt>wwsSpaceId <span class="property-type">string</span></dt>
+      <dd>The ID for the space that needs to be updated.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsSpaceId</code>
+      </dd>
+
+
+      <dt>wwsMemberList <span class="property-type">comma-separated string</span></dt>
+      <dd>The list of members to be added to the space. The members need to be specified by their ID<br>
+          The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
+      </dd>
+
+
+      <dt>wwsPropertyList <span class="property-type">comma-separated string</span></dt>
+      <dd>Defines a comma separated list of <b>Name = Value</b> pairs where each item represents the name of the property to be modified and the modified value.
+        <br />
+        The <b>Value</b> part can optionally be included in <code> " </code> (double-quotes).
+        <br />
+        <b>Name</b> is the <b>displayName</b> for the property. Dynamically the node transofrms it to its <b>ID</b> representation.
+        <br />
+        <b>Value</b> is the <b>displayName</b> of the <i>acceptableValues</i> definition for <b>LIST</b> Properties. 
+        <br />
+        <b>Value</b> is the property value for <b>TEXT</b> Properties. 
+        <br />
+        <b>Value</b> is <b>true</b> or <b>false</b> for <b>BOOLEAN</b> Properties. 
+        <hr />
+        <p>
+            The value on the configuration panel overrides the value in <code>msg.wwsPropertyList</code>
+            <br />
+            In this case, <code>msg.wwsPropertyList</code> would NOT be a string but an array where each item is an object with the following attributes:
+            <ul>
+              <li><b>name</b> the name of the property (textual representation)</li>
+              <li><b>value</b> the value of the property (textual representation)</li>
+            </ul>
+      </dd>
+
+      <dt>wwsNewStatus <span class="property-type">string</span></dt>
+      <dd>The <b>textual</b> representation os the target Status.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsNewStatus</code>
+      </dd>
+  </dl>
+  <h3>Details</h3>
+  <dl>
+  <p>In case the operation terminates succesfully, the output will be similar to this one:
+    <br />
+    <img src="icons/node-red-contrib-wws/wws-get-desc1.png" />
+    <img src="icons/node-red-contrib-wws/wws-get-desc2.png" />
+    <img src="icons/node-red-contrib-wws/wws-get-desc3.png" />
+    <img src="icons/node-red-contrib-wws/wws-get-desc4.png" />
+  </p>
+  <p>
+      <b>Note : </b><p>
+        The result provides additional information about each of the property and about the status. More precisely: 
+        <ul>
+          <li><code>Properties</code><br />
+            The <b>type</b>, <b>displayName</b> and <b>valueDisplayName</b> are also provided
+          </li>
+          <li><code>status</code><br />
+            The <b>statusValueName</b> is also provided
+          </li>
+        </ul>
+      Any inconsistency in the names or values of properties or in the value of the status will automatically produce a <code>node.error</code>
+  </p>
+  </dl>
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
+
+<script type="text/javascript">
+  RED.nodes.registerType("wws-createSpaceFromTemplate", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "center",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      wwsTemplateId: {
+        value: "",
+        required: true
+      },   
+      wwsSpaceName: {
+        value: "",
+        required: true
+      },   
+      wwsMemberList: {
+        value: "",
+        required: true
+      },   
+      wwsPropertyList: {
+        value: "",
+        required: true
+      }
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function () {
+      return this.name || "Space from Template";
+    },
+    paletteLabel: "Space from Template",
+    oneditsave: updateCreateSpaceFromTemplate
+  });
+
+
+  function updateCreateSpaceFromTemplate() {
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-createSpaceFromTemplate">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsTemplateId"><i class="fa fa-eye"></i> Template Id</label>
+    <input type="text" id="node-input-wwsTemplateId" placeholder="Template Id, i.e. 5b101230e4b09834e0e434d7">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsSpaceName"><i class="fa fa-vcard-o"></i> Space Name</label>
+    <input type="text" id="node-input-wwsSpaceName" placeholder="the name for the space to be created.....">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsMemberList"><i class="fa fa-users"></i> Members</label>
+    <input type="text" id="node-input-wwsMemberList" placeholder="person-id, person-id...">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsPropertyList"><i class="fa fa-gears"></i> Properties</label>
+    <input type="text" id="node-input-wwsPropertyList" placeholder="propName1 = value1, propName2 = (value2), ...">
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-createSpaceFromTemplate">
+  <p>This node provides a tool to easily create a Space from a Template. It allows to easily initialize any of the <code>properties</code> coming from the Template and 
+    the <b>initial members</b>.
+  </p>
+  <p>
+      The main charactceristics of this node is that the names and the values of the <b>properties</b> are entered using their textual representation.
+      <br />
+      When using <b>graphQL</b> the names of the properties and the values of properties of type LIST need to be provides using <b>their internal ID format</b>; 
+      this node allows the user to enter everything as <b>text</b>; its internal code translate the text into IDs and generates errors when an association is not found.
+  </p>
+  <p>This node <b>ONLY WORKS WITH an AUTHORIZE-AS-USER</b>.   
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt>wwsTemplateId <span class="property-type">string</span></dt>
+      <dd>The ID of the Template to be used as a model for the new Space.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code></dd>
+
+      <dt>wwsSpaceName <span class="property-type">string</span></dt>
+        <dd>The name for the Space to be created.<br>
+          The value on the configuration panel overrides the value in <code>msg.wwsSpaceName</code>
+        </dd>
+
+        <dt>wwsMemberList <span class="property-type">comma-separated string</span></dt>
+        <dd>The list of members to be added to the space. The members need to be specified by their ID<br>
+          The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
+        </dd>
+  
+      <dt>wwsPropertyList <span class="property-type">comma-separated string</span></dt>
+      <dd>Defines a comma separated list of <b>Name = Value</b> pairs where each item represents the name of the property to be modified and the modified value.
+        <br />
+        The <b>Value</b> part can optionally be included in <code> " </code> (double-quotes).
+        <br />
+        <b>Name</b> is the <b>displayName</b> for the property. Dynamically the node transofrms it to its <b>ID</b> representation.
+        <br />
+        <b>Value</b> is the <b>displayName</b> of the <i>acceptableValues</i> definition for <b>LIST</b> Properties. 
+        <br />
+        <b>Value</b> is the property value for <b>TEXT</b> Properties. 
+        <br />
+        <b>Value</b> is <b>true</b> or <b>false</b> for <b>BOOLEAN</b> Properties. 
+        <hr />
+        <p>
+            The value on the configuration panel overrides the value in <code>msg.wwsPropertyList</code>
+            <br />
+            In this case, <code>msg.wwsPropertyList</code> would NOT be a string but an array where each item is an object with the following attributes:
+            <ul>
+              <li><b>name</b> the name of the property (textual representation)</li>
+              <li><b>value</b> the value of the property (textual representation)</li>
+            </ul>
+      </dd>
+  </dl>
+  <h3>Details</h3>
+  <dl>
+  <p>In case the operation terminates succesfully, the output will be similar to this one:
+    <br />
+    <img src="icons/node-red-contrib-wws/wws-get-desc1.png" />
+    <img src="icons/node-red-contrib-wws/wws-get-desc2.png" />
+    <img src="icons/node-red-contrib-wws/wws-get-desc3.png" />
+    <img src="icons/node-red-contrib-wws/wws-get-desc4.png" />
+  </p>
+  <p>
+      <b>Note : </b><p>
+        The result provides additional information about each of the property and about the status. More precisely: 
+        <ul>
+          <li><code>Properties</code><br />
+            The <b>type</b>, <b>displayName</b> and <b>valueDisplayName</b> are also provided
+          </li>
+          <li><code>status</code><br />
+            The <b>statusValueName</b> is also provided
+          </li>
+        </ul>
+      Any inconsistency in the names or values of properties or in the value of the status will automatically produce a <code>node.error</code>
+  </p>
+  </dl>
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
+<script type="text/javascript">
+  RED.nodes.registerType("wws-addRemoveMembers", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "center",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      ARoperation: {
+        value: "ADD",
+        required: true
+      },
+      wwsSpaceId: {
+        value: "",
+        required: true
+      },   
+      wwsMemberList: {
+        value: "",
+        required: true
+      } 
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function () {
+      return this.name || "Add/Remove Members";
+    },
+    paletteLabel: "Add/Remove Members",
+    oneditsave: updateAddMembers
+  });
+
+
+  function updateAddMembers() {
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-addRemoveMembers">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-ARoperation"><i class="fa fa-arrow-circle-right"></i> Operation</label>
+      <select id="node-input-ARoperation">
+       <option value="ADD">Add Members</option>
+       <option value="REMOVE">Remove Members</option>
+      </select>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-wwsSpaceId"><i class="fa fa-eye"></i> Space Id</label>
+    <input type="text" id="node-input-wwsSpaceId" placeholder="Space Id, i.e. 5b101230e4b09834e0e434d7">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsMemberList"><i class="fa fa-users"></i> Members</label>
+    <input type="text" id="node-input-wwsMemberList" placeholder="person-id, person-id...">
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-addRemoveMembers">
+  <p>This node provides a tool to easily add or remove Members to or from a Space. More than one member can be added or removed at the same time.
+  </p>
+ 
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt>wwsSpaceId <span class="property-type">string</span></dt>
+      <dd>The ID of the Space.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code></dd>
+
+        <dt>wwsMemberList <span class="property-type">comma-separated string</span></dt>
+        <dd>The list of members to be added to / removed from the space. The members need to be specified by their ID<br>
+          The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
+        </dd>
+  
+  </dl>
+  <h3>Details</h3>
+  <dl>
+  <p>In case the operation terminates succesfully, the output will be similar to this one:
+    <br />
+    <img src="icons/node-red-contrib-wws/wws-addremove-desc.png" />
+  </p>
+  </dl>
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
+<script type="text/javascript">
+  RED.nodes.registerType("wws-getPeople", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "center",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      PeopleOperation: {
+        value: "byMail",
+        required: true
+      },
+      wwsPersonList: {
+        value: "",
+        required: true
+      } 
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function () {
+      return this.name || "Get Person(s)";
+    },
+    paletteLabel: "Get Person(s)",
+    oneditsave: updateGetPeople
+  });
+
+
+  function updateGetPeople() {
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-getPeople">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-PeopleOperation"><i class="fa fa-arrow-circle-right"></i> Operation</label>
+      <select id="node-input-PeopleOperation">
+       <option value="byMail">by Mail</option>
+       <!-- <option value="byName">by Name</option> -->
+       <!-- <option value="byId">by ID</option> -->
+      </select>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-wwsPersonList"><i class="fa fa-users"></i> Person List</label>
+    <input type="text" id="node-input-wwsPersonList" placeholder="person-id, person-id...">
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-getPeople">
+  <p>This node provides a tool to easily retriev all the details for a set of people.
+    <br>
+    The set of people can be specified as a set of <b>email addresses</b> or <b>names</b> or <b>IDs</b>
+  </p>
+ 
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+
+        <dt>wwsMemberList <span class="property-type">comma-separated string</span></dt>
+        <dd>The list of people whose details need to be retrieved.<br>
+          The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
+        </dd>
+  
+  </dl>
+  <h3>Details</h3>
+  <dl>
+  <p>In case the operation terminates succesfully, the output will be similar to this one:
+    <br />
+    <img src="icons/node-red-contrib-wws/wws-person-desc1.png" />
+  </p>
+  </dl>
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
 

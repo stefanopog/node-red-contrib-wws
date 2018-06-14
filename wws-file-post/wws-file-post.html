@@ -9,7 +9,7 @@
       name: { value: "" }
     },
     inputs: 1,
-    outputs: 0,
+    outputs: 1,
     icon: "wws.png",
     label: function() {
       return this.name || "send file";
@@ -96,10 +96,10 @@
       <dt>App Name</dt>
       <dd>The configured name for a specific Watson Work App.</dd>
       <dt>Space ID</dt>
-      <dd>The identifier of the Space in Watson Workspace. Can be overriden with <code>msg.spaceId</code>.</dd>
+      <dd>The identifier of the Space in Watson Workspace. Can be overriden with <code>msg.wwsSpaceId</code>.</dd>
   </dl>
   <p>
-    In order to send a buffer data-type in <code>msg.file</code>, it has to follow the following format:
+    In order to send a buffer data-type in <code>msg.wwsFile</code>, it has to follow the following format:
     <pre>
 {
   "value" : "&lt;BUFFER&gt;",
@@ -112,7 +112,7 @@
     So, the <code>&lt;BUFFER&gt;</code>, <code>&lt;filename&gt;</code> and <code>&lt;content-type&gt;</code> are the required data.
   </p>
   <p>
-    In order to send a buffer data-type in <code>msg.image</code>, it has to follow the following format:
+    In order to send a buffer data-type in <code>msg.wwsImage</code>, it has to follow the following format:
     <pre>
 {
   "value" : "&lt;BUFFER&gt;",

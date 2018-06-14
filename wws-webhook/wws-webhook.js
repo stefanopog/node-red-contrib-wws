@@ -80,74 +80,88 @@ module.exports = function(RED) {
                         res.set(headers).status(200).send(responseBody);
 
                     } else {
-                        //Webhook Event Processing
-                        msg.spaceId = req.body.spaceId;
-                        msg.spaceName = req.body.spaceName;
-                        msg.messageId = req.body.messageId;
-                        msg.type = req.body.type;
-                        //ignoring own app message
+                        //
+                        //  Webhook Event Processing
+                        //
+                        msg.wwsSpaceId = req.body.spaceId;
+                        msg.wwsSpaceName = req.body.spaceName;
+                        msg.wwsMessageId = req.body.messageId;
+                        msg.wwsType = req.body.type;
+                        //
+                        //  ignoring own app message
+                        //
                         var ignore = req.body.userId===appId;
                         switch(req.body.type) {
                             case "message-created":
-                                //do sth;
-                                msg.userName = req.body.userName;
-                                msg.userId = req.body.userId;
+                                //
+                                //  do sth;
+                                //
+                                msg.wwsUserName = req.body.userName;
+                                msg.wwsUserId = req.body.userId;
                                 msg.payload = req.body.content;
                                 if (!msg.payload) {
-                                    //Ignore empty message-created entries (happens during app messages e.g. from other apps attached to the same space)
+                                    //
+                                    //  Ignore empty message-created entries (happens during app messages e.g. from other apps attached to the same space)
+                                    //
                                     ignore = true;
                                 }
                                 break;
+                            case "message-edited":
+                                //do sth;
+                                msg.payload = req.body.content;
+                                break;
                             case "message-deleted":
                                 //do sth;
-                                msg.payload = msg.messageId;
+                                msg.payload = msg.wwsMessageId;
                                 break;
                             case "message-annotation-added":
                                 //do sth;
-                                msg.annotationId = req.body.annotationId;
-                                msg.annotationService = req.body.userId;
-                                msg.annotationType = req.body.annotationType;
+                                msg.wwsAnnotationId = req.body.annotationId;
+                                msg.wwsAnnotationService = req.body.userId;
+                                msg.wwsAnnotationType = req.body.annotationType;
                                 msg.payload = JSON.parse(req.body.annotationPayload);
                                 break;
                             case "message-annotation-edited":
                                 //do sth;
-                                msg.annotationId = req.body.annotationId;
-                                msg.annotationService = req.body.userId;
-                                msg.annotationType = req.body.annotationType;
+                                msg.wwsAnnotationId = req.body.annotationId;
+                                msg.wwsAnnotationService = req.body.userId;
+                                msg.wwsAnnotationType = req.body.annotationType;
                                 msg.payload = JSON.parse(req.body.annotationPayload);
                                 break;
                             case "message-annotation-removed":
                                 //do sth;
-                                msg.reactor = req.body.userId;
-                                msg.relatedMessage = req.body.objectId;
-                                msg.reactionType = req.body.objectType;
+                                msg.wwsReactor = req.body.userId;
+                                msg.wwsRelatedMessage = req.body.objectId;
+                                msg.wwsReactionType = req.body.objectType;
                                 msg.payload = req.body.reaction;
                                 break;   
                             case "reaction-added":
                                 //do sth;
-                                msg.reactor = req.body.userId;
-                                msg.relatedMessage = req.body.objectId;
-                                msg.reactionType = req.body.objectType;
+                                msg.wwsReactor = req.body.userId;
+                                msg.wwsRelatedMessage = req.body.objectId;
+                                msg.wwsReactionType = req.body.objectType;
                                 msg.payload = req.body.reaction;
                                 break;
                             case "reaction-removed":
                                 //do sth;
-                                msg.reactor = req.body.userId;
-                                msg.relatedMessage = req.body.objectId;
-                                msg.reactionType = req.body.objectType;
+                                msg.wwsReactor = req.body.userId;
+                                msg.wwsRelatedMessage = req.body.objectId;
+                                msg.wwsReactionType = req.body.objectType;
                                 msg.payload = req.body.reaction;
                                 break;
                             case "space-updated":
                                 //do sth;
-                                msg.updater = req.body.userId;
-                                msg.spaceProperties = req.body.spaceProperties;
+                                msg.wwsUpdater = req.body.userId;
+                                msg.wwsSpaceProperties = req.body.spaceProperties;
                                 if (req.body.title) {
-                                    //Space Title has been updated
-                                    msg.updateCause="title-change";
-                                    msg.spaceName = req.body.title;
+                                    //
+                                    //  Space Title has been updated
+                                    //
+                                    msg.wwsUpdateCause="title-change";
+                                    msg.wwsSpaceName = req.body.title;
                                     msg.payload = req.body.title;
                                 } else {
-                                    msg.updateCause="other";
+                                    msg.wwsUpdateCause="other";
                                 }
                                 break;
                             case "space-deleted":
@@ -157,29 +171,69 @@ module.exports = function(RED) {
                             case "space-members-added":
                                 //do sth;
                                 if (node.isApp(req.body.memberIds)) {
-                                    msg.cause = "app-added";
+                                    msg.wwsCause = "app-added";
                                 }
                                 msg.payload = req.body.memberIds;
                                 break;   
                             case "space-members-removed":
                                 //do sth;
                                 if (node.isApp(req.body.memberIds)) {
-                                    msg.cause = "app-removed";
+                                    msg.wwsCause = "app-removed";
                                 }
                                 msg.payload = req.body.memberIds;
                                 break;   
                             case "appMessage":
-                                //do NOT process app messages
-                            	   ignore = true;
+                                //
+                                //  do NOT process app messages
+                                //
+                            	ignore = true;
                                 break;
-
                         }
-	                    	//Send response to Webhook to avoid timeouts!
-	                    	res.sendStatus(200);
+                        //
+                        //  Send response to Webhook to avoid timeouts!
+                        //
+	                    res.sendStatus(200);
                         if (!ignore) {
-	                        	//Store original request body
-	                        	msg.event = req.body;
-	                        	node.send(msg);
+                            //
+                            //  Store original request body
+                            //
+                            msg.wwsEvent = req.body;
+                        //
+                        //  Check if there is ONLY one output for everything or we need to separate outputs
+                        //
+                        if (config.filterOutputs) {
+                                //
+                                //  Array of answers... only one of which is not NULL corresponding to the req.body.type
+                                //
+                                let items = config.hidden_string.split(',');
+                                let theIndex = -1;
+                                for (let k=0; k< items.length; k++) {
+                                    if (items[k].trim() === req.body.type) {
+                                        theIndex = k;
+                                        break;
+                                    }
+                                }
+                                //
+                                //  Build an array of NULL messages
+                                //
+                                let outArray = [];
+                                for (let k=0; k < items.length; k++) {
+                                    outArray.push(null);
+                                }
+                                //
+                                //  Now fill the answer in the right position :-)
+                                //
+                                outArray[theIndex] = msg;
+                                //
+                                //  Provide the answer
+                                //
+                                node.send(outArray);
+                            } else {
+                                //
+                                //  No Filtering
+                                //
+                                node.send(msg);
+                            }
                         }
                     }
                 }
@@ -191,7 +245,7 @@ module.exports = function(RED) {
         node.processError = function(err, req, res, next) {
             node.error(err);
             res.sendStatus(500);
-          };
+        };
 
         // create route for this node
         if (RED.settings.httpNodeRoot !== false) {

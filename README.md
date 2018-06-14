@@ -29,7 +29,7 @@ The following packages are required to be present in node-red prior to this inst
 * To make Node-RED find the code, define the NODE_PATH environment variable by adding the Node-RED installation directory first, and the user directory second. Here is an example: `NODE_PATH="/usr/src/node-red/node_modules:/data/node_modules"`
 
 # Features
-* credentials node
+* Credentials node
   * creates a configuration node for a dedicated Watson Work Application, 
   * containing App ID and App Secret, 
   * plus additional OAuth configuration elements
@@ -38,6 +38,7 @@ The following packages are required to be present in node-red prior to this inst
   * Configure the webhook url
   * converts events into node-red friendly messages
   * shows incoming events on nodes status
+  * optionally provides filtering of outputs according to the **msg.type** value of the incoming message
 * message node
   * send messages to a space
   * provides a configuration interface (including preview functionality)
@@ -56,8 +57,28 @@ The following packages are required to be present in node-red prior to this inst
 * Validate Action node
   * this is a service node which makes it easy to filter Annotations coresponding to **actionSelected** lenses
   * you can specify multiple **ActionId** (they can come from *custom intents*, from *slash commands*, from *buttons* etc)
-  * provides multiple outputs. Each output corresponds to one of the possible actionId that the instance of the node supports
+  * provides multiple outputs. Each output corresponds to one of the possible **actionId** that the instance of the node supports
   * see ![Validate Action](wws-graphql/icons/wws-action-desc.png)
+* Get Templated Space node
+  * this node simply retrieves all the information related to a space that was built out of a Template
+  * It friendly provides textual representation of **preperties**, **property values** and **status**
+* Update Space
+  * This node provides a tool to easily update a Space coming from a Template. It allows to easily change the **status** and any of the **properties**.
+  * The main charactceristics of this node is that the **names** and the **values** of the **properties** and of the **status** are entered using their textual representation.
+    * New Property value are specified using a comma-separated string where each item is in the form of a *name = value* pair
+* Space From Template
+  * This node provides a tool to easily create a Space from a Template. It allows to easily initialize any of the **properties** coming from the Template and 
+    the **initial members**.
+  * The main charactceristics of this node is that the **names** and the **values** of the **properties** are entered using their textual representation.
+    * New Property value are specified using a comma-separated string where each item is in the form of a *name = value* pair
+* Get Template
+  * This node provides a tool to easily retrieve all the informations for a Template.
+  * This node **ONLY WORKS WITH an AUTHORIZE-AS-USER**, i.e. using the "wwsToken" input parameter
+* Add/Remove Members
+  * This node provides a tool to easily add or remove Members to or from a Space. More than one member can be added or removed at the same time.
+* Get Person(s)
+  * This node provides a tool to easily retriev all the details for a set of people.
+  * The set of people can be specified as a set of **email addresses** (in the next versions also as "**names**" or "**IDs**") 
 
    
 # Known Issues
