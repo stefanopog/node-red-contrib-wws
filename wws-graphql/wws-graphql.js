@@ -53,6 +53,8 @@ module.exports = function (RED) {
       var bearerToken = msg.wwsToken || accessToken.token.access_token;
       var host = this.application.api;
 
+      
+
       var viewType = "PUBLIC";
       if (config.wwsBetaFeatures) viewType += ',BETA';
       if (config.wwsExperimentalFeatures) viewType += ',EXPERIMENTAL';
@@ -401,8 +403,8 @@ module.exports = function (RED) {
         //  There is an issue
         //
         console.log("Missing referralMessageId Information");
-        node.status({fill:"red", shape:"dot", text:"Missing referralMessageId"});
-        node.error('Missing Bookmark URL', msg);
+        node.status({fill:"red", shape:"dot", text:"Missing referralMessageId Information"});
+        node.error('Missing referralMessageId Information', msg);
         return;
       }
       if (config.wwsReferralMessageId !== '') {
@@ -417,8 +419,8 @@ module.exports = function (RED) {
         //  There is an issue
         //
         console.log("Missing actionId Information");
-        node.status({fill:"red", shape:"dot", text:"Missing actionId"});
-        node.error('Missing actionsId', msg);
+        node.status({fill:"red", shape:"dot", text:"Missing actionId Information"});
+        node.error('Missing actionId Information', msg);
         return;
       }
       if (config.wwsActionId !== '') {
@@ -447,7 +449,7 @@ module.exports = function (RED) {
       //
       var selectedRule = -1;
       for (let i=0; i < actionList.length; i++) {
-        var theAction = actionList[i].trim();
+        let theAction = actionList[i].trim();
         if (theAction.match(parExp)) {
           //
           //  There is the LENS in parenthesis. So we get the part outside parenthseis
@@ -527,7 +529,7 @@ module.exports = function (RED) {
           console.log('errors from query');
           console.log(JSON.stringify(res.errors));
           node.status({fill: "red", shape: "dot", text: "Errors from query"});
-          node.error('Missing ActionsList', msg);
+          node.error('Errors from query', msg);
         } else {
           //
           //  Ok, we got the array of annotations...

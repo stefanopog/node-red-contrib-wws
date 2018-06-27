@@ -77,8 +77,10 @@ The following packages are required to be present in node-red prior to this inst
 * Add/Remove Members
   * This node provides a tool to easily add or remove Members to or from a Space. More than one member can be added or removed at the same time.
 * Get Person(s)
-  * This node provides a tool to easily retriev all the details for a set of people.
-  * The set of people can be specified as a set of **email addresses** (in the next versions also as "**names**" or "**IDs**") 
+  * This node provides a tool to easily retrieve all the details for a set of people.
+  * The set of people can be specified as a set of comma separated **email addresses** (in the next versions also as "**names**" or "**IDs**") 
+* Focus
+  * This node provides a tool to easily invoke the **Focus API**.
 
    
 # Known Issues

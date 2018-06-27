@@ -2,7 +2,7 @@ var request = require("request");
 var rp = require("request-promise-native");
 
 module.exports = function(RED) {
-  function wwsFilePostNode(config) {
+  function wwsFocusNode(config) {
     RED.nodes.createNode(this, config);
     this.application = RED.nodes.getNode(config.application);
     var node = this;
@@ -26,55 +26,35 @@ module.exports = function(RED) {
     };
 
     this.on("input", function(msg) {
-      if (!msg.wwsFile && !msg.wwsImage) {
-        node.error("Missing required input in msg object: [image | file]");
+      var text = msg.payload || config.theText;
+      if (!text) {
+        node.error("FOCUS : Missing required input: PAYLOAD");
         return;
-      }
-      var space = msg.wwsSpaceId || config.space;
-      if (!space) {
-        node.error("Missing required input: spaceId");
-        return;
-      }
-
-      
-      var file = msg.wwsFile;
-      if (file && !file.options) {
-        node.error("File object is not provided in the correct format. Please check the node help for details!");
-        return;
-      }
-
-      if (msg.wwsImage) {
-        if (!msg.wwsImage.options) {
-          node.error("Image object is not provided in the correct format. Please check the node help for details!");
-          return;
-        } else {
-          file = msg.wwsImage;
-        }
       }
 
       var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);        
       var host = this.application.api;
       var bearerToken = msg.wwsToken || accessToken.token.access_token;
 
-      wwsFilePost(bearerToken, space, file, host).then((res) => {
+      _wwsFocusPost(bearerToken, text, host).then((res) => {
         if (res.errors) {
           msg.payload = res.errors;
-          console.log('errors posting file');
+          console.log('FOCUS : errors posting Focus');
           console.log(JSON.stringify(res.errors));
-          node.status({fill: "red", shape: "dot", text: "errors posting file"});
-          node.error("errors posting file", msg);
+          node.status({fill: "red", shape: "dot", text: "errors getting FOCUSes"});
+          node.error("errors posting FOCUS", msg);
           return;
         } else {
-          console.log('File/image succesfully sent ');
-          console.log(JSON.stringify(res.data, ' ', 2));
-          msg.payload = res.data;
-          node.status({ fill: "green", shape: "dot", text: "Sending file..." });
+          console.log('FOCUS: Succesfully retrieved');
+          console.log(JSON.stringify(res, ' ', 2));
+          msg.wwsFocuses = res;
+          node.status({ fill: "green", shape: "dot", text: "FOCUSes retrieved" });
           node.send(msg)
           }
       }).catch((err) => {
-        console.log("Error while posting file to WWS.", err);
-        node.status({ fill: "red", shape: "ring", text: "sending file failed..." });
-        node.error("Error while posting file to WWS.", err);
+        console.log("FOCUS : Error getting Focus.", err);
+        node.status({ fill: "red", shape: "ring", text: "Error Getting FOCUSes..." });
+        node.error("Error getting Focus.", err);
       });
       setTimeout(() => {
           node.isInitialized();
@@ -92,15 +72,11 @@ module.exports = function(RED) {
     };
   }
 
-  RED.nodes.registerType("wws-file-post", wwsFilePostNode);
+  RED.nodes.registerType("wws-focus", wwsFocusNode);
 
   // Helper functions
-  function wwsFilePost(accessToken, space, file, host) {
-    var uri = host + "/v1/spaces/" + space + "/files";
-    //Optional send dimensions - only applicable for images
-    if (file.dimension) {
-      uri +="?dim="+file.dimension.width+"x"+file.dimension.height;
-    }
+  function _wwsFocusPost(accessToken, theText, host) {
+    var uri = host + "/v1/focus";
     var options = {
       method: "POST",
       uri: uri,
@@ -108,9 +84,7 @@ module.exports = function(RED) {
         Authorization: "Bearer " + accessToken
       },
       json: true,
-      formData: {
-        file: file
-      }
+      body : {text: theText}
     };
     return rp(options);
   }

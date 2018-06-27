@@ -1,0 +1,78 @@
+<script type="text/javascript">
+    RED.nodes.registerType("wws-focus", {
+      category: 'Watson Work',
+      color:"#11ABA5",
+      defaults: {
+        application: { type: "wws-credentials", required: true },
+        theText: { value: "" }
+      },
+      inputs: 1,
+      outputs: 1,
+      icon: "wws.png",
+      label: function() {
+        return this.name || "get Focus";
+      },
+      paletteLabel: "Focus",
+      align: "right",
+      oneditprepare: function() {
+      }
+    });
+  </script>
+  
+  <script type="text/x-red" data-template-name="wws-focus">
+    <div class="form-row">
+      <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+      <input type="text" id="node-input-application">
+    </div>
+    <div class="form-row">
+      <label for="node-input-theText"><i class="fa fa-comment"></i> Text</label>
+      <input type="text" id="node-input-theText"  placeholder="Text to be processed">
+    </div>
+    <div class="form-row">
+      <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+      <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+  </script>
+  
+  <script type="text/x-red" data-help-name="wws-focus">
+    <p>A node that retrieves a list of foccuses based on a sentence that is given in input. See <a href="https://developer.watsonwork.ibm.com/docs/api-reference/focus">IBM Watson Workspace Focus API</a>.</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">payload <span class="property-type">String</span></dt>
+        <dd>The sentence hat needs to be processed. </b> Its value superseeds the <code>Text</code> value from the Configuration Panel
+        </dd>
+    </dl>
+    <h3>Details</h3>
+    <p>This node sends request using the Focus API. Check the <a href="https://developer.watsonwork.ibm.com/docs/api-reference/focus" target="_blank">Reference Documentation</a> for further information.<br/>
+        Provide the following information:
+    </p>
+    <dl class="message-properties">
+        <dt>App Name</dt>
+        <dd>The configured name for a specific Watson Work App.</dd>
+        <dt>Text</dt>
+        <dd>The text to be parsed. Can be overriden with <code>msg.payload</code>.</dd>
+    </dl>
+    <h3>Returns</h3>
+    <p>If the operation succeeds, it returns:</p>
+    <dl class="message-properties">
+        <dt>wwsFocuses <span class="property-type">Object</span></dt>
+        <dd>An object which contains:
+            <dl class="message-properties">
+                <dt>requestId <span class="property-type">String</span></dt>
+                <dd>The request Id from the API</dd>
+            </dl>
+            <dl class="message-properties">
+                <dt>focuses <span class="property-type">Array</span></dt>
+                <dd>Array of Focus information. It can be empty</dd>
+            </dl>
+        </dd>
+    </dl>
+    <h3>References</h3>
+    <ul>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/files" target="_blank">Files</a> - Reference Documentation for sending files (and images).</li>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+        <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+    </ul>
+  </script>
+  
