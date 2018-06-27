@@ -9,7 +9,7 @@ module.exports = function(RED) {
         RED.nodes.createNode(this,config);
         let stringOrDefault = (value, defaultValue) => {
             return typeof value == 'string' && value.length > 0 ? value : defaultValue;
-        }
+        };
         this.account = config.account;
         this.color = stringOrDefault(config.color, "#11ABA5");
         this.avatar = stringOrDefault(config.avatar, undefined);
@@ -55,7 +55,7 @@ module.exports = function(RED) {
                 "version": 1.0
             };
             if (msg.avatar || node.avatar) {
-                annotation.actor = {"name": msg.avatar?msg.avatar:node.avatar}
+                annotation.actor = {"name": msg.avatar ? msg.avatar:node.avatar};
             }
             if (msg.color || node.color) {
                 annotation.color = msg.color?msg.color:node.color;
@@ -83,7 +83,7 @@ module.exports = function(RED) {
             var headers = {
                 "Content-Type": "application/json",
                 "Authorization": "Bearer " + bearerToken           
-            }
+            };
             //create target URL
             var url = apiUrl + createMessagePath.replace("/:spaceId/", "/"+msg.spaceId+"/");
             var opts = urllib.parse(url);
@@ -124,9 +124,9 @@ module.exports = function(RED) {
                         try { msg.payload = JSON.parse(msg.payload); } // obj
                         catch(e) { node.warn("Could not convert the response to a JSON format!"); }
                         node.isInitialized();
-                    } else {
-                        console.log(msg.payload);
                     }
+                    console.log('Message-Post : sending the following message :');
+                    console.log(JSON.stringify(msg, ' ', 2));
                     switch (msg.statusCode) {
                         case 500:
                             if (msg.payload.message) {
@@ -147,13 +147,15 @@ module.exports = function(RED) {
                             node.error("Message could not be delivered to Space! " + "Improperly formed message body.");
                             break;
                         case 201:
+                            node.send(msg);
+                            break;
                     }
                     return new Promise((resolve) => {
                         if (msg.statusCode>201) {
                             node.status({fill:"red",shape:"dot",text: "message failed"});
                         } else {
                             node.status({fill:"green",shape:"dot",text: "message send"});
-                            console.log(JSON.stringify(msg.payload));
+                            console.log(JSON.stringify(msg, ' ', 2));
                         }
                         resolve();
                     }).then(() => {
@@ -167,7 +169,7 @@ module.exports = function(RED) {
             req.setTimeout(node.reqTimeout, function() {
                 node.error("TIMEOUT: Could not receive an answer within the given timeframe!",msg);
                 setTimeout(function() {
-                    node.status({fill:"red",shape:"ring",text: "TIMEOUT: Could not receive an answer within the given timeframe!"});
+                    node.status({fill:"red", shape:"ring", text: "TIMEOUT: Could not receive an answer within the given timeframe!"});
                 },10);
                 req.abort();
             });
@@ -186,7 +188,6 @@ module.exports = function(RED) {
 
 
         this.on('input', function(msg) {
-
             const fsm = node.accountConfig.getStateMachine();
             if (!fsm.is('has_token')) {
                 node.error("Please configure your account information first!");
@@ -207,8 +208,7 @@ module.exports = function(RED) {
 
             if (accessToken.expired()) {
                 fsm.invalidate(node);
-                fsm.renew(node)
-                .then((accessToken) => {
+                fsm.renew(node).then((accessToken) => {
                     node.sendMessage(accessToken, node.prepareMessage(msg));
                 });
                 return;
@@ -232,10 +232,10 @@ module.exports = function(RED) {
             const intervalObj = setInterval(() => {
                 if (this.isInitialized()) {
                     this.releaseInterval(intervalObj);
-                };
+                }
               }, 2000);
-        };
+        }
 
     }
     RED.nodes.registerType("wws-message-post",WWSAppMessageNode);
-}
+};

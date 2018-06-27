@@ -16,7 +16,7 @@ module.exports = function(RED) {
         this.accountConfig = RED.nodes.getNode(this.account);
         this.accountConfigCredentials = RED.nodes.getCredentials(this.account);
         this.webhookPath = config.webhookPath;
-        const appId = this.accountConfigCredentials.clientId
+        const appId = this.accountConfigCredentials.clientId;
         var node = this;
         if (!node.credentials.webhookSecret) {
             this.error("Missing Webhook Secret!");
@@ -45,7 +45,7 @@ module.exports = function(RED) {
                     node.status({});
                 }, 5000);
             });
-        }
+        };
         //Callback for request processing
         node.processRequest = function(req, res, next){
             var msg = {};
@@ -198,10 +198,10 @@ module.exports = function(RED) {
                             //  Store original request body
                             //
                             msg.wwsEvent = req.body;
-                        //
-                        //  Check if there is ONLY one output for everything or we need to separate outputs
-                        //
-                        if (config.filterOutputs) {
+                            //
+                            //  Check if there is ONLY one output for everything or we need to separate outputs
+                            //
+                            if (config.filterOutputs) {
                                 //
                                 //  Array of answers... only one of which is not NULL corresponding to the req.body.type
                                 //
@@ -255,15 +255,15 @@ module.exports = function(RED) {
                 webhookPath = '/'+webhookPath;
             }
             RED.httpNode.post(webhookPath, jsonParser, node.processRequest, node.processError);
-            node.log("Created new route for: " + webhookPath);
+            node.log("wws-webhook: Created new route for: " + webhookPath);
         } else {
-            node.error("Could not create a rout for " + webhookPath);
+            node.error("wws-webhook: Could not create a route for " + node.webhookPath);
         }
     }
 
-    RED.nodes.registerType("wws-webhook",WWSWebhookNode,{
+    RED.nodes.registerType("wws-webhook", WWSWebhookNode,{
         credentials: {
             webhookSecret: {type:"text"}
         }
     });
-}
+};

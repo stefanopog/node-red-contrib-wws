@@ -69,7 +69,7 @@ module.exports = function(RED) {
           console.log(JSON.stringify(res.data, ' ', 2));
           msg.payload = res.data;
           node.status({ fill: "green", shape: "dot", text: "Sending file..." });
-          node.send(msg)
+          node.send(msg);
           }
       }).catch((err) => {
         console.log("Error while posting file to WWS.", err);
@@ -87,9 +87,9 @@ module.exports = function(RED) {
         const intervalObj = setInterval(() => {
             if (this.isInitialized()) {
                 this.releaseInterval(intervalObj);
-            };
+            }
           }, 2000);
-    };
+    }
   }
 
   RED.nodes.registerType("wws-file-post", wwsFilePostNode);
@@ -114,4 +114,4 @@ module.exports = function(RED) {
     };
     return rp(options);
   }
-}
+};

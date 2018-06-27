@@ -22,7 +22,7 @@ module.exports = function (RED) {
         node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
       }
       return initialized;
-    };
+    }
       
     //Check for token on start up
     const tokenFsm = node.application.getStateMachine();
@@ -36,9 +36,9 @@ module.exports = function (RED) {
       const intervalObj = setInterval(() => {
         if (_isInitialized()) {
           clearInterval(intervalObj);
-        };
+        }
       }, 2000);
-    };
+    }
 
     this.on("input", (msg) => {
       if (!msg.payload) {
@@ -162,7 +162,7 @@ module.exports = function (RED) {
         node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
       }
       return initialized;
-    };
+    }
       
     //Check for token on start up
     const tokenFsm = node.application.getStateMachine();
@@ -176,9 +176,9 @@ module.exports = function (RED) {
       const intervalObj = setInterval(() => {
         if (_isInitialized()) {
           clearInterval(intervalObj);
-        };
+        }
       }, 2000);
-    };
+    }
 
     this.on("input", (msg) => {
       //
@@ -250,7 +250,7 @@ module.exports = function (RED) {
         node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
       }
       return initialized;
-    };
+    }
       
     //Check for token on start up
     const tokenFsm = node.application.getStateMachine();
@@ -264,9 +264,9 @@ module.exports = function (RED) {
       const intervalObj = setInterval(() => {
         if (_isInitialized()) {
           clearInterval(intervalObj);
-        };
+        }
       }, 2000);
-    };
+    }
 
     this.on("input", (msg) => {
       //
@@ -375,7 +375,7 @@ module.exports = function (RED) {
         node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
       }
       return initialized;
-    };
+    }
     //Check for token on start up
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
@@ -387,9 +387,9 @@ module.exports = function (RED) {
       const intervalObj = setInterval(() => {
         if (_isInitialized()) {
           clearInterval(intervalObj);
-        };
+        }
       }, 2000);
-    };
+    }
 
     this.on("input", (msg) => {
       var referralMessageId;
@@ -490,19 +490,19 @@ module.exports = function (RED) {
           //  Build the output Array (as the node has multiple outputs)
           //  all the outputs will be initialized to NULL
           //
-          var outArray = [];
+          let outArray2 = [];
           for (let i=0; i <= actionList.length; i++) {
-            outArray.push(null);
+            outArray2.push(null);
           }
           //
           //  the array item corresponding to the selectedRule is filled with the INCOMING MESSAGE
           //
-          outArray[selectedRule] = msg;
+          outArray2[selectedRule] = msg;
           //  
           //  Sends the output array
           //
           node.status({fill:"green", shape:"dot", text:"No Lens for Action " + actionId});
-          node.send(outArray);  
+          node.send(outArray2);  
           return;      
       }
       var lens = theAction.match(parExp)[2].trim();
@@ -605,7 +605,7 @@ module.exports = function (RED) {
         node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
       }
       return initialized;
-    };
+    }
       
     //Check for token on start up
     const tokenFsm = node.application.getStateMachine();
