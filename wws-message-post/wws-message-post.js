@@ -199,11 +199,11 @@ module.exports = function(RED) {
                 node.error("Payload may not be empty!");
                 return;
             }
-            if (!msg.spaceId && !node.spaceId) {
+            if (!msg.wwsSpaceId && !node.spaceId) {
                 node.error("You need to define a spaceId to which the message needs to be send to!");
                 return;
             }
-            msg.spaceId = msg.spaceId?msg.spaceId:node.spaceId;
+            msg.wwsSpaceId = msg.wwsSpaceId ? msg.wwsSpaceId : node.spaceId;
             let accessToken = fsm.appToken;
 
             if (accessToken.expired()) {

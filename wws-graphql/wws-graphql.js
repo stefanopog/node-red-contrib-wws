@@ -620,8 +620,7 @@ module.exports = function (RED) {
       //
       //  Retrieve the annotations for the given Message
       //
-      wwsGraphQL(bearerToken, host, query, null, null, "PUBLIC")
-      .then((res) => {
+      wwsGraphQL(bearerToken, host, query, null, null, "PUBLIC").then((res) => {
         if (res.errors) {
           //
           //  Should NOT BE...
@@ -647,6 +646,11 @@ module.exports = function (RED) {
               let intent = JSON.parse(res.data.message.annotations[i]);
               if ((intent.type === "message-focus") && (intent.lens === lens)) {
                 msg.payload = intent;
+                /*
+                if (msg.payload.conversationId) msg.wwsConversationId = msg.payload.conversationId;
+                if (msg.payload.targetDialogId) msg.wwsTargetDialogId = msg.payload.targetDialogId;
+                if (msg.payload.updatedBy) msg.wwsUpdatedBy = msg.payload.updatedBy;
+                */
                 found = true;
                 break;
               }
@@ -677,7 +681,7 @@ module.exports = function (RED) {
             console.log("Error while dealing with action " + actionId + ' for lens ' + lens);
             node.status({fill: "red", shape: "ring", text: "Error while dealing with action " + actionId + ' for lens ' + lens});
             node.error('Lens ' + lens + ' not found for action ' + actionId, msg);
-              }
+          }
         }})
       .catch((err) => {
         msg.payload = err;
