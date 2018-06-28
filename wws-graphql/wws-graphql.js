@@ -84,6 +84,107 @@ module.exports = function (RED) {
 
 
   //
+  //  Get Message Details
+  //
+  function wwsGetMessage(config) {
+    RED.nodes.createNode(this, config);
+    this.application = RED.nodes.getNode(config.application);
+    var node = this;
+
+    function _isInitialized() {
+      var initialized = false;
+      if (tokenFsm.getAccessToken()) {
+        node.status({fill: "green", shape: "dot", text: "token available"});
+        initialized = true;
+      } else {
+        node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
+      }
+      return initialized;
+    }
+      
+    //Check for token on start up
+    const tokenFsm = node.application.getStateMachine();
+    if (!tokenFsm) {
+      console.log("No Account Info");
+      node.status({fill:"red", shape:"dot", text:"Please configure your account information first!"});
+      node.error("Please configure your account information first!");
+      return;
+    }
+    if (!_isInitialized()) {
+      const intervalObj = setInterval(() => {
+        if (_isInitialized()) {
+          clearInterval(intervalObj);
+        }
+      }, 2000);
+    }
+
+    this.on("input", (msg) => {
+      //
+      //  get Space Id
+      //
+      var messageId = '';
+      if ((config.wwsMessageId === '') && 
+          ((msg.wwsMessageId === undefined) || (msg.wwsMessageId === ''))) {
+        //
+        //  There is an issue
+        //
+        console.log("Missing messageID Information");
+        node.status({fill:"red", shape:"dot", text:"Missing messageID"});
+        node.error('Missing messageID', msg);
+        return;
+      }
+      if (config.wwsMessageId !== '') {
+        messageId = config.wwsMessageId;
+      } else {
+        messageId = msg.wwsMessageId;
+      }
+
+      var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);
+      var bearerToken = msg.wwsToken || accessToken.token.access_token;
+      var host = this.application.api;
+
+      var query = _getMessageInformation(messageId);
+      //
+      //  Perform the operation
+      //
+      wwsGraphQL(bearerToken, host, query, null, null, BETA_EXP_FLAGS).then((res) => {
+        if (res.errors) {
+          msg.payload = res.errors;
+          console.log('errors getting Message ' + messageId);
+          console.log(JSON.stringify(res.errors));
+          node.status({fill: "red", shape: "dot", text: "errors getting Message " + messageId});
+          node.error("errors getting Message " + messageId, msg);
+          return;
+        } else {
+          //
+          //  Successfull Result !
+          //
+          msg.payload = res.data.message;
+          console.log('Retrieving Message for messageID ' + messageId + ' succesfully completed!');
+          if (msg.payload.annotations) {
+            if (msg.payload.annotations.length > 0) {
+              let annotations = [];
+              for (let i = 0; i < msg.payload.annotations.length; i++) {
+                annotations.push(JSON.parse(msg.payload.annotations[i]));
+              }
+              msg.payload.annotations = annotations;
+            }
+          }
+          console.log(JSON.stringify(res.data));
+          node.status({fill: "green", shape: "dot", text: 'Retrieving Message for messageID ' + messageId + ' succesfully completed!'});
+          node.send(msg);
+        }
+      }).catch((err) => {
+        console.log("errors getting Message " + messageId, err);
+        node.status({fill: "red", shape: "ring", text: "errors getting Message " + messageId});
+        node.error("errors getting Message " + messageId, err);
+        return;
+      });
+      setTimeout(() => {_isInitialized(); }, 2000);
+    });
+  }
+
+  //
   //  Retrieve information about a list of people
   //
   function wwsGetPersons(config) {
@@ -1442,6 +1543,8 @@ module.exports = function (RED) {
   
   RED.nodes.registerType("wws-graphql", wwsGraphQLNode);
   
+  RED.nodes.registerType("wws-getMessage", wwsGetMessage);
+  
   RED.nodes.registerType("wws-addRemoveMembers", wwsAddRemoveMembers);
   
   RED.nodes.registerType("wws-getPeople", wwsGetPersons);
@@ -1526,6 +1629,15 @@ module.exports = function (RED) {
   //
   //  End of code coming form the following article : https://stackoverflow.com/questions/26246601/wildcard-string-comparison-in-javascript
   //  
+  function _getMessageInformation(messageId) {
+    var query = 'query getMessage { message(id: "' + messageId + '") {';
+    query += 'id content contentType annotations';
+    query += ' created createdBy {id displayName email customerId presence photoUrl}';
+    query += ' updated updatedBy {id displayName email customerId presence photoUrl}';
+    query += ' reactions {reaction count viewerHasReacted}'
+    query += '}}';
+    return query;
+  }
 
   function _propertiesNamesToIds(properties, templates) {
     var outProperties = [];
@@ -1591,7 +1703,6 @@ module.exports = function (RED) {
     }
     return outProperties;
   }
-
   function _propertiesIdsToNames(properties, templates) {
     var outProperties = [];
     for (let i=0; i < properties.length; i++) {
@@ -1711,8 +1822,6 @@ module.exports = function (RED) {
     console.log(query);
     return query;
   }
-
-  
   function _getTemplatedSpaceQuery(spaceId) {
     var query = 'query getTemplatedSpace { space(id: "' + spaceId + '") {';
     query += 'id title description visibility';

@@ -39,12 +39,14 @@ The following packages are required to be present in node-red prior to this inst
   * converts events into node-red friendly messages
   * shows incoming events on nodes status
   * optionally provides filtering of outputs according to the **msg.type** value of the incoming message
-* message node
+* Send message node
   * send messages to a space
   * provides a configuration interface (including preview functionality)
   * selection of available spaces
   * availability to upload a profile photo for each app
   * returns response from WWS to msg.payload
+* Get message node
+  * Gets all the information from a given message, including **Annotations** and **Reactions**
 * file node
   * selection of available spaces
   * optional usage of a different access token (e.g. from 'Authenticate on behalf of a user')
