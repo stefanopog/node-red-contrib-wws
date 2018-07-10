@@ -85,7 +85,7 @@ module.exports = function(RED) {
                 "Authorization": "Bearer " + bearerToken           
             };
             //create target URL
-            var url = apiUrl + createMessagePath.replace("/:spaceId/", "/"+msg.spaceId+"/");
+            var url = apiUrl + createMessagePath.replace("/:spaceId/", "/" + msg.wwsSpaceId + "/");
             var opts = urllib.parse(url);
             opts.method = method;
             opts.headers = headers;
