@@ -31,7 +31,8 @@
             "wws-graphql": "wws-graphql/wws-graphql.js",
             "wws-message-post": "wws-message-post/wws-message-post.js",
             "wws-webhook:": "wws-webhook/wws-webhook.js",
-            "wws-focus:": "wws-focus/wws-focus.js"
+            "wws-focus:": "wws-focus/wws-focus.js",
+            "wws-authorize": "wws-authorize/wws-authorize.js"
         }
     },
     "contributors": [

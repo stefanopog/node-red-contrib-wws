@@ -1,7 +1,7 @@
 module.exports = function(RED) {
     "use strict";
     const OAuth2 = require('simple-oauth2');
-    const StateMachine = require('javascript-state-machine');
+    /*const StateMachine = require('javascript-state-machine');*/
     const urllib = require("url");
     const http = require("follow-redirects").http;
     const https = require("follow-redirects").https;
@@ -172,7 +172,13 @@ module.exports = function(RED) {
         this.getStateMachine().obtain();
         */
     };
-    RED.nodes.registerType("wws-credentials",WWSNode);
+    RED.nodes.registerType("wws-credentials",WWSNode, {
+        credentials: {
+            api: {type:"text"},
+            tokenType: {type:"text"},
+            token: {type: "password"}
+        }
+    });
     
     // Http Endpoint to display token user
     RED.httpAdmin.get('/wws/app/:id/token', (req, res) => {
@@ -237,7 +243,7 @@ module.exports = function(RED) {
                 let userInformation = response.data.person;
                 console.log("UserInformation: ", JSON.stringify(userInformation));
                 let displayName;
-                switch (oauthConfig.token.token.tokenType) {
+                switch (oauthConfig.tokenType) {
                     case "user":
                         displayName = userInformation.displayName + " (on behalf of " + oauthConfig.token.token.displayName + ")";
                         break;
@@ -313,7 +319,7 @@ module.exports = function(RED) {
                     result.scope = scopes;
                     res.json(result);
                     oauthConfig.token = oauth2.accessToken.create(result);
-                    oauthConfig.token.topenType = req.body.tokenType;
+                    oauthConfig.tokenType = req.body.tokenType;
                     oauthConfig.api = credentials.auth.tokenHost;
                     console.log("AccessTokenHelper:" + JSON.stringify(oauthConfig.token));
 
@@ -356,11 +362,11 @@ module.exports = function(RED) {
             var userToken = response.token;
             var scopes = userToken.scope.trim().split(" ");
             userToken.scope = scopes;
-            userToken.tokenType = "user";
-            oauthConfig.api = oauthConfig.credentials.auth.tokenHost;
             oauthConfig.token = {
                 token: userToken
             };
+            oauthConfig.tokenType = "user";
+            oauthConfig.api = oauthConfig.credentials.auth.tokenHost;
             
             delete oauthConfig.callback;
             delete oauthConfig.credentials;
@@ -516,9 +522,17 @@ module.exports = function(RED) {
         })
 
     });
+    
+    function getOAuthConfigFromCredentials(id) {
+        let oauthConfig = RED.nodes.getCredentials(id);
+        return oauthConfig;
+    }
 
     function getOAuthConfig(id) {
         var oauthConfig = RED.settings.get(id);
+        /*if (!oauthConfig) {
+            oauthConfig = getOAuthConfigFromCredentials(id);
+        }*/
         if (!oauthConfig) {
             oauthConfig = undefined;
         }
@@ -534,6 +548,7 @@ module.exports = function(RED) {
     function storeOAuthConfig(id, oauthConfig) {
         RED.log.info(JSON.stringify(oauthConfig));
         RED.settings.set(id, oauthConfig);
+        /*RED.nodes.addCredentials(id, oauthConfig);*/
     }
 
     function getUserToken(credentials, code, scope, redirectUrl) {
