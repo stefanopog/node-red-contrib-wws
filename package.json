@@ -27,15 +27,17 @@
     "node-red": {
         "nodes": {
             "wws-credentials": "wws-credentials/wws-credentials.js",
-            "wws-webhook:": "wws-webhook/wws-webhook.js",
-            "wws-message-post": "wws-message-post/wws-message-post.js",
             "wws-file-post": "wws-file-post/wws-file-post.js",
             "wws-graphql": "wws-graphql/wws-graphql.js",
+            "wws-message-post": "wws-message-post/wws-message-post.js",
+            "wws-webhook:": "wws-webhook/wws-webhook.js",
+            "wws-focus:": "wws-focus/wws-focus.js",
             "wws-authorize": "wws-authorize/wws-authorize.js"
         }
     },
     "contributors": [
-    		"Arne Sutor <arne.sutor@de.ibm.com> (https://www.ibm.com/collaboration/collaboration-tools/watson-work/workspace)",
+    		"Arne Sutor <arne.sutor@de.ibm.com>",
+    		"Stefano Pogliani <stefano.pogliani@fr.ibm.com>",
     		"Benedikt Müller <benedikt.mueller@de.ibm.com>"
     ]
 }

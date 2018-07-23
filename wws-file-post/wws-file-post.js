@@ -26,35 +26,55 @@ module.exports = function(RED) {
     };
 
     this.on("input", function(msg) {
-      if (!msg.file && !msg.image) {
+      if (!msg.wwsFile && !msg.wwsImage) {
         node.error("Missing required input in msg object: [image | file]");
         return;
       }
-      var space = msg.spaceId || config.space;
+      var space = msg.wwsSpaceId || config.space;
       if (!space) {
         node.error("Missing required input: spaceId");
         return;
       }
-      var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);        
-      var host = this.application.api;
-      var bearerToken = msg.token || accessToken.token.access_token;
-      var file = msg.file;
+
+      
+      var file = msg.wwsFile;
       if (file && !file.options) {
         node.error("File object is not provided in the correct format. Please check the node help for details!");
         return;
       }
-      var dimension = {};
-      if (msg.image && !msg.image.options) {
-        node.error("Image object is not provided in the correct format. Please check the node help for details!");
-        return;
-      } else {
-        file = msg.image;
+
+      if (msg.wwsImage) {
+        if (!msg.wwsImage.options) {
+          node.error("Image object is not provided in the correct format. Please check the node help for details!");
+          return;
+        } else {
+          file = msg.wwsImage;
+        }
       }
-      wwsFilePost(bearerToken, space, file, host).then(() => {
-        node.status({ fill: "green", shape: "dot", text: "Sending file..." });
+
+      var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);        
+      var host = this.application.api;
+      var bearerToken = msg.wwsToken || accessToken.token.access_token;
+
+      wwsFilePost(bearerToken, space, file, host).then((res) => {
+        if (res.errors) {
+          msg.payload = res.errors;
+          console.log('errors posting file');
+          console.log(JSON.stringify(res.errors));
+          node.status({fill: "red", shape: "dot", text: "errors posting file"});
+          node.error("errors posting file", msg);
+          return;
+        } else {
+          console.log('File/image succesfully sent ');
+          console.log(JSON.stringify(res.data, ' ', 2));
+          msg.payload = res.data;
+          node.status({ fill: "green", shape: "dot", text: "Sending file..." });
+          node.send(msg);
+          }
       }).catch((err) => {
         console.log("Error while posting file to WWS.", err);
         node.status({ fill: "red", shape: "ring", text: "sending file failed..." });
+        node.error("Error while posting file to WWS.", err);
       });
       setTimeout(() => {
           node.isInitialized();
@@ -67,9 +87,9 @@ module.exports = function(RED) {
         const intervalObj = setInterval(() => {
             if (this.isInitialized()) {
                 this.releaseInterval(intervalObj);
-            };
+            }
           }, 2000);
-    };
+    }
   }
 
   RED.nodes.registerType("wws-file-post", wwsFilePostNode);
@@ -78,7 +98,6 @@ module.exports = function(RED) {
   function wwsFilePost(accessToken, space, file, host) {
     var uri = host + "/v1/spaces/" + space + "/files";
     //Optional send dimensions - only applicable for images
-
     if (file.dimension) {
       uri +="?dim="+file.dimension.width+"x"+file.dimension.height;
     }
@@ -95,4 +114,4 @@ module.exports = function(RED) {
     };
     return rp(options);
   }
-}
+};

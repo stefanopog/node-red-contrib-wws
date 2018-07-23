@@ -1,3 +1,161 @@
+
+<script type="text/javascript">
+    RED.nodes.registerType('wws-webhook',{
+        category: 'Watson Work',
+        color:"#11ABA5",
+        defaults: {
+            account: {
+                type: "wws-credentials",
+                required: true
+            },
+            webhookSecret: {
+                value: "", 
+                required: true
+            },
+            webhookPath: {
+                value: "/workspace/hook", 
+                required: true
+            },
+            filterOutputs: {
+                    value: false,
+                    required: false
+            },
+            o_messageCreated : {
+                    value: false,
+                    required: false
+            },
+            o_messageEdited : {
+                    value: false,
+                    required: false
+            },
+            o_messageDeleted : {
+                    value: false,
+                    required: false
+            },
+            o_spaceMemberRemoved : {
+                    value: false,
+                    required: false
+            },
+            o_spaceMemberAdded : {
+                    value: false,
+                    required: false
+            },
+            o_spaceUpdated : {
+                    value: false,
+                    required: false
+            },
+            o_spaceDeleted : {
+                    value: false,
+                    required: false
+            },
+            o_annotationAdded : {
+                    value: false,
+                    required: false
+            },
+            o_annotationEdited : {
+                    value: false,
+                    required: false
+            },
+            o_annotationRemoved : {
+                    value: false,
+                    required: false
+            },
+            o_reactionAdded : {
+                    value: false,
+                    required: false
+            },
+            o_reactionRemoved : {
+                    value: false,
+                    required: false
+            },
+            hidden_string : {
+                value : "",
+                required : false
+            },
+            name: {
+                value: ""
+            },
+            outputs: {
+                //
+                //  this is the same "outputs" variable that is used to define the number of outputs of the node instance
+                //  It is promoted here in order to make sure it can be programmatically modified
+                //
+                value:1
+            }
+        },
+        credentials: {
+            webhookSecret: {
+                type: "text"
+            }
+        },
+        inputs: 0,
+        outputs: 1,
+        icon: "wws.png",
+        outputLabels: function(index) { 
+            //
+            //  This function dynamically assigns a label to each of the output.
+            //  The label assigned to each output reflects the value entered in the wwsActionsList input
+            //  An additional label is generated for the last output, to cover the "OTHERWISE" case
+            //
+            var temp = this.hidden_string.split(',');
+            return temp[index].trim();
+        },
+        label: function() {
+            if (this.name) {
+                return this.name;
+            } else {
+                return "["+this.webhookPath+"] webhook";
+            }
+        },
+        paletteLabel: "webhook",
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        oneditprepare: _setupWebhookNode,
+        oneditsave : _saveWebhookNode
+    });
+
+
+    function _setupWebhookNode() {
+        _filterOutputsWebhookNode();
+    }
+
+    function _saveWebhookNode() {
+        if (document.querySelector("#node-input-filterOutputs").checked){ 
+            let count = 0;
+            let out = [];
+
+            if (document.querySelector("#node-input-o_messageCreated").checked) {count += 1; out.push("message-created")};
+            if (document.querySelector("#node-input-o_messageEdited").checked) {count += 1; out.push("message-edited")};
+            if (document.querySelector("#node-input-o_messageDeleted").checked)  {count += 1; out.push("message-deleted")};
+            if (document.querySelector("#node-input-o_annotationAdded").checked)  {count += 1; out.push("message-annotation-added")};
+            if (document.querySelector("#node-input-o_annotationEdited").checked)  {count += 1; out.push("message-annotation-edited")};
+            if (document.querySelector("#node-input-o_annotationRemoved").checked)  {count += 1; out.push("message-annotation-removed")};
+            if (document.querySelector("#node-input-o_spaceMemberAdded").checked)  {count += 1; out.push("space-members-added")};
+            if (document.querySelector("#node-input-o_spaceMemberRemoved").checked)  {count += 1; out.push("space-members-removed")};
+            if (document.querySelector("#node-input-o_spaceUpdated").checked)  {count += 1; out.push("space-updated")};
+            if (document.querySelector("#node-input-o_spaceDeleted").checked)  {count += 1; out.push("space-deleted")};
+            if (document.querySelector("#node-input-o_reactionAdded").checked)  {count += 1; out.push("reaction-added")};
+            if (document.querySelector("#node-input-o_reactionRemoved").checked)  {count += 1; out.push("reaction-removed")};
+            this.outputs = count;
+            this.hidden_string = out.join(',');
+        } else { 
+            this.outputs = 1;
+            this.hidden_string = "output";
+        } 
+
+    }
+
+    function _filterOutputsWebhookNode() { 
+        if (document.querySelector("#node-input-filterOutputs").checked){ 
+            document.querySelector("#outputDetails").style.display = "inline"; 
+        } else { 
+            document.querySelector("#outputDetails").style.display = "none"; 
+        } 
+    }
+    
+</script>
+
 <script type="text/x-red" data-template-name="wws-webhook">
     <div class="form-row">
         <label for="node-input-account"><i class="fa fa-user"></i> App Name</label>
@@ -11,6 +169,102 @@
         <label for="node-input-webhookPath"><i class="fa fa-cog"></i> Hook Path</label>
         <input type="text" id="node-input-webhookPath">
     </div>
+
+
+    <div class="form-row">
+        <label for="node-input-filterOutputs"><i></i> Filter Outputs ?</label>
+        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-filterOutputs" onchange="_filterOutputsWebhookNode()"></input>
+    </div>
+    <div class="form-row" id="outputDetails">
+        <table style="width: 100%">
+            <tr>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_messageCreated"><i></i> Message Created</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_messageCreated"></input>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_messageEdited"><i></i> Message Edited</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_messageEdited"></input>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_messageDeleted"><i></i> Message Deleted</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_messageDeleted"></input>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_annotationAdded"><i></i> Annotation Added</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_annotationAdded"></input>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_annotationEdited"><i></i> Annotation Edited</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_annotationEdited"></input>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_annotationRemoved"><i></i> Annotation Removed</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_annotationRemoved"></input>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_spaceUpdated"><i></i> Space Updated</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_spaceUpdated"></input>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_spaceDeleted"><i></i> Space Deleted</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_spaceDeleted"></input>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_spaceMemberAdded"><i></i> Member Added</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_spaceMemberAdded"></input>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_spaceMemberRemoved"><i></i> Member Removed</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_spaceMemberRemoved"></input>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_reactionAdded"><i></i> Reaction Added</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_reactionAdded"></input>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-row">
+                        <label for="node-input-o_reactionRemoved"><i></i> Reaction Removed</label>
+                        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-o_reactionRemoved"></input>
+                    </div>
+                </td>
+            </tr>
+        </table>
+                                                                
+        <br />
+        <br />
+    </div>
+    
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</span></label>
         <input type="text" id="node-input-name" placeholder="Name">
@@ -68,6 +322,7 @@
     The following message types are supported.</p>
     <ul>
             <li><code>message-created</code></li>
+            <li><code>message-edited</code></li>
             <li><code>message-deleted</code></li>
             <li><code>message-annotation-added</code></li>
             <li><code>message-annotation-edited</code></li>
@@ -88,13 +343,13 @@
 {
     "payload": "Hello App!",
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "spaceName": "NodeRed Test",
-    "messageId": "5ac57856e4b0758fdb1d14af",
-    "type": "message-created",
-    "userName": "Arne Sutor",
-    "userId": "54f13685-35f7-468e-939e-28f8bed06a87",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsSpaceName": "NodeRed Test",
+    "wwsMessageId": "5ac57856e4b0758fdb1d14af",
+    "wwsType": "message-created",
+    "wwsUserName": "Arne Sutor",
+    "wwsUserId": "54f13685-35f7-468e-939e-28f8bed06a87",
+    "wwsEvent": {
         "spaceName": "NodeRed Test",
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "messageId": "5ac57856e4b0758fdb1d14af",
@@ -115,10 +370,10 @@
 {
     "payload": "5ac57691e4b01fb480a7d493",
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "messageId": "5ac57691e4b01fb480a7d493",
-    "type": "message-deleted",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsMessageId": "5ac57691e4b01fb480a7d493",
+    "wwsType": "message-deleted",
+    "wwsEvent": {
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "messageId": "5ac57691e4b01fb480a7d493",
         "time": 1522891128960,
@@ -140,14 +395,14 @@
         }
     },
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "spaceName": "NodeRed Test",
-    "messageId": "5ac57915e4b0b65c47d9fb15",
-    "type": "message-annotation-added",
-    "annotationId": "5ac57915e4b0797dd985c834",
-    "annotationService": "toscana-aip-nlc-consumer-client-id",
-    "annotationType": "message-nlp-docSentiment",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsSpaceName": "NodeRed Test",
+    "wwsMessageId": "5ac57915e4b0b65c47d9fb15",
+    "wwsType": "message-annotation-added",
+    "wwsAnnotationId": "5ac57915e4b0797dd985c834",
+    "wwsAnnotationService": "toscana-aip-nlc-consumer-client-id",
+    "wwsAnnotationType": "message-nlp-docSentiment",
+    "wwsEvent": {
         "spaceName": "NodeRed Test",
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "annotationPayload": "{\"language\":\"de\",\"docSentiment\":{\"score\":0.0,\"type\":\"neutral\"}}",
@@ -195,14 +450,14 @@
         "momentVersion": 6
     },
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "spaceName": "NodeRed Test",
-    "messageId": "5ac57691e4b01fb480a7d493",
-    "type": "message-annotation-edited",
-    "annotationId": "5ac57691e4b016de47756a6e",
-    "annotationService": "toscana-service-moment-identification-client-id",
-    "annotationType": "conversation-moment",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsSpaceName": "NodeRed Test",
+    "wwsMessageId": "5ac57691e4b01fb480a7d493",
+    "wwsType": "message-annotation-edited",
+    "wwsAnnotationId": "5ac57691e4b016de47756a6e",
+    "wwsAnnotationService": "toscana-service-moment-identification-client-id",
+    "wwsAnnotationType": "conversation-moment",
+    "wwsEvent": {
         "spaceName": "NodeRed Test",
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "annotationPayload": "{\"hidden\":false,\"spaceId\":\"5ac3a40fe4b0b569843a146b\",\"momentSummary\":{\"phrases\":[],\"mostRelevantMessage\":{\"messageId\":\"5ac57691e4b01fb480a7d493\",\"published\":1522890385417}},\"momentId\":\"d371dfee5d9aa30eafcabdd9dd656dce992ed2eb\",\"algorithm\":\"timegap\",\"participants\":[{\"authorId\":\"54f13685-35f7-468e-939e-28f8bed06a87\",\"messageCount\":3}],\"startMessage\":{\"messageId\":\"5ac57691e4b01fb480a7d493\",\"published\":1522890385417},\"lastUpdatedMessage\":{\"messageId\":\"5ac57856e4b0758fdb1d14af\",\"published\":1522890838960},\"momentVersion\":6}",
@@ -231,10 +486,10 @@
         "99b7f797-17ba-4666-a595-2668834822e5"
     ],
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "spaceName": "NodeRed Test",
-    "type": "space-members-added",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsSpaceName": "NodeRed Test",
+    "wwsType": "space-members-added",
+    "wwsEvent": {
         "spaceName": "NodeRed Test",
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "time": 1522891286786,
@@ -255,10 +510,10 @@
         "99b7f797-17ba-4666-a595-2668834822e5"
     ],
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "spaceName": "NodeRed Test",
-    "type": "space-members-removed",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsSpaceName": "NodeRed Test",
+    "wwsType": "space-members-removed",
+    "wwsEvent": {
         "spaceName": "NodeRed Test",
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "time": 1522891359071,
@@ -277,12 +532,12 @@
 {
     "payload": "👍",
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "type": "reaction-added",
-    "reactor": "54f13685-35f7-468e-939e-28f8bed06a87",
-    "relatedMessage": "5ac57915e4b0b65c47d9fb15",
-    "reactionType": "MESSAGE",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsType": "reaction-added",
+    "wwsReactor": "54f13685-35f7-468e-939e-28f8bed06a87",
+    "wwsRelatedMessage": "5ac57915e4b0b65c47d9fb15",
+    "wwsReactionType": "MESSAGE",
+    "wwsEvent": {
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "reaction": "👍",
         "time": 1522891206509,
@@ -301,12 +556,12 @@
 {
     "payload": "👍",
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "type": "reaction-removed",
-    "reactor": "54f13685-35f7-468e-939e-28f8bed06a87",
-    "relatedMessage": "5ac57915e4b0b65c47d9fb15",
-    "reactionType": "MESSAGE",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsType": "reaction-removed",
+    "wwsReactor": "54f13685-35f7-468e-939e-28f8bed06a87",
+    "wwsRelatedMessage": "5ac57915e4b0b65c47d9fb15",
+    "wwsReactionType": "MESSAGE",
+    "wwsEvent": {
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "reaction": "👍",
         "time": 1522891244379,
@@ -325,12 +580,12 @@
 {
     "payload": {},
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "type": "space-updated",
-    "updater": "54f13685-35f7-468e-939e-28f8bed06a87",
-    "spaceProperties": {},
-    "updateCause": "other",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsType": "space-updated",
+    "wwsUpdater": "54f13685-35f7-468e-939e-28f8bed06a87",
+    "wwsSpaceProperties": {},
+    "wwsUpdateCause": "other",
+    "wwsEvent": {
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "spaceProperties": {},
         "time": 1522891244443,
@@ -347,9 +602,9 @@
 {
     "payload": "54f13685-35f7-468e-939e-28f8bed06a87",
     "error": null,
-    "spaceId": "5ac3a40fe4b0b569843a146b",
-    "type": "space-deleted",
-    "event": {
+    "wwsSpaceId": "5ac3a40fe4b0b569843a146b",
+    "wwsType": "space-deleted",
+    "wwsEvent": {
         "spaceId": "5ac3a40fe4b0b569843a146b",
         "time": 1522891432336,
         "type": "space-deleted",
@@ -366,35 +621,4 @@
         <li>TODO: <a>GitHub</a> - the nodes github repository</li>
     </ul>
 
-</script>
-
-<script type="text/javascript">
-    RED.nodes.registerType('wws-webhook',{
-        category: 'Watson Work',
-        color:"#11ABA5",
-        defaults: {
-            account: {type:"wws-credentials",required:true},
-            webhookSecret: {value:"", required:true},
-            webhookPath: {value:"/workspace/hook", required:true},
-            name: {value:""},
-            inputs: {value:0}
-        },
-        credentials: {
-            webhookSecret: {type: "text"}
-        },
-        inputs: 0,
-        outputs: 1,
-        icon: "wws.png",
-        label: function() {
-            if (this.name) {
-                return this.name;
-            } else {
-                return "["+this.webhookPath+"] webhook";
-            }
-        },
-        paletteLabel: "webhook",
-        labelStyle: function() {
-            return this.name?"node_label_italic":"";
-        }
-    });
 </script>
