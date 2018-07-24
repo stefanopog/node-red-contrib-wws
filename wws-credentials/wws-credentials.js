@@ -1,7 +1,6 @@
 module.exports = function(RED) {
     "use strict";
     const OAuth2 = require('simple-oauth2');
-    /*const StateMachine = require('javascript-state-machine');*/
     const urllib = require("url");
     const http = require("follow-redirects").http;
     const https = require("follow-redirects").https;
@@ -15,8 +14,13 @@ module.exports = function(RED) {
 
         this.accountName = config.accountName;
         this.name = config.accountName;
-        console.log("TokenType: " + config.tokenType);
-        this.tokenType = config.tokenType;
+        this.clientId = config.clientId;
+        this.clientSecret = config.clientSecret;
+
+        /* Remove this for productive usage*/
+        console.log("Credentials for [" + this.id + "] " + (this.accountName ? this.accountName : ""));
+        console.log("=>" + JSON.stringify(this.credentials, "", 2));
+        
         /*
         let stringOrDefault = (value, defaultValue) => {
             return typeof value == 'string' && value.length > 0 ? value : defaultValue;
@@ -171,6 +175,90 @@ module.exports = function(RED) {
         /*
         this.getStateMachine().obtain();
         */
+        this.getCredentials = () => {
+            return {
+                client: {
+                    id: this.clientId,
+                    secret: this.clientSecret
+                },
+                auth: {
+                    tokenHost: this.credentials.api
+                }
+            };
+        };
+        this.getAccessToken = (statusNode) => {
+            let accessToken = this.credentials.token;
+            const oauth2 = OAuth2.create(this.getCredentials());
+            let tokenHelper = oauth2.accessToken.create(accessToken);
+            if (tokenHelper && tokenHelper.expired()) {
+                if (statusNode) {
+                    statusNode.status({fill: "yellow", shape: "dot", text: "token expired"});
+                }
+                console.log("Access Token expired, renewing token...")
+                switch (this.credentials.tokenType) {
+                    case "bot":
+                        let tokenConfig = {};
+                        oauth2.clientCredentials.getToken(tokenConfig)
+                        .then((result) => {
+                            let newToken = result;
+                            let scopes = newToken.scope.trim().split(" ");
+                            newToken.scope = scopes;
+                            this.credentials.token = newToken;
+                            if (statusNode) {
+                                statusNode.status({fill: "green", shape: "dot", text: "token available"});
+                            }
+                            storeOAuthConfig(this.id, this.credentials);
+                            return this.credentials.token;
+                        })
+                        .catch((error) => {
+                            RED.log.error("Error: " + error.message);
+                            console.log("Error: " + JSON.stringify(error));
+                            if (statusNode) {
+                                statusNode.status({fill: "grey", shape: "dot", text: "uninitialized token"});
+                            }
+                        });
+                        break;
+                    case "user":
+                        tokenHelper.refresh()
+                        .then((result) => {
+                            let newToken = result.token;
+                            let scopes = newToken.scope.trim().split(" ");
+                            newToken.scope = scopes;
+                            this.credentials.token = newToken;
+                            if (statusNode) {
+                                statusNode.status({fill: "green", shape: "dot", text: "token available"});
+                            }
+                            storeOAuthConfig(this.id, this.credentials);
+                            return this.credentials.token;
+                        })
+                        .catch((error) => {
+                            RED.log.error("Error: " + error.message);
+                            console.log("Error: " + JSON.stringify(error));
+                            if (statusNode) {
+                                statusNode.status({fill: "grey", shape: "dot", text: "uninitialized token"});
+                            }
+                        });
+                        break;
+                    default:
+                        if (statusNode) {
+                            statusNode.status({fill: "red", shape: "dot", text: "unknown tokenType"});
+                        }
+                        break;
+                }
+            } else if (accessToken) {
+                statusNode.status({fill: "green", shape: "dot", text: "token available"});
+                return this.credentials.token;
+            } else {
+                statusNode.status({fill: "grey", shape: "dot", text: "token unavailable"});
+            }
+           
+        };
+        this.hasAccessToken = () => {
+            return (this.credentials.token);
+        }
+        this.getApiUrl = () => {
+            return this.credentials.api;
+        }
     };
     RED.nodes.registerType("wws-credentials",WWSNode, {
         credentials: {
@@ -183,8 +271,9 @@ module.exports = function(RED) {
     // Http Endpoint to display token user
     RED.httpAdmin.get('/wws/app/:id/token', (req, res) => {
         var oauthConfig = getOAuthConfig(req.params.id);
+        console.log("TEST: " + JSON.stringify(oauthConfig));
         if (oauthConfig && oauthConfig.token) {
-            var token = oauthConfig.token.token;
+            var token = oauthConfig.token;
             var body = {
                 displayName: token.displayName,
                 id: token.id,
@@ -199,28 +288,28 @@ module.exports = function(RED) {
     // HTTP Endpoint to receive the name based on tokenType
     RED.httpAdmin.get('/wws/app/:id/name/:userId', RED.auth.needsPermission('wws.read'), function(req, res) {
         var oauthConfig = getOAuthConfig(req.params.id);
-        console.log("/name: " + JSON.stringify(oauthConfig));
+        RED.log.trace("/name: " + JSON.stringify(oauthConfig));
         var bearerToken;
+        var host;
         if (oauthConfig && oauthConfig.token) {
-            bearerToken = oauthConfig.token.token.access_token;
+            bearerToken = oauthConfig.token.access_token;
+            host = oauthConfig.api;
         } else {
-            console.error("No token information could be found for Node " + req.params.id + "!");
+            RED.log.error("No token information could be found for Node " + req.params.id + "!");
             res.sendStatus(400);
             return;
         }
         var userId = req.params.userId;
         if (!userId) {
-            console.error("No user id could be found for Node " + req.params.id + "!");
+            RED.log.error("No user id could be found for Node " + req.params.id + "!");
             res.sendStatus(400);
             return;
         }
-        console.log("Token: " + bearerToken);
+        RED.log.log("Token: " + bearerToken);
+        RED.log.log("Host: " + host);
         
         var query = "query getDisplayName { person (id: \"" + userId + "\") { id displayName } }";
-        console.log("Query: " + query);
-
-        var host = oauthConfig.api;
-        console.log("Host: " + host);
+        RED.log.log("Query: " + query);
 
         function getDisplayName(host, bearerToken, query) {
             var uri = host + "/graphql";
@@ -235,17 +324,17 @@ module.exports = function(RED) {
                 query: query
               }
             };
-            console.log(options);
+            RED.log.log(JSON.stringify(options));
             return rp(options);
         }
         if (bearerToken && host) {
             getDisplayName(host, bearerToken, query).then((response) => {
                 let userInformation = response.data.person;
-                console.log("UserInformation: ", JSON.stringify(userInformation));
+                RED.log.log("UserInformation: ", JSON.stringify(userInformation));
                 let displayName;
                 switch (oauthConfig.tokenType) {
                     case "user":
-                        displayName = userInformation.displayName + " (on behalf of " + oauthConfig.token.token.displayName + ")";
+                        displayName = userInformation.displayName + " (on behalf of " + oauthConfig.token.displayName + ")";
                         break;
                     default:
                     case "bot":
@@ -256,8 +345,20 @@ module.exports = function(RED) {
                     appName: displayName
                 });
               }).catch((err) => {
-                console.log("Error while reading the display name.", err);
+                RED.log.error("Error while reading the display name. Reason: " +  err.message);
+                RED.log.log(JSON.stringify(err));
+                let displayMessage = err.message;
+                if (err.statusCode) {
+                    switch (err.statusCode) {
+                        case 401:
+                            displayMessage = "Token is expired, please renew token!"
+                            break;
+                        default:
+                            break;
+                    }
+                }
                 res.json({
+                    message: displayMessage,
                     error: err
                 });
             });
@@ -271,8 +372,8 @@ module.exports = function(RED) {
 
     //HTTP Endpoint to provide a redirect URL for callback
     RED.httpAdmin.post('/wws/app/:id/auth/url', (req, res) => {
-        console.log(JSON.stringify(req.body));
-        console.log("ID: " + req.params.id);
+        RED.log.trace(JSON.stringify(req.body));
+        RED.log.trace("ID: " + req.params.id);
         if (!req.params.id || !req.body.protocol || !req.body.hostname) {
             res.sendStatus(400);
             return;
@@ -297,14 +398,14 @@ module.exports = function(RED) {
                 }
                 oauthConfig.callback = callback;
                 oauthConfig.credentials = credentials;
-                console.log("OAuthConfig:" + JSON.stringify(oauthConfig));
+                RED.log.log("OAuthConfig:" + JSON.stringify(oauthConfig));
                 storeOAuthConfig(req.params.id, oauthConfig);
                 var url = oauth2.authorizationCode.authorizeURL({
                     client_id: credentials.client.id,
                     redirect_uri: callback.callbackUrl,
                     state: callback.state
                 })
-                console.log("Callback URL:" + url);
+                RED.log.log("Callback URL:" + url);
                 res.send({
                     'url': url
                 });
@@ -314,20 +415,18 @@ module.exports = function(RED) {
                 let tokenConfig = {};
                 oauth2.clientCredentials.getToken(tokenConfig)
                 .then((result) => {
-                    console.log("AccessToken:" + JSON.stringify(result));
+                    RED.log.info("AccessToken:" + JSON.stringify(result));
                     var scopes = result.scope.trim().split(" ");
                     result.scope = scopes;
                     res.json(result);
-                    oauthConfig.token = oauth2.accessToken.create(result);
+                    oauthConfig.token = result;
                     oauthConfig.tokenType = req.body.tokenType;
                     oauthConfig.api = credentials.auth.tokenHost;
-                    console.log("AccessTokenHelper:" + JSON.stringify(oauthConfig.token));
-
 
                     storeOAuthConfig(req.params.id, oauthConfig);
                 })
                 .catch((error) => {
-                    console.log("Error:" + JSON.stringify(error));
+                    RED.log.log("Error:" + JSON.stringify(error));
                     RED.log.error("Receiving Access Token failed: " + error.message);
                     res.sendStatus(error.status);
                 });
@@ -343,7 +442,7 @@ module.exports = function(RED) {
         }
 
         var oauthConfig = getOAuthConfig(req.params.id);
-        console.log("Outh after callback: " + JSON.stringify(oauthConfig));
+        RED.log.trace("Outh after callback: " + JSON.stringify(oauthConfig));
         var state = "";
         if (oauthConfig && oauthConfig.callback) {
             state = oauthConfig.callback.state;
@@ -362,9 +461,7 @@ module.exports = function(RED) {
             var userToken = response.token;
             var scopes = userToken.scope.trim().split(" ");
             userToken.scope = scopes;
-            oauthConfig.token = {
-                token: userToken
-            };
+            oauthConfig.token = userToken;
             oauthConfig.tokenType = "user";
             oauthConfig.api = oauthConfig.credentials.auth.tokenHost;
             
@@ -381,9 +478,10 @@ module.exports = function(RED) {
     // Http Endpoint to remove the current token
     RED.httpAdmin.get('/wws/app/:id/remove', (req, res) => {
         var oauthConfig = getOAuthConfig(req.params.id);
-        console.log("OAuthConfig: " + JSON.stringify(oauthConfig));
+        RED.log.trace("OAuthConfig: " + JSON.stringify(oauthConfig));
         if (oauthConfig && oauthConfig.token) {
-            storeOAuthConfig(req.params.id, {});
+
+            createOAuthConfig(req.params.id, oauthConfig.tokenType);
             res.status(200);
         } else {
             res.status(304);
@@ -399,11 +497,13 @@ module.exports = function(RED) {
     RED.httpAdmin.get('/wws/app/:id/spaces', RED.auth.needsPermission('wws.read'), function(req, res) {
         var oauthConfig = getOAuthConfig(req.params.id);
         var bearerToken;
-        if (oauthConfig.token) {
-            bearerToken = oauthConfig.token.token.access_token;
+        var host;
+        if (oauthConfig && oauthConfig.token) {
+            bearerToken = oauthConfig.token.access_token;
+            host = oauthConfig.api;
         }
         var query = "query getSpaces { spaces(first: 50) { items { id title } } }";
-        var host = oauthConfig.api;
+        
 
         function getSpaces(host, bearerToken, query) {
             var uri = host + "/graphql";
@@ -418,16 +518,16 @@ module.exports = function(RED) {
                 query: query
               }
             };
-            console.log(options);
+            RED.log.log(JSON.stringify(options));
             return rp(options);
         }
         if (bearerToken && host) {
             getSpaces(host, bearerToken, query).then((response) => {
                 var spaces = response.data.spaces.items;
-                console.log("SPACES: ", JSON.stringify(spaces));
+                RED.log.log("SPACES: ", JSON.stringify(spaces));
                 res.json(spaces);
               }).catch((err) => {
-                console.log("Error while getting list of spaces.", err);
+                RED.log.log("Error while getting list of spaces.", err);
                 res.json({
                     error: err
                 });
@@ -443,16 +543,18 @@ module.exports = function(RED) {
     RED.httpAdmin.post('/wws/app/:id/photo', (req, res) => {
         var oauthConfig = getOAuthConfig(req.params.id);
         var bearerToken;
-        if (oauthConfig.token) {
-            bearerToken = oauthConfig.token.token.access_token;
+        var host;
+        if (oauthConfig && oauthConfig.token) {
+            bearerToken = oauthConfig.token.access_token;
+            host = oauthConfig.api;
         }
         var contentType = req.headers["content-type"];
         var contentLength = req.headers['content-length'];
 
-        var canBeProcessed = (oauthConfig.api && bearerToken)?true:false;
+        var canBeProcessed = (host && bearerToken)?true:false;
 
         function processRequest(buf) {
-            var url = oauthConfig.token.api + "/photos";
+            var url = host + "/photos";
             
             //Do post message
             var opts = urllib.parse(url);
@@ -522,33 +624,39 @@ module.exports = function(RED) {
         })
 
     });
-    
-    function getOAuthConfigFromCredentials(id) {
-        let oauthConfig = RED.nodes.getCredentials(id);
-        return oauthConfig;
-    }
 
     function getOAuthConfig(id) {
-        var oauthConfig = RED.settings.get(id);
-        /*if (!oauthConfig) {
-            oauthConfig = getOAuthConfigFromCredentials(id);
-        }*/
+        var oauthConfig = RED.nodes.getCredentials(id);
+        if (!oauthConfig) {
+            oauthConfig = RED.settings.get(id);
+            if (oauthConfig) {
+                //fallback - only log if used!
+                RED.log.info("Using FALLBACK to receive oauthConfig " + JSON.stringify(oauthConfig));
+
+            }
+        }
         if (!oauthConfig) {
             oauthConfig = undefined;
         }
         return oauthConfig;
     }
     
-    function createOAuthConfig(id) {
-        var oauthConfig = {};
+    function createOAuthConfig(id, tokenType) {
+        if (!tokenType) {
+            tokenType = "bot";
+        }
+        var oauthConfig = {
+            tokenType : tokenType
+        };
         RED.settings.set(id, oauthConfig);
+        RED.nodes.addCredentials(id, oauthConfig);
         return oauthConfig;
     }
 
     function storeOAuthConfig(id, oauthConfig) {
-        RED.log.info(JSON.stringify(oauthConfig));
+        RED.log.info("Storing => " + JSON.stringify(oauthConfig));
         RED.settings.set(id, oauthConfig);
-        /*RED.nodes.addCredentials(id, oauthConfig);*/
+        RED.nodes.addCredentials(id, oauthConfig);
     }
 
     function getUserToken(credentials, code, scope, redirectUrl) {
