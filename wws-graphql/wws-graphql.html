@@ -61,7 +61,10 @@
 </script>
 
 <script type="text/x-red" data-help-name="wws-graphql">
-  <p>A node that sends a GraphQL request to <a href="https://developer.watsonwork.ibm.com" target="_blank">IBM Watson Work Services</a>.</p>
+  <p>
+    A node that sends a GraphQL request to <a href="https://developer.watsonwork.ibm.com" target="_blank">IBM Watson Work Services</a>.
+  </p>
+
   <h3>Inputs</h3>
   <dl class="message-properties">
       <dt>payload
@@ -69,17 +72,29 @@
       </dt>
       <dd>The query to be executed against Watson Work Servics.</dd>
 
-      <dt class="optional">operationName <span class="property-type">string</span></dt>
+      <dt class="optional">operationName 
+        <span class="property-type">string</span>
+      </dt>
       <dd>Defines the name of the operation.</dd>
 
-      <dt class="optional">variables <span class="property-type">object</span></dt>
+      <dt class="optional">variables 
+        <span class="property-type">object</span>
+      </dt>
       <dd>Key-value map of variables to be used in a GraphQL query.</dd>
       
-      <dt class="optional">wwsToken <span class="property-type">string</span></dt>
-      <dd>Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace application(s) for this particular message.</dd>
+      <dt class="optional">wwsToken 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+        application(s) for this particular message.</br />
+        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      </dd>
   </dl>
+
   <h3>Details</h3>
-  <p>This node sends a <a href="https://graphql.org/learn/" target="_blank">qraphQl query</a> to Watson Work Services. This allows to extract additional information in the context of the application from Watson Work Services. Check the <a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphqL Tool</a> for further information.<br/>
+  <p>
+    This node sends a <a href="https://graphql.org/learn/" target="_blank">qraphQl query</a> to Watson Work Services. This allows to extract additional information in the context of the application from Watson Work Services. Check the <a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphqL Tool</a> for further information.<br/>
       Provide the following information:
   </p>
   <dl class="message-properties">
@@ -111,263 +126,6 @@ msg.payload = `
         }`
     </pre>
   </p>
-  <h3>References</h3>
-  <ul>
-      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
-      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
-      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
-      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
-  </ul>
-</script>
-
-<script type="text/javascript">
-  RED.nodes.registerType("wws-getMessage", {
-    category: 'Watson Work',
-    icon: "wws.png",
-    color: "#11ABA5",
-    align: "center",
-    defaults: {
-      name: {
-        value: ""
-      },
-      application: {
-        value: "",
-        type: "wws-credentials"
-      },
-      wwsMessageId: {
-        value: ''
-      }
-    },
-    inputs: 1,
-    outputs: 1,
-    label: function () {
-      return this.name || "Get Message";
-    },
-    paletteLabel: "Get Message"
-  });
-</script>
-
-<script type="text/x-red" data-template-name="wws-getMessage">
-  <div class="form-row">
-    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
-    <input type="text" id="node-input-application">
-  </div>
-
-  <div class="form-row" id="wwsMessageId">
-      <label for="node-input-wwsMessageId"><i class="fa fa-eye"></i> MessageId</label>
-      <input type="text"  name="wwsMessageId" id="node-input-wwsMessageId" placeholder="Message Id : ex 5b340xxxxx84894"></input>
-  </div>
-
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name">
-  </div>
-</script>
-
-<script type="text/x-red" data-help-name="wws-getMessage">
-  <p>A node that retrieves all the information about a given Message.</p>
-  <h3>Inputs</h3>
-  <dl class="message-properties">
-      <dt>wwsMessageId <span class="property-type">string</span></dt>
-      <dd>The Id of the message to be retrieved.</dd>
-      
-      <dt class="optional">wwsToken <span class="property-type">string</span></dt>
-      <dd>Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace application(s) for this particular message.</dd>
-  </dl>
-  <h3>Details</h3>
-  <p>This node sends a <a href="https://graphql.org/learn/" target="_blank">qraphQl query</a> to Watson Work Services. This allows to extract additional information in the context of the application from Watson Work Services. Check the <a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphqL Tool</a> for further information.<br/>
-      Provide the following information:
-  </p>
-  <dl class="message-properties">
-      <dt>App Name</dt>
-          <dd>The configured name for a specific Watson Work App.</dd>
-      <dt>Message Id <span class="property-type">string</span></dt>
-          <dd>The Id of the message to be retrieved. It superseeds the value of the incoming <code>msg.wwsMessageId</code> if present</dd>
-      </dl>
-  <h3>References</h3>
-  <ul>
-      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
-      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
-      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
-      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
-  </ul>
-</script>
-
-
-<script type="text/javascript">
-  var parExp = /(.*?)\s\((.*?)\)/;
-  RED.nodes.registerType("wws-validateActions", {
-    category: 'Watson Work',
-    icon: "wws.png",
-    color: "#11ABA5",
-    align: "center",
-    defaults: {
-      name: {
-        value: ""
-      },
-      application: {
-        value: "",
-        required: true,
-        type: "wws-credentials"
-      },
-      wwsReferralMessageId: {
-        value: "",
-        required: true
-      },
-      wwsActionsList: {
-        value : "",
-        required: true
-      },
-      wwsActionId: {
-        value : "",
-        required: true
-      },
-      outputs: {
-        //
-        //  this is the same "outputs" variable that is used to define the number of outputs of the node instance
-        //  It is promoted here in order to make sure it can be programmatically modified
-        //
-        value:1
-      }
-    },
-    inputs: 1,
-    outputs: 1,
-    outputLabels: function(index) { 
-      //
-      //  This function dynamically assigns a label to each of the output.
-      //  The label assigned to each output reflects the value entered in the wwsActionsList input
-      //  An additional label is generated for the last output, to cover the "OTHERWISE" case
-      //
-      var actions = this.wwsActionsList; 
-      var A_actions = actions.split(',');
-      if (index === A_actions.length) {
-        return 'Otherwise';
-      } else {
-        var tt = A_actions[index].trim().match(parExp);
-        if (tt) {
-          return tt[1];
-        } else {
-          return A_actions[index].trim();
-        }
-      }
-    },
-    label: function () {
-      return this.name || "Validate Action";
-    },
-    paletteLabel: "Validate Action",
-    oneditsave: updateWwsActionsList
-  });
-
-
-  function updateWwsActionsList() {
-    //
-    //  Get the value from the input field
-    //
-    var actions = $("#node-input-wwsActionsList").val();
-    //
-    //  create an array out of the string
-    //
-    var A_actions = actions.split(',');
-    var B_actions = [];
-    //
-    //  Prune empty elements and trim others
-    //
-    for (let i=0; i < A_actions.length; i++) {
-      A_actions[i] = A_actions[i].trim();
-      if (A_actions[i].length !== 0) {
-        B_actions.push(A_actions[i])
-      }
-    }
-    //
-    //  Update the number of outputs of the node
-    //  NOTE : "this.outputs" works because this method is called by the "oneditsave".
-    //
-    this.outputs = B_actions.length + 1;
-    //
-    //  Replace the original value from the input field with a sanitized version
-    //
-    $("#node-input-wwsActionsList").val(B_actions.join(', '));
-  }
-</script>
-
-<script type="text/x-red" data-template-name="wws-validateActions">
-  <div class="form-row">
-    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
-    <input type="text" id="node-input-application">
-  </div>
-  <div class="form-row">
-    <label for="node-input-wwsReferralMessageId"><i class="fa fa-eye"></i> Referral MsgId</label>
-    <input type="text" id="node-input-wwsReferralMessageId" placeholder="the Id of the message">
-  </div>
-  <div class="form-row">
-    <label for="node-input-wwsActionId"><i class="fa fa-eye"></i> Action Id</label>
-    <input type="text" id="node-input-wwsActionId" placeholder="incoming Action Id">
-  </div>
-  <div class="form-row">
-    <label for="node-input-wwsActionsList"><i class="fa fa-eye"></i> Recognized Actions</label>
-    <input type="text" id="node-input-wwsActionsList" placeholder="comma-separated list of actions">
-  </div>
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name">
-  </div>
-</script>
-
-<script type="text/x-red" data-help-name="wws-validateActions">
-  <p>This node provides a mean to filter a set of Actions identified by <a href="https://developer.watsonwork.ibm.com" target="_blank">IBM Watson Work Services</a>.</p>
-  <p>Normally this node is deployed after the Webhook node and once you want to filter <b>annotations</b> whose <code>annotationType = "actionSelected"</code>. <p>
-  <h3>Inputs</h3>
-  <dl class="message-properties">
-      <dt>wwsActionId <span class="property-type">string</span></dt>
-      <dd>The name of the Action from the webhook.<br>
-        The value on the configuration panel overrides the value in <code>msg.wwsActionId</code></dd>
-
-      <dt>wwsActionsList <span class="property-type">comma-separated string</span></dt>
-      <dd>Defines a list of possible Actions this node should be able to validate.
-        <br>
-        This is a comma-separated list of values; each value can be a fully defined name or a string containing wildcards (such as <code>*alfa*, alfa*beta*</code> etc).
-        <br>
-        Wildcards are often useful for actions issued by buttons or links in <a href="https://developer.watsonwork.ibm.com/docs/tutorials/action-fulfillment" target="_blank">Action Fulfillment</a>.
-        <br>
-        <b>Slash Commands</b> strings are also recognized and they must be prefixed by the <code> / (slash)</code> character.<br>
-        <p>
-          <b>Note:</b><br>
-          Each item may be qualified by the information related to the <b>lens</b> possibly asssociated to the <code>wwsActionId</code>.<br />
-          In this case the syntax for <code>wwsActionList</code> will be the following: <br />
-          <code>actionName (lens)</code><br />
-          wwhere the name of the <b>lens</b> appears within the parenthesis and precedes the <code>comma</code> introducing the next item.<br />
-          In these situations, the node will automatically fetch the <b>annotation</b> corresponding to the <b>lens</b> and the output will contain, as <b>payload</b>, 
-          the <b>annotation</b> that was just retrieved. 
-        </p>
-        <p>
-          <b>Note:</b><br>
-          The node will automatically generate as many outputs as the number of items in <code>wwsActionsList</code> <b>PLUS ONE</b>. <br>
-          Each output corresponds to an item in <code>wwsActionsList</code>; the additional output corresponds to an <i>otherwise</i> situation, i.e. when 
-          the <code>wwsActionId</code> does not match any item in <code>wwsActionsList</code>.<br>
-          The label associated with each output is set to be the value of the corresponding item from <code>wwsActionsLis</code><br>
-        </p>
-        <img src="icons/node-red-contrib-wws/wws-action-desc.png" />
-      </dd>
-
-      <dt>wwsReferralMessageId <span class="property-type">string</span></dt>
-      <dd>The ID of the message to which the ActionId refers to. This information comes from the webhook.<br>
-        The value on the configuration panel overrides the value in <code>msg.wwsActionId</code>
-      </dd>
-  </dl>
-  <h3>Details</h3>
-  <p>In case the incoming <code>wwsActionId</code> matches one of the items listed in <code>wwsActionsList</code>, the node executes its processing.
-    <ul>
-    <li>If the <code>wwsActionId</code> does not have a <b>lens</b> assigned to the corresponding match in the <code>wwsActionsList</code>, then the incoming <code>msg</code> (coming normally from the Webook) is passed untouched to the output 
-    corresponding to the <b>action</b> from <code>wwsActionsList</code>.</li>
-    <li>If the <code>wwsActionId</code> corresponds to an Action with an associated <b>lens</b>, then a GraphQL query is issued to get the original annotation 
-      corresponding to the <b>wwsActionId</b>. Then this annotation is posted as <code>msg.payload</code> for the output corresponding to the <b>action</b> from <code>wwsActionsList</code>.</li>
-    <li>If the <code>wwsActionId</code> does not correspond to any value inside <code>wwsActionslist</code>, the the original <code>msg</code> is passed untouched to the output 
-      corresponding to the <b>otheriwse condition</b> (the last output).</li>
-    </ul>
-  </p>
-  </dl>
   <h3>References</h3>
   <ul>
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
@@ -429,14 +187,33 @@ msg.payload = `
 </script>
 
 <script type="text/x-red" data-help-name="wws-getTemplate">
-  <p>This node provides a tool to easily retrieve all the informations for a Template.
-    <p>This node <b>ONLY WORKS WITH an AUTHORIZE-AS-USER</b>.   
+  <p>
+    This node provides a tool to easily retrieve all the informations for a Template.
+  </p>
+  <p>
+    This node <b>ONLY WORKS WITH an AUTHORIZE-AS-USER</b>.
+  </p>
+
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsTemplateId <span class="property-type">string</span></dt>
-      <dd>The ID for the space whose information are to be retrieved.<br>
-        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code></dd>
-
+      <dt>
+        wwsTemplateId 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The ID for the space whose information are to be retrieved.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code>
+      </dd>
+      
+      <dt class="optional">wwsToken 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+        application(s) for this particular message.</br />
+        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      </dd>
+  
   </dl>
   <h3>Details</h3>
   <dl>
@@ -446,6 +223,7 @@ msg.payload = `
     <img src="icons/node-red-contrib-wws/wws-template-desc2.png" />
   </p>
   </dl>
+
   <h3>References</h3>
   <ul>
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
@@ -475,13 +253,14 @@ msg.payload = `
       wwsSpaceId: {
         value: "",
         required: true
-      }    },
+      }    
+    },
     inputs: 1,
     outputs: 1,
     label: function () {
-      return this.name || "Get Templated Space";
+      return this.name || "Get Space";
     },
-    paletteLabel: "Get Templated Space",
+    paletteLabel: "Get Space",
     oneditsave: updateGetTemplatedSpace
   });
 
@@ -506,13 +285,32 @@ msg.payload = `
 </script>
 
 <script type="text/x-red" data-help-name="wws-getTemplatedSpace">
-  <p>This node provides a tool to easily retrieve all the informations for a Space coming from a Template.   <h3>Inputs</h3>
+  <p>
+    This node provides a tool to easily retrieve all the informations for a Space coming from a Template.   
+  </p>
+    
+    
+  <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsSpaceId <span class="property-type">string</span></dt>
-      <dd>The ID for the space whose information are to be retrieved.<br>
-        The value on the configuration panel overrides the value in <code>msg.wwsSpaceId</code></dd>
-
+      <dt>
+        wwsSpaceId 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The ID for the space whose information are to be retrieved.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsSpaceId</code>
+      </dd>
+      
+      <dt class="optional">wwsToken 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+        application(s) for this particular message.</br />
+        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      </dd> 
   </dl>
+
   <h3>Details</h3>
   <dl>
   <p>In case the operation terminates succesfully, the output will be similar to this one:
@@ -535,6 +333,7 @@ msg.payload = `
       Any inconsistency in the names or values of properties or in the value of the status will automatically produce a <code>node.error</code>
   </p>
   </dl>
+
   <h3>References</h3>
   <ul>
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
@@ -551,7 +350,7 @@ msg.payload = `
     category: 'Watson Work',
     icon: "wws.png",
     color: "#11ABA5",
-    align: "center",
+    align: "right",
     defaults: {
       name: {
         value: ""
@@ -620,57 +419,86 @@ msg.payload = `
 </script>
 
 <script type="text/x-red" data-help-name="wws-updateTemplatedSpace">
-  <p>This node provides a tool to easily update a Space coming from a Template. It allows to easily change the <code>status</code> and any of the <code>properties</code> of the space
-    as well as to <b>add members</b>. 
+  <p>
+    This node provides a tool to easily update a Space coming from a Template. <br />
+    It allows to easily change the <code>status</code> and any of the <code>properties</code> of the space as well as to <b>add members</b>. 
   </p>
   <p>
       The main characteristics of this node is that the names and the values of the <b>properties</b> and of the <b>status</b> are entered using their textual representation.
       <br />
-      When using <b>graphQL</b> the names of the properties, the values of properties of type LIST and the values of the status need to be provides using <b>their internal ID format</b>; 
-      this node allows the user to enter everything as <b>text</b>; its internal code translate the text into IDs and generates errors when an association is not found.
+      When using <b>graphQL</b> the names of the properties, the values of properties of type LIST and the values of the status need to be provides using <b>their internal ID format</b>; this node allows the user to enter everything as <b>text</b>; its internal code translate the text into IDs and generates errors when an association is not found.
   </p>
+
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsSpaceId <span class="property-type">string</span></dt>
-      <dd>The ID for the space that needs to be updated.<br>
+      <dt>wwsSpaceId 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The ID for the space that needs to be updated.<br>
         The value on the configuration panel overrides the value in <code>msg.wwsSpaceId</code>
       </dd>
 
-
-      <dt>wwsMemberList <span class="property-type">comma-separated string</span></dt>
-      <dd>The list of members to be added to the space. The members need to be specified by their ID<br>
+      <dt>wwsMemberList 
+        <span class="property-type">comma-separated string</span>
+      </dt>
+      <dd>
+        The list of members to be added to the space. <b>The members need to be specified by their ID</b><br>
           The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
       </dd>
 
-
-      <dt>wwsPropertyList <span class="property-type">comma-separated string</span></dt>
-      <dd>Defines a comma separated list of <b>Name = Value</b> pairs where each item represents the name of the property to be modified and the modified value.
-        <br />
-        The <b>Value</b> part can optionally be included in <code> " </code> (double-quotes).
-        <br />
-        <b>Name</b> is the <b>displayName</b> for the property. Dynamically the node transofrms it to its <b>ID</b> representation.
-        <br />
-        <b>Value</b> is the <b>displayName</b> of the <i>acceptableValues</i> definition for <b>LIST</b> Properties. 
-        <br />
-        <b>Value</b> is the property value for <b>TEXT</b> Properties. 
-        <br />
-        <b>Value</b> is <b>true</b> or <b>false</b> for <b>BOOLEAN</b> Properties. 
-        <hr />
-        <p>
-            The value on the configuration panel overrides the value in <code>msg.wwsPropertyList</code>
-            <br />
-            In this case, <code>msg.wwsPropertyList</code> would NOT be a string but an array where each item is an object with the following attributes:
+      <dt>wwsPropertyList 
+        <span class="property-type">comma-separated string</span>
+      </dt>
+      <dd>
+        Defines a comma separated list of <b>Name = Value</b> pairs where each item represents the name of the property to be modified and the modified value.
+        <ul>
+          <li><b>Name</b> is the <b>displayName</b> for the property. The node dynamically translates it to its <b>ID</b> representation.
+          </li>
+          <li><b>Value</b> is 
             <ul>
-              <li><b>name</b> the name of the property (textual representation)</li>
-              <li><b>value</b> the value of the property (textual representation)</li>
+              <li>
+                the <b>displayName</b> of the <i>acceptableValues</i> definition for <b>LIST</b> Properties. 
+              </li>
+              <li>
+                the property value for <b>TEXT</b> Properties. 
+              </li>
+              <li>
+                <b>true</b> or <b>false</b> for <b>BOOLEAN</b> Properties. 
+              </li>
             </ul>
+            The <b>Value</b> part can optionally be included in <b> " (double-quotes) </b>.
+            <p>
+              The value on the configuration panel overrides the value in <code>msg.wwsPropertyList</code>
+              <br />
+              In this case, <code>msg.wwsPropertyList</code> would NOT be a string but an array where each item is an object with the following attributes:
+              <ul>
+                <li><b>name</b> the name of the property (textual representation)</li>
+                <li><b>value</b> the value of the property (textual representation)</li>
+              </ul>
+            </p>
+          </li>
+        </ul>
       </dd>
 
-      <dt>wwsNewStatus <span class="property-type">string</span></dt>
-      <dd>The <b>textual</b> representation os the target Status.<br>
+      <dt>wwsNewStatus 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The <b>textual</b> representation os the target Status.<br>
         The value on the configuration panel overrides the value in <code>msg.wwsNewStatus</code>
       </dd>
-  </dl>
+      
+      <dt class="optional">wwsToken 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+        application(s) for this particular message.</br />
+        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      </dd>
+    </dl>
+
   <h3>Details</h3>
   <dl>
   <p>In case the operation terminates succesfully, the output will be similar to this one:
@@ -694,6 +522,7 @@ msg.payload = `
       Any inconsistency in the names or values of properties or in the value of the status will automatically produce a <code>node.error</code>
   </p>
   </dl>
+
   <h3>References</h3>
   <ul>
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
@@ -780,7 +609,8 @@ msg.payload = `
 </script>
 
 <script type="text/x-red" data-help-name="wws-createSpaceFromTemplate">
-  <p>This node provides a tool to easily create a Space from a Template. It allows to easily initialize any of the <code>properties</code> coming from the Template and 
+  <p>
+    This node provides a tool to easily create a Space from a Template. It allows to easily initialize any of the <code>properties</code> coming from the Template and 
     the <b>initial members</b>.
   </p>
   <p>
@@ -789,47 +619,80 @@ msg.payload = `
       When using <b>graphQL</b> the names of the properties and the values of properties of type LIST need to be provides using <b>their internal ID format</b>; 
       this node allows the user to enter everything as <b>text</b>; its internal code translate the text into IDs and generates errors when an association is not found.
   </p>
-  <p>This node <b>ONLY WORKS WITH an AUTHORIZE-AS-USER</b>.   
+  <p>
+    This node <b>ONLY WORKS WITH an AUTHORIZE-AS-USER</b>.  
+  </p> 
 
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsTemplateId <span class="property-type">string</span></dt>
-      <dd>The ID of the Template to be used as a model for the new Space.<br>
-        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code></dd>
-
-      <dt>wwsSpaceName <span class="property-type">string</span></dt>
-        <dd>The name for the Space to be created.<br>
-          The value on the configuration panel overrides the value in <code>msg.wwsSpaceName</code>
-        </dd>
-
-        <dt>wwsMemberList <span class="property-type">comma-separated string</span></dt>
-        <dd>The list of members to be added to the space. The members need to be specified by their ID<br>
-          The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
-        </dd>
-  
-      <dt>wwsPropertyList <span class="property-type">comma-separated string</span></dt>
-      <dd>Defines a comma separated list of <b>Name = Value</b> pairs where each item represents the name of the property to be modified and the modified value.
-        <br />
-        The <b>Value</b> part can optionally be included in <code> " </code> (double-quotes).
-        <br />
-        <b>Name</b> is the <b>displayName</b> for the property. Dynamically the node transofrms it to its <b>ID</b> representation.
-        <br />
-        <b>Value</b> is the <b>displayName</b> of the <i>acceptableValues</i> definition for <b>LIST</b> Properties. 
-        <br />
-        <b>Value</b> is the property value for <b>TEXT</b> Properties. 
-        <br />
-        <b>Value</b> is <b>true</b> or <b>false</b> for <b>BOOLEAN</b> Properties. 
-        <hr />
-        <p>
-            The value on the configuration panel overrides the value in <code>msg.wwsPropertyList</code>
-            <br />
-            In this case, <code>msg.wwsPropertyList</code> would NOT be a string but an array where each item is an object with the following attributes:
-            <ul>
-              <li><b>name</b> the name of the property (textual representation)</li>
-              <li><b>value</b> the value of the property (textual representation)</li>
-            </ul>
+      <dt>wwsTemplateId 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The ID of the Template to be used as a model for the new Space.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code>
       </dd>
-  </dl>
+
+      <dt>wwsSpaceName 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The name for the Space to be created.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsSpaceName</code>
+      </dd>
+
+      <dt>wwsMemberList 
+        <span class="property-type">comma-separated string</span>
+      </dt>
+      <dd>
+        The list of members to be added to the space. The members need to be specified by their ID<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
+      </dd>
+  
+      <dt>wwsPropertyList 
+        <span class="property-type">comma-separated string</span>
+      </dt>
+      <dd>
+        Defines a comma separated list of <b>Name = Value</b> pairs where each item represents the name of the property to be modified and the modified value.
+        <ul>
+          <li><b>Name</b> is the <b>displayName</b> for the property. The node dynamically translates it to its <b>ID</b> representation.
+          </li>
+          <li><b>Value</b> is 
+            <ul>
+              <li>
+                the <b>displayName</b> of the <i>acceptableValues</i> definition for <b>LIST</b> Properties. 
+              </li>
+              <li>
+                the property value for <b>TEXT</b> Properties. 
+              </li>
+              <li>
+                <b>true</b> or <b>false</b> for <b>BOOLEAN</b> Properties. 
+              </li>
+            </ul>
+            The <b>Value</b> part can optionally be included in <b> " (double-quotes) </b>.
+            <p>
+              The value on the configuration panel overrides the value in <code>msg.wwsPropertyList</code>
+              <br />
+              In this case, <code>msg.wwsPropertyList</code> would NOT be a string but an array where each item is an object with the following attributes:
+              <ul>
+                <li><b>name</b> the name of the property (textual representation)</li>
+                <li><b>value</b> the value of the property (textual representation)</li>
+              </ul>
+            </p>
+          </li>
+        </ul>
+      </dd>
+      
+      <dt class="optional">wwsToken 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+        application(s) for this particular message.</br />
+        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      </dd>
+    </dl>
+
   <h3>Details</h3>
   <dl>
   <p>In case the operation terminates succesfully, the output will be similar to this one:
@@ -853,6 +716,7 @@ msg.payload = `
       Any inconsistency in the names or values of properties or in the value of the status will automatically produce a <code>node.error</code>
   </p>
   </dl>
+
   <h3>References</h3>
   <ul>
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
@@ -869,7 +733,7 @@ msg.payload = `
     category: 'Watson Work',
     icon: "wws.png",
     color: "#11ABA5",
-    align: "center",
+    align: "right",
     defaults: {
       name: {
         value: ""
@@ -940,23 +804,41 @@ msg.payload = `
  
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsSpaceId <span class="property-type">string</span></dt>
-      <dd>The ID of the Space.<br>
-        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code></dd>
+      <dt>wwsSpaceId 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The ID of the Space.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code>
+      </dd>
 
-        <dt>wwsMemberList <span class="property-type">comma-separated string</span></dt>
-        <dd>The list of members to be added to / removed from the space. The members need to be specified by their ID<br>
-          The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
-        </dd>
-  
+      <dt>wwsMemberList 
+        <span class="property-type">comma-separated string</span>
+      </dt>
+      <dd>
+        The list of members to be added to / removed from the space. The members need to be specified by their ID<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
+      </dd>
+      
+      <dt class="optional">wwsToken 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+        application(s) for this particular message.</br />
+        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      </dd>
+    
   </dl>
   <h3>Details</h3>
   <dl>
-  <p>In case the operation terminates succesfully, the output will be similar to this one:
+  <p>
+    In case the operation terminates succesfully, the output will be similar to this one:
     <br />
     <img src="icons/node-red-contrib-wws/wws-addremove-desc.png" />
   </p>
   </dl>
+
   <h3>References</h3>
   <ul>
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
@@ -1016,8 +898,7 @@ msg.payload = `
       <label for="node-input-PeopleOperation"><i class="fa fa-arrow-circle-right"></i> Operation</label>
       <select id="node-input-PeopleOperation">
        <option value="byMail">by Mail</option>
-       <!-- <option value="byName">by Name</option> -->
-       <!-- <option value="byId">by ID</option> -->
+       <option value="byId">by ID</option>
       </select>
   </div>
 
@@ -1034,25 +915,38 @@ msg.payload = `
 <script type="text/x-red" data-help-name="wws-getPeople">
   <p>This node provides a tool to easily retrieve all the details for a set of people.
     <br>
-    The set of people can be specified as a set of <b>email addresses</b> or <b>names</b> or <b>IDs</b>
+    The set of people can be specified as a set of <b>email addresses</b> or <b>IDs</b>
   </p>
  
   <h3>Inputs</h3>
   <dl class="message-properties">
-
-        <dt>wwsMemberList <span class="property-type">comma-separated string</span></dt>
-        <dd>The list of people whose details need to be retrieved.<br>
-          The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
-        </dd>
+    <dt>wwsMemberList 
+      <span class="property-type">comma-separated string</span>
+    </dt>
+    <dd>
+      The list of people whose details need to be retrieved.<br>
+      The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
+    </dd>
+      
+    <dt class="optional">wwsToken 
+      <span class="property-type">string</span>
+    </dt>
+    <dd>
+      Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+      application(s) for this particular message.</br />
+      <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+    </dd>
   
   </dl>
   <h3>Details</h3>
   <dl>
-  <p>In case the operation terminates succesfully, the output will be similar to this one:
+  <p>
+    In case the operation terminates succesfully, the output will be similar to this one:
     <br />
     <img src="icons/node-red-contrib-wws/wws-person-desc1.png" />
   </p>
   </dl>
+
   <h3>References</h3>
   <ul>
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
@@ -1064,4 +958,1047 @@ msg.payload = `
 </script>
 
 
+<script type="text/javascript">
+  RED.nodes.registerType("wws-addFocus", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "right",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      wwsMessageId: {
+        value : "",
+        required: true
+      },
+      wwsString: {
+        value : "",
+        required: true
+      },
+      wwsLens: {
+        value: "",
+        required: true
+      },
+      wwsActionId: {
+        value: "",
+        required: true
+      },
+      wwsCategory: {
+        value: "",
+        required: false
+      },
+      wwsPayload: {
+        value: "",
+        required: false
+      }
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function () {
+      return this.name || "Add Focus";
+    },
+    paletteLabel: "Add Focus",
+    oneditsave: updateWwsAddFocus
+  });
 
+
+  function updateWwsAddFocus() {
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-addFocus">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+  
+  <div class="form-row">
+    <label for="node-input-wwsMessageId"><i class="fa fa-eye"></i> Message Id</label>
+    <input type="text" id="node-input-wwsMessageId" placeholder="Message Id">
+  </div>
+  
+  <div class="form-row">
+    <label for="node-input-wwsString"><i class="fa fa-eye"></i> String</label>
+    <input type="text" id="node-input-wwsString" placeholder="String to be recognized in the message">
+  </div>
+      
+  <div class="form-row">
+    <label for="node-input-wwsActionId"><i class="fa fa-eye"></i> Action Id</label>
+    <input type="text" id="node-input-wwsActionId" placeholder="incoming Action Id">
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-wwsLens"><i class="fa fa-eye"></i> Lens</label>
+    <input type="text" id="node-input-wwsLens" placeholder="Lens Name">
+  </div>
+
+  <hr />
+  
+  <div class="form-row">
+    <label for="node-input-wwsCategory"><i class="fa fa-eye"></i> Category</label>
+    <input type="text" id="node-input-wwsCategory" placeholder="Category (optional)">
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-wwsPayload"><i class="fa fa-eye"></i> Payload</label>
+      <input type="text" id="node-input-wwsPayload" placeholder="Payload (optional)">
+  </div>
+
+  <hr />
+
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-addFocus">
+  <p>
+    This node allows to quickly add a custom focus to any message. See the documentation here .
+  </p>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    
+      <dt>wwsMessageId 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The ID of the message to which the focus needs to be added.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsMessageId</code>
+      </dd>
+  
+      <dt>wwsString 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The string to be underlined within the sentence and associated with the new Focus.<br />
+        If this string is not part of the message, the <b>focus will NOT be added</b>
+        The value on the configuration panel overrides the value in <code>msg.wwsString</code>
+      </dd>
+          
+      <dt>wwsActionId 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The name of the Action to be associated to the <b>message-focus</b> annotation.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsActionId</code>
+      </dd>
+
+      <dt>wwsLens 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+          The name of the Lens to be associated to the <b>message-focus</b> annotation.<br>
+          The value on the configuration panel overrides the value in <code>msg.wwsLens</code>
+      </dd>
+  
+      <dt class="optional">wwsCategory 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The <b>optional</b> category to be associated with the new focus. <br />
+        The value on the configuration panel overrides the value in <code>msg.wwsCategory</code>
+      </dd>
+
+      <dt class="optional">wwsPayload 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        the <b>optional</b> payload to be associated with the new focus. <br/>
+        It <b>must be a string</b>. Since you could pass the string representation of a JSON object, this node will <b>escape</b> the value of this attribute 
+        before using it.<br />
+        The value on the configuration panel overrides the value in <code>msg.wwsPayload</code>
+      </dd>
+      
+      <dt class="optional">wwsToken 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+        application(s) for this particular message.</br />
+        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      </dd>
+    </dl>
+
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload 
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      The full definition of an IBM Watson Workspace <b>message object</b> as shown here below: <br />
+      <img src="icons/node-red-contrib-wws/wws-message-details.png" />
+    </dd>
+    
+    <dt>wwsFocusAdded 
+      <span class="property-type">boolean</span>
+    </dt>
+    <dd>
+      If the content of the message to which the new Focus needs to be added <b>does not contain</b> the <code>wwsString</code>, the message is not annotated and the valueof this property will be <b>false</b>. <br />
+      If a <b>focus is added</b> then the value of this property will be <b>true</b>.
+      </dd>
+  </dl>
+
+  <h3>Details</h3>
+  <p>
+  </p>
+
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
+<script type="text/javascript">
+  RED.nodes.registerType("wws-actionFulfillment", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "right",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      AF_Operation: {
+        value : "Attachments",
+        required: "true"
+      }    
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function () {
+      return this.name || "Action Fulfillment";
+    },
+    paletteLabel: "Action Fulfillment",
+    oneditsave: updateWwsAF
+  });
+
+
+  function updateWwsAF() {
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-actionFulfillment">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-AF_Operation"><i class="fa fa-arrow-circle-right"></i> Type</label>
+      <select id="node-input-AF_Operation">
+        <option value="Attachments">Attachments</option>
+        <option value="Annotations">Annotations</option>
+      </select>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-actionFulfillment">
+  <p>
+    This node allows create Action Fulfillment dialogs as <a href="https://developer.watsonwork.ibm.com/docs/tutorials/action-fulfillment">detailed here</a>.
+  </p>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">    
+    <dt>wwsAFElements
+      <span class="property-type">array</span>
+    </dt>
+    <dd>
+      This input allows you to define the <b>Annotations</b> or <b>Attachments</b> to be added to the Action fulfillment dialog. The array will be interpreted as <i>Annotations</i> or <i>Attachments</i> according to the <code>Type</code> selector in the configuration panel.
+      <br />
+      In order to simplify the creation of the array, the following structure is going to be supported:
+      <ul>
+        <li>
+          each main item in the array represents either a <b>genericAnnotation</b> or an <b>informationCardInput</b>. <br />
+          The properties for the item are:
+          <ul>
+            <li><b>title</b><br/>
+              This Property is common to both the genericAnnotation and the informationCardInput
+            </li>
+            <li><b>text</b><br />
+              This Property is common to both the genericAnnotation and the informationCardInput
+            </li>
+            <li><b>subtitle</b><br />
+              This property will only be interpreted for Attachments
+            </li>
+            <li><b>date</b><br />
+              This property will only be interpreted for Attachments. If not present, it will default to <b>now</b>.
+            </li>
+            <li><b>buttons</b><br />
+              This is an array of elements. Each element includes the following properties:
+              <ul>
+                <li><b>text</b><br />
+                  It will be transformed to the <b>text</b> property for the Attachment <b>card button</b> and to the <b>text</b> property for the Annotation <b>postbackButton</b>.
+                </li>
+                <li><b>payload</b><br />
+                  It will be transformed to the <b>text</b> property for the Attachment <b>card button</b> and to the <b>id</b> property for the Annotation <b>postbackButton</b>.
+                </li>
+                <li><b>isPrimary</b><br />
+                  if <b>true</b> a Primary button will be created, a Secondary button otherwise.
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </dd>
+
+  <dt>wwsAFMutation
+    <span class="property-type">string</span>
+  </dt>
+  <dd>
+    See the documentation for the <b>Filter Action</b> node in this package. <br />
+    The <code>wwsAFMutation</code> input is generated by the <b>Filter Action</b> node. It provides the Skeleton for the Action Fulfillment mutation which includes 
+    the header part (the one containing the <i>ConversationID</i>, the <i>TargetDialogId</i> and the <i>TargetUserId</i>). <br/>
+    The Skeleton contains a placeholder (identified by the string <code>$$$$$$$$</code>). The <code>wwsAFElements</code> input array will replace the placeholder thus 
+    providing a convenient and easy way to create the mutation.
+  </dd>
+
+  <dt class="optional">wwsToken 
+    <span class="property-type">string</span>
+  </dt>
+  <dd>
+    Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+    application(s) for this particular message.</br />
+    <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+  </dd>
+</dl>
+
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload 
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      If the operation is succesfull, the payload will look like the following: <br />
+      <img src="icons/node-red-contrib-wws/wws-AF-output.png" />
+    </dd>
+  </dl>
+
+  <h3>Details</h3>
+  <p>
+  </p>
+
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
+<script type="text/javascript">
+  var parExp = /(.*?)\s\((.*?)\)/;
+  RED.nodes.registerType("wws-validateActions", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "right",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        required: true,
+        type: "wws-credentials"
+      },
+      wwsActionsList: {
+        value : "",
+        required: true
+      },
+      wwsActionId: {
+        value : "",
+        required: true
+      },
+      wwsReferralMsgId: {
+        value: "",
+        required: false
+      },
+      outputs: {
+        //
+        //  this is the same "outputs" variable that is used to define the number of outputs of the node instance
+        //  It is promoted here in order to make sure it can be programmatically modified
+        //
+        value:1
+      }
+    },
+    inputs: 1,
+    outputs: 1,
+    outputLabels: function(index) { 
+      //
+      //  This function dynamically assigns a label to each of the output.
+      //  The label assigned to each output reflects the value entered in the wwsActionsList input
+      //  An additional label is generated for the last output, to cover the "OTHERWISE" case
+      //
+      var actions = this.wwsActionsList; 
+      var A_actions = actions.split(',');
+      if (index === A_actions.length) {
+        return 'Otherwise';
+      } else {
+        var tt = A_actions[index].trim().match(parExp);
+        if (tt) {
+          return tt[1];
+        } else {
+          return A_actions[index].trim();
+        }
+      }
+    },
+    label: function () {
+      return this.name || "Filter Actions";
+    },
+    paletteLabel: "Filter Actions",
+    oneditsave: updateWwsActionsList
+  });
+
+
+  function updateWwsActionsList() {
+    //
+    //  Get the value from the input field
+    //
+    var actions = $("#node-input-wwsActionsList").val();
+    //
+    //  create an array out of the string
+    //
+    var A_actions = actions.split(',');
+    var B_actions = [];
+    //
+    //  Prune empty elements and trim others
+    //
+    for (let i=0; i < A_actions.length; i++) {
+      A_actions[i] = A_actions[i].trim();
+      if (A_actions[i].length !== 0) {
+        B_actions.push(A_actions[i])
+      }
+    }
+    //
+    //  Update the number of outputs of the node
+    //  NOTE : "this.outputs" works because this method is called by the "oneditsave".
+    //
+    this.outputs = B_actions.length + 1;
+    //
+    //  Replace the original value from the input field with a sanitized version
+    //
+    $("#node-input-wwsActionsList").val(B_actions.join(', '));
+  }
+</script>
+
+<script type="text/x-red" data-template-name="wws-validateActions">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsActionId"><i class="fa fa-eye"></i> Action Id</label>
+    <input type="text" id="node-input-wwsActionId" placeholder="incoming Action Id">
+  </div>
+  <div class="form-row">
+    <label for="node-input-wwsActionsList"><i class="fa fa-eye"></i> Recognized Actions</label>
+    <input type="text" id="node-input-wwsActionsList" placeholder="comma-separated list of actions">
+  </div>
+  <div class="form-row">
+      <label for="node-input-wwsReferralMsgId"><i class="fa fa-eye"></i> Referral MsgId</label>
+      <input type="text" id="node-input-wwsReferralMsgId" placeholder="the Id of the message">
+  </div>
+
+  <hr />
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-validateActions">
+  <p>
+    This node provides a mean to filter a set of Actions identified by <a href="https://developer.watsonwork.ibm.com" target="_blank">IBM Watson Work Services</a>.
+  </p>
+  <p>
+    Normally this node is deployed after the Webhook node and once you want to filter <b>annotations</b> whose <code>annotationType = "actionSelected"</code>. 
+  </p>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt>wwsActionId 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The name of the Action from the webhook.<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsActionId</code>
+      </dd>
+
+      <dt>wwsActionsList 
+        <span class="property-type">comma-separated string</span>
+      </dt>
+      <dd>
+        Defines a list of possible Actions this node should be able to validate.
+        <br>
+        This is a comma-separated list of values; each value can be a fully defined name or a string containing wildcards (such as <code>*alfa*, alfa*beta*</code> etc).
+        <br>
+        Wildcards are often useful for actions issued by buttons or links in <a href="https://developer.watsonwork.ibm.com/docs/tutorials/action-fulfillment" target="_blank">Action Fulfillment</a>.
+        <br>
+        <b>Slash Commands</b> strings are also recognized and they must be prefixed by the <code> / (slash)</code> character.<br>
+        <p>
+          <b>Note:</b><br>
+          Each item may be qualified by the information related to the <b>lens</b> possibly asssociated to the <code>wwsActionId</code>.<br />
+          In this case the syntax for <code>wwsActionList</code> will be the following: <br />
+          <code>actionName (lens)</code><br />
+          where the name of the <b>lens</b> appears within the parenthesis and precedes the <code>comma</code> introducing the next item.<br />
+          In these situations, the node will automatically fetch the <b>message-focus annotation</b> corresponding to the <b>lens</b> and the output will contain, 
+          as <b>payload</b>, the <b>annotation</b> that was just retrieved. 
+        </p>
+        <p>
+          <b>Note:</b><br>
+          The node will automatically generate as many outputs as the number of items in <code>wwsActionsList</code> <b>PLUS ONE</b>. <br>
+          Each output corresponds to an item in <code>wwsActionsList</code>; the additional output corresponds to an <i>otherwise</i> situation, i.e. when 
+          the <code>wwsActionId</code> does not match any item in <code>wwsActionsList</code>.<br>
+          The visual label associated with each output is set to be the value of the corresponding item from <code>wwsActionsLis</code><br>
+        </p>
+        <img src="icons/node-red-contrib-wws/wws-action-desc.png" />
+      </dd>
+
+      <dt class="optional">wwsReferralMsgId 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The ID of the message to which the ActionId refers to. This information comes from the webhook <b>and is only required when</b> there is a <b>lens</b> associated
+        to the <code>wwsActionId</code> that needs to be processed (remember that the <b>lens</b> is included in the <code>wwsActionList</code> input).<br>
+        The value on the configuration panel overrides the value in <code>msg.wwsReferralMsgId</code>
+        <p>
+            <b>Note:</b><br/>
+            The <code>wwsReferralMsgId</code> is normally provided as an output by the <b>Webhook node</b> from this package. So, most of the times, you do not have to worry 
+            about it.
+        </p>
+      </dd>
+      
+      <dt class="optional">wwsToken 
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+        application(s) for this particular message.</br />
+        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      </dd>
+    </dl>
+
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      In case the incoming <code>wwsActionId</code> matches one of the items listed in <code>wwsActionsList</code>, the node executes the following processing.
+      <ul>
+        <li>
+          If the <code>wwsActionId</code> does not have a <b>lens</b> assigned to the corresponding match in the <code>wwsActionsList</code>, then the incoming 
+          <code>msg</code> (coming normally from the Webook) is passed untouched to the output corresponding to the <b>wwsActionId</b>.
+          <br/>
+          This is normally the case of <b>Slash commands</b> or actions coming from <b>Action Fulfillment</b> cards.
+          <br/>
+          This means that the <b>payload</b> will not also be changed on respect to the one received in input.
+        </li>
+        <li>
+          If the <code>wwsActionId</code> corresponds to an Action with an associated <b>lens</b>, then the original <b>message-focus annotation</b> corresponding to the 
+          <b>lens</b> is retrieved from getting the details of the <code>wwsReferralMsgId</code> input parameter. <br/>
+          Then this annotation is posted as <code>msg.payload</code> for the output corresponding to the <b>wwsActionId</b>.
+        </li>
+        <li>
+          If the <code>wwsActionId</code> does not correspond to any value inside <code>wwsActionslist</code>, the the original <code>msg</code> is passed untouched to the output 
+          corresponding to the <b>otheriwse condition</b> (the last output).
+          <br/>
+          This means that the <b>payload</b> will not also be changed on respect to the one received in input.
+        </li>
+      </ul>
+    </dd>
+
+    <dt class="optional">wwsAFMutation
+      <span class="property-type">string</span>
+    </dt>
+    <dd>
+      When the input to this node arrives from the <b>Webhook</b>, several information are provided. Among them, there are the ones that would allow the node to build 
+      the skeleton of the <code>CreateTargeterMessage mutation</code> that is going to be used by 
+      <a href="https://developer.watsonwork.ibm.com/docs/tutorials/action-fulfillment" target="_blank">Action Fulfillment</a>.
+      <br/>
+      If the node finds all the required information, the <code>wwsAFMutation</code> attribute is provided which looks like the following:
+      <br />
+      <img src="icons/node-red-contrib-wws/wws-targetMessage-mutation.png" />
+      <br />
+      You can see that a series of <code>$$$$$$$$</code> is included where the <b>attachments</b> or <b>annotations</b> elements required for the mutation can be substituted using the 
+      appropriate node (or a simple <code>javascript replace</code> statement). 
+    </dd>
+
+  </dl>
+
+  <h3>Details</h3>
+  <p>
+  </p>
+
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
+<script type="text/javascript">
+    RED.nodes.registerType('wws-filterAnnotations',{
+        category: 'Watson Work',
+        color:"#11ABA5",
+        align:"right",
+        defaults: {
+          name: {
+              value: ""
+            },
+            application: {
+              value: "",
+              required: true,
+              type: "wws-credentials"
+            },
+            filterOutputs2: {
+                value: false,
+                required: false
+            },
+            o_generic : {
+                value: false,
+                required: false
+            },
+            o_actionSelected : {
+                value: false,
+                required: false
+            },
+            o_conversationMoment : {
+                value: false,
+                required: false
+            },
+            o_messageFocus : {
+                value: false,
+                required: false
+            },
+            o_messageNlpEntities : {
+                value: false,
+                required: false
+            },
+            o_messageNlpKeywords : {
+                value: false,
+                required: false
+            },
+            o_messageNlpDocSentiment : {
+                value: false,
+                required: false
+            },
+            o_messageNlpRelations : {
+                value: false,
+                required: false
+            },
+            o_messageNlpConcepts : {
+                value: false,
+                required: false
+            },
+            o_messageNlpTaxonomy : {
+                value: false,
+                required: false
+            },
+            o_messageNlpDates : {
+                value: false,
+                required: false
+            },
+            o_messageNlpAll : {
+                value: false,
+                required: false
+            },
+            hidden_string : {
+                value : "",
+                required : false
+            },
+            outputs: {
+                //
+                //  this is the same "outputs" variable that is used to define the number of outputs of the node instance
+                //  It is promoted here in order to make sure it can be programmatically modified
+                //
+                value : 1
+            }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "wws.png",
+        outputLabels: function(index) { 
+            //
+            //  This function dynamically assigns a label to each of the output.
+            //  The label assigned to each output reflects the value entered in the wwsActionsList input
+            //  An additional label is generated for the last output, to cover the "OTHERWISE" case
+            //
+            var temp = this.hidden_string.split(',');
+            return temp[index].trim();
+        },
+        label: function() {
+            if (this.name) {
+                return this.name;
+            } else {
+                return "Filter Annotations";
+            }
+        },
+        paletteLabel: "Filter Annotations",
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        oneditprepare: _setupFilterAnnotationsNode,
+        oneditsave : _saveFilterAnnotationsNode
+    });
+
+
+    function _setupFilterAnnotationsNode() {
+      _filterOutputsFilterAnnotationsNode();
+    }
+
+    function _saveFilterAnnotationsNode() {
+        if (document.querySelector("#node-input-filterOutputs2").checked){ 
+            let count = 0;
+            let out = [];
+
+            if (document.querySelector("#node-input-o_generic").checked) {count += 1; out.push("generic")};
+            if (document.querySelector("#node-input-o_actionSelected").checked) {count += 1; out.push("actionSelected")};
+            if (document.querySelector("#node-input-o_messageFocus").checked)  {count += 1; out.push("message-focus")};
+            if (document.querySelector("#node-input-o_conversationMoment").checked)  {count += 1; out.push("conversation-moment")};
+            if (document.querySelector("#node-input-o_messageNlpAll").checked) {
+              count += 1; 
+              out.push("message-nlp-all")
+            } else {
+              if (document.querySelector("#node-input-o_messageNlpKeywords").checked)  {count += 1; out.push("message-nlp-keywords")};
+              if (document.querySelector("#node-input-o_messageNlpEntities").checked)  {count += 1; out.push("message-nlp-entities")};
+              if (document.querySelector("#node-input-o_messageNlpDocSentiment").checked)  {count += 1; out.push("message-nlp-docSentiment")};
+              if (document.querySelector("#node-input-o_messageNlpRelations").checked)  {count += 1; out.push("message-nlp-relations")};
+              if (document.querySelector("#node-input-o_messageNlpConcepts").checked)  {count += 1; out.push("message-nlp-concepts")};
+              if (document.querySelector("#node-input-o_messageNlpTaxonomy").checked)  {count += 1; out.push("message-nlp-taxonomy")};
+              if (document.querySelector("#node-input-o_messageNlpDates").checked)  {count += 1; out.push("message-nlp-dates")};
+            }
+            this.outputs = count;
+            this.hidden_string = out.join(',');
+        } else { 
+            this.outputs = 1;
+            this.hidden_string = "output";
+        } 
+
+    }
+
+    function _filterOutputsFilterAnnotationsNode() { 
+        if (document.querySelector("#node-input-filterOutputs2").checked){ 
+            document.querySelector("#outputDetails2").style.display = "inline"; 
+        } else { 
+            document.querySelector("#outputDetails2").style.display = "none"; 
+        } 
+    }
+    
+</script>
+
+<script type="text/x-red" data-template-name="wws-filterAnnotations">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-filterOutputs2" style="width:30%"><i class="fa fa-check"></i> Filter Outputs ?</label>
+      <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="filterOutputs2" id="node-input-filterOutputs2" onchange="_filterOutputsFilterAnnotationsNode()"></input>
+  </div>
+
+  <div class="form-row" id="outputDetails2">
+      <label style="width:100%"><strong>Standard Annotations</strong></label>
+      <br /><br />
+      <table style="width: 100%">
+        <tr>
+            <td>
+                <div class="form-row">
+                    <label for="node-input-o_actionSelected"><i></i> Action Selected</label>
+                    <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual1" id="node-input-o_actionSelected"></input>
+                </div>
+            </td>
+            <td>
+                <div class="form-row">
+                    <label for="node-input-o_messageFocus"><i></i> Message Focus</label>
+                    <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual2" id="node-input-o_messageFocus"></input>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="form-row">
+                    <label for="node-input-o_generic"><i></i> Generic</label>
+                    <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual11" id="node-input-o_generic"></input>
+                </div>
+            </td>
+            <td>
+                <div class="form-row">
+                    <label for="node-input-o_conversationMoment"><i></i> Conversation Moment</label>
+                    <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual3" id="node-input-o_conversationMoment"></input>
+                </div>
+            </td>
+        </tr>
+      </table>
+
+      <hr />
+
+      <label style="width:100%"><strong>Natural Language Processing Annotations</strong></label>
+      <br /><br />
+      <br/>
+
+      <table style="width: 100%;">
+          <tr>
+            <td>
+                <div class="form-row">
+                    <label for="node-input-o_messageNlpAll" style="width:90%"><i></i> All selected NLPs together</label>
+                    <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual3" id="node-input-o_messageNlpAll"></input>
+                </div>
+            </td>
+          </tr>
+          <tr>
+              <td>
+                  <div class="form-row">
+                      <label for="node-input-o_messageNlpKeywords"><i></i> Keywords</label>
+                      <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual4" id="node-input-o_messageNlpKeywords"></input>
+                  </div>
+              </td>
+              <td>
+                  <div class="form-row">
+                      <label for="node-input-o_messageNlpEntities"><i></i> Entities</label>
+                      <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual5" id="node-input-o_messageNlpEntities"></input>
+                  </div>
+              </td>
+              <td>
+                  <div class="form-row">
+                      <label for="node-input-o_messageNlpDocSentiment"><i></i> Doc Sentiment</label>
+                      <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual6" id="node-input-o_messageNlpDocSentiment"></input>
+                  </div>
+              </td>
+          </tr>
+          <tr>
+              <td>
+                  <div class="form-row">
+                      <label for="node-input-o_messageNlpRelations"><i></i> Relations</label>
+                      <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual7" id="node-input-o_messageNlpRelations"></input>
+                  </div>
+              </td>
+              <td>
+                  <div class="form-row">
+                      <label for="node-input-o_messageNlpConcepts"><i></i> Concepts</label>
+                      <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual8" id="node-input-o_messageNlpConcepts"></input>
+                  </div>
+              </td>
+          </tr>
+          <tr>
+              <td>
+                  <div class="form-row">
+                      <label for="node-input-o_messageNlpTaxonomy"><i></i> Taxonomy</label>
+                      <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual9" id="node-input-o_messageNlpTaxonomy"></input>
+                  </div>
+              </td>
+              <td>
+                  <div class="form-row">
+                      <label for="node-input-o_messageNlpDates"><i></i> Dates</label>
+                      <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="qual10" id="node-input-o_messageNlpDates"></input>
+                  </div>
+              </td>
+          </tr>
+      </table>
+  </div>
+<hr />
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-filterAnnotations">
+  <p>
+    This node provides a mean to filter the <a href="https://developer.watsonwork.ibm.com" target="_blank">IBM Watson Work Services</a> <b>Annotations</b> retrieved by the <b>Webhook node</b> .
+  </p>
+  <p>
+    Normally this node is deployed after the <b>Webhook node</b> nd before the <b>Filter Actions node</b> and is useful when you need to perform specific processing according to the value of the  <code>wwsAnnotationType</code> property returned by the Webhook node. 
+  </p>
+
+  <h3>Behaviour</h3>
+  <p>
+    This node is a convenience node. Normally a standard <b>switch node</b> could be used but here we wanted to help developers clearly seeing the possible <b>annotation types</b> they could be dealing with.
+    <br />
+    Here some hints on using the node:
+    <ul>
+      <li>the <b>Filter Outputs</b> checkbox.<br />
+        <ul>
+          <li>
+              If the checkbox is not checked, this node behaves as a pass through node: all incoming Messages are delivered through the single output provided by the node
+          </li>
+          <li>
+            The magic happens when the checkbox <b>is checked</b>. <br />
+            In this case the Configuration proposes the following panel: <br/>
+            <img src="icons/node-red-contrib-wws/wws-filter-annotations0.png" />
+            <br />
+            The panel allows you to select which <b>annotation types</b> you actually want to filter. The annotations are split in two families: <b>Standard Annotations</b> and <b>NLP Annotations</b>.
+          </li>
+          <li>
+            When you select the checkboxes associated to each AnnotationType, like (for instance) what is shown in the picture below <br />
+            <img src="icons/node-red-contrib-wws/wws-filter-annotations1.png" />
+            <br />
+            the node will automatically generate as many outputs as the Annotations that have been chosen. Each Annotation will be routed through the corresponding output as shown here :<br/>
+            <img src="icons/node-red-contrib-wws/wws-filter-annotations2.png" />
+            <br />
+          </li>
+          <li>
+            A special meaning is given to the <b>All selected NLP together</b> checkbox. <br />
+            <img src="icons/node-red-contrib-wws/wws-filter-annotations3.png" />
+            <br />
+            When this checkbox is checked, all the selected <b>NLP annotations</b> will be actually delivered to a single output, name <b>message-nlp-all</b> as shown in the picture below: <br />
+            <img src="icons/node-red-contrib-wws/wws-filter-annotations4.png" />
+            <br />
+            This may be useful in situations in which you want to actually deliver a special processing to NLP annotations (or a subset of them) but you do not need to distinguish among them.
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </p>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+      <dt>wwsAnnotationType
+        <span class="property-type">string</span>
+      </dt>
+      <dd>
+        The name of the Annotation coming from the Webhook node.<br>
+        Wehn using the <b>Webhook node</b> from this package, this property is directly passed from the Webhook itself, together with all the other informations for the event.<br />
+      </dd>
+
+  <h3>Outputs</h3>
+  <p>
+    This node deliveres the <b>same output</b> as the <code>Webhook node</code> from this package. 
+  </p>
+
+  <h3>Details</h3>
+  <p>
+  </p>
+
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>
+
+
+<script type="text/javascript">
+  RED.nodes.registerType("wws-getMessage", {
+    category: 'Watson Work',
+    icon: "wws.png",
+    color: "#11ABA5",
+    align: "center",
+    defaults: {
+      name: {
+        value: ""
+      },
+      application: {
+        value: "",
+        type: "wws-credentials"
+      },
+      wwsMessageId: {
+        value: ''
+      }
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function () {
+      return this.name || "get Message";
+    },
+    paletteLabel: "get Message"
+  });
+</script>
+
+<script type="text/x-red" data-template-name="wws-getMessage">
+  <div class="form-row">
+    <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+    <input type="text" id="node-input-application">
+  </div>
+
+  <div class="form-row" id="wwsMessageId">
+      <label for="node-input-wwsMessageId"><i class="fa fa-eye"></i> MessageId</label>
+      <input type="text"  name="wwsMessageId" id="node-input-wwsMessageId" placeholder="Message Id : ex 5b340xxxxx84894"></input>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="wws-getMessage">
+  <p>A node that retrieves all the information about a given Message.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>wwsMessageId 
+      <span class="property-type">string</span>
+    </dt>
+    <dd>
+      The Id of the message to be retrieved.
+    </dd>
+    
+    <dt class="optional">wwsToken 
+      <span class="property-type">string</span>
+    </dt>
+    <dd>
+      Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+      application(s) for this particular message.</br />
+      <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+    </dd>
+  </dl>
+
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload 
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      The full definition of an IBM Watson Workspace <b>message object</b> as shown here below: <br />
+      <img src="icons/node-red-contrib-wws/wws-message-details.png" />
+    </dd>
+  </dl>
+
+  <h3>Details</h3>
+  <p>
+  </p>
+  
+  <h3>References</h3>
+  <ul>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
+      <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+  </ul>
+</script>

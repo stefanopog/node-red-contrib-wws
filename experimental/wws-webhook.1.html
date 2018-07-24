@@ -182,7 +182,7 @@
 
     <div class="form-row">
         <label for="node-input-filterOutputs"><i></i> Filter Outputs ?</label>
-        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="filterOutput" id="node-input-filterOutputs" onchange="_filterOutputsWebhookNode()"></input>
+        <input style="display: inline-block; width: auto; vertical-align: top;" type="checkbox" name="limitCB" id="node-input-filterOutputs" onchange="_filterOutputsWebhookNode()"></input>
     </div>
     <div class="form-row" id="outputDetails">
         <table style="width: 100%">
@@ -278,10 +278,10 @@
     </div>
 
     <div class="form-row">
-            <label for="node-input-cacheLimit"><i class="fa fa-tag"></i> Cache Limit</span></label>
-            <input type="text" id="node-input-cacheLimit" placeholder="enter a number">
-        </div>
-        <hr/>
+        <label for="node-input-cacheLimit"><i class="fa fa-tag"></i> Cache Limit</span></label>
+        <input type="text" id="node-input-cacheLimit" placeholder="enter a number">
+    </div>
+    <hr/>
 
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</span></label>
@@ -356,8 +356,7 @@
                     When an annotation is <b>created</b> or <b>edited</b>, it brings the id of the message to which such annotation refers to. <br />
                     The same happens when a reaction is <b>added</b> or <b>removed</b>. <br />
                     The node automatically retrieves the <b>original Message</b> associated with the annotation or reaction and places it in the <code>msg.wwsOriginalMessage</code> 
-                    attribute. In this way, it becomes simpler for the developer to get the annotation/reaction <b>as well as</b> the message to which such annotation/reaction 
-                    refers to.
+                    attribute. In this way, it becomes simpler for the developer to get the annotation/reaction <b>as well as</b> the message to which such annotation/reaction refers to.
                 </p>
             </li>
             <li>
@@ -370,7 +369,6 @@
                     <br />
                     The default for the Cache is <b>5000</b> elements. This value can be modified using the node Configuration panel.
                 </p>
-            </li>
         </ul>
     </p>
 
@@ -401,8 +399,8 @@
             <span class="property-type">boolean</span>
         </dt>
         <dd>
-            See the <b>Own filtering</b> information in the <b>Behavior Section</b> above
-        </dd>                    
+            See the <b>Output filtering</b> information in the <b>Behavior Section</b> above
+        </dd>
 
         <dt>Cache Limit
             <span class="property-type">integer</span>
@@ -410,8 +408,8 @@
         <dd>
             See the <b>Message Caching</b> information in the <b>Behavior Section</b> above
         </dd>
-                        
-        </dl>
+                    
+    </dl>
     
     <h3>Outputs</h3>
     <dl class="message-properties">
@@ -588,13 +586,6 @@
                         <br />
                         In all other situations it is undefined.
                     </dd>
-
-                    <dt>wwsReferralMsgId 
-                        <span class="property-type">string</span>
-                    </dt>
-                    <dd>
-                        The ID of the message to which the Annotation refers to. This normally comes from the <b>referralMessageId</b> attribute 
-                    </dd>
     
                     <dt>wwsOriginalMessage
                         <span class="property-type">object</span>
@@ -602,12 +593,11 @@
                     <dd>
                         The JSON content of the message to which the annotation refers to (<b>msg.wwsMessageId</b>). 
                         <br />
-                        In case the Annotation brings a <code>referralMessageId</code> information, the node uses the <b>referralMessageId</b> instead of the <b>messageId</b> 
-                        attribute to retrieve the content of the message to which the annotation refers to. 
-                        <br />
-                        <b>Note : </b><br />
-                        Given the use of caching, you do not have to trust on the completeness of the <b>annotations attribute</b> of the <code>wwsOriginalMessage</code>: 
-                        some annotations may be missing.
+                        In case the annotation brings a <code>referralMessageId</code> information, the node uses the <b>referralMessageId</b> instead of the <b>messageId</b> attribute to
+                        retrieve the content of the message to which the annotation refers to. This is particularly useful for Annotations of type <code>actionSelected</code>; in this
+                        case, the <b>referrallMessageId</b> brings all the required information of the original message, <b>including the FOCUS annotation</b> which is very useful
+                        when you need to retrieve the <b>lens</b> associated with the selected action (the <b>lens</b> is actually found in the array of annotations associated 
+                        with the original message)
                     </dd>
                 </dl>                    
             </p>            
@@ -650,12 +640,6 @@
                         See the <a href="https://developer.watsonwork.ibm.com/docs/annotations/">reference documentation</a> for a detailed description of each <b>Annotation Type</b>.
                     </dd>
 
-                    <dt>wwsReferralMsgId 
-                        <span class="property-type">string</span>
-                    </dt>
-                    <dd>
-                        The ID of the message to which the Annotation refers to. This normally comes from the <b>referralMessageId</b> attribute 
-                    </dd>
                     <dt>wwsOriginalMessage
                         <span class="property-type">object</span>
                     </dt>
@@ -663,11 +647,10 @@
                         The JSON content of the message to which the annotation refers to (<b>msg.wwsMessageId</b>). 
                         <br />
                         In case the annotation brings a <code>referralMessageId</code> information, the node uses the <b>referralMessageId</b> instead of the <b>messageId</b> attribute to
-                        retrieve the content of the message to which the annotation refers to. 
-                        <br />
-                        <b>Note : </b><br />
-                        Given the use of caching, you do not have to trust on the completeness of the <b>annotations attribute</b> of the <code>wwsOriginalMessage</code>: 
-                        some annotations may be missing.
+                        retrieve the content of the message to which the annotation refers to. This is particularly useful for Annotations of type <code>actionSelected</code>; in this
+                        case, the <b>referrallMessageId</b> brings all the required information of the original message, <b>including the FOCUS annotation</b> which is very useful
+                        when you need to retrieve the <b>lens</b> associated with the selected action (the <b>lens</b> is actually found in the array of annotations associated 
+                        with the original message)
                     </dd>
                 </dl>                    
             </p>            
@@ -783,24 +766,6 @@
                     <dd>
                         The user ID of the person who reacted
                     </dd>
-
-                    <dt>wwsReferralMsgId 
-                        <span class="property-type">string</span>
-                    </dt>
-                    <dd>
-                        The ID of the message to which the Annotation refers to. This normally comes from the <b>referralMessageId</b> attribute 
-                    </dd>
-
-                    <dt>wwsOriginalMessage
-                        <span class="property-type">object</span>
-                    </dt>
-                    <dd>
-                        The JSON content of the message to which the reaction refers to (<b>msg.wwsMessageId</b>). 
-                        <br />
-                        <b>Note : </b><br />
-                        Given the use of caching, you do not have to trust on the completeness of the <b>annotations attribute</b> of the <code>wwsOriginalMessage</code>: 
-                        some annotations may be missing.
-                    </dd>
                 </dl>                    
             </p>            
         </li>
@@ -831,26 +796,8 @@
                     <dd>
                         The user ID of the person who reacted
                     </dd>
-
-                    <dt>wwsReferralMsgId 
-                        <span class="property-type">string</span>
-                    </dt>
-                    <dd>
-                        The ID of the message to which the Annotation refers to. This normally comes from the <b>referralMessageId</b> attribute 
-                    </dd>
-
-                    <dt>wwsOriginalMessage
-                        <span class="property-type">object</span>
-                    </dt>
-                    <dd>
-                        The JSON content of the message to which the reaction refers to (<b>msg.wwsMessageId</b>). 
-                        <br />
-                        <b>Note : </b><br />
-                        Given the use of caching, you do not have to trust on the completeness of the <b>annotations attribute</b> of the <code>wwsOriginalMessage</code>: 
-                        some annotations may be missing.
-                    </dd>
                 </dl>                    
-        </p>            
+            </p>            
         </li>
         <li><b>NEW</b> <code>space-updated</code>
             <p>

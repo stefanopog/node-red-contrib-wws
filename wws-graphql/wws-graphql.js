@@ -23,8 +23,9 @@ module.exports = function (RED) {
       }
       return initialized;
     }
-      
-    //Check for token on start up
+    // 
+    //  Check for token on start up
+    //
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
       console.log("No Account Info");
@@ -48,13 +49,11 @@ module.exports = function (RED) {
         return;
       }
 
-
       var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);
       var bearerToken = msg.wwsToken || accessToken.token.access_token;
       var host = this.application.api;
 
       
-
       var viewType = "PUBLIC";
       if (config.wwsBetaFeatures) viewType += ',BETA';
       if (config.wwsExperimentalFeatures) viewType += ',EXPERIMENTAL';
@@ -82,6 +81,25 @@ module.exports = function (RED) {
     });
   }
 
+  //
+  //  parse Annotations to JSON
+  //
+  function _parseAnnotations(theAnnotations) {
+    if (theAnnotations) {
+      if (theAnnotations.length > 0) {
+        let annotations = [];
+        for (let i = 0; i < theAnnotations.length; i++) {
+          annotations.push(JSON.parse(theAnnotations[i]));
+        }
+        return annotations;
+      } else {
+        return theAnnotations;
+      }
+    } else {
+      return theAnnotations;
+    }
+  }
+
 
   //
   //  Get Message Details
@@ -101,8 +119,9 @@ module.exports = function (RED) {
       }
       return initialized;
     }
-      
-    //Check for token on start up
+    //
+    //  Check for token on start up
+    //
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
       console.log("No Account Info");
@@ -159,16 +178,16 @@ module.exports = function (RED) {
           //
           //  Successfull Result !
           //
-          msg.payload = res.data.message;
-          console.log('Retrieving Message for messageID ' + messageId + ' succesfully completed!');
-          if (msg.payload.annotations) {
-            if (msg.payload.annotations.length > 0) {
-              let annotations = [];
-              for (let i = 0; i < msg.payload.annotations.length; i++) {
-                annotations.push(JSON.parse(msg.payload.annotations[i]));
-              }
-              msg.payload.annotations = annotations;
-            }
+          if (res.data.message) {
+            msg.payload = res.data.message;
+            console.log('Retrieving Message for messageID ' + messageId + ' succesfully completed!');
+            msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
+          } else {
+            //
+            //  Message is VOID
+            //
+            msg.payload = res.data;
+            console.log('Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
           }
           console.log(JSON.stringify(res.data));
           node.status({fill: "green", shape: "dot", text: 'Retrieving Message for messageID ' + messageId + ' succesfully completed!'});
@@ -195,11 +214,11 @@ module.exports = function (RED) {
     var asyncTasks = [];
         
     function _dummyCallback(err, item) {
-      console.log('DUMMY CALLBACK ' + item);
+      console.log('wwsGetPersons. : DUMMY CALLBACK ' + item);
     }
 
     function _beforeSend(theMsg) {
-        console.log('_beforeSend: need to process ' + asyncTasks.length + ' async tasks...');
+        console.log('wwsGetPersons._beforeSend: need to process ' + asyncTasks.length + ' async tasks...');
         //
         //  This is where the MAGIC of Async happens
         //
@@ -209,7 +228,7 @@ module.exports = function (RED) {
                                             // All tasks are done now
                                             //  We can return
                                             //
-                                            console.log("_beforeSend : ready to send final information....");
+                                            console.log("wwsGetPersons._beforeSend : ready to send final information....");
                                             node.send(theMsg);
                                         }
             );                  
@@ -222,8 +241,16 @@ module.exports = function (RED) {
         }
     }
     function _getPersonDetails(token, host, person, type, fullMsg, callback) {
-      if (type !== "byMail") return;
-      var query = 'query getPersonByMail {person(email: "' + person + '") {displayName extId email photoUrl customerId ibmUniqueID created updated presence id}}';
+      var query = '';
+      if (type === "byMail") {
+        query = 'query getPersonByMail {person(email: "' + person + '") {displayName extId email photoUrl customerId ibmUniqueID created updated presence id}}';
+      } else {
+        if (type === "byId") {
+          query = 'query getPersonById {person(id: "' + person + '") {displayName extId email photoUrl customerId ibmUniqueID created updated presence id}}';
+        } else {
+          return;
+        }
+      }
       //
       //  Perform the operation
       //
@@ -231,7 +258,7 @@ module.exports = function (RED) {
       .then((res) => {
         if (res.errors) {
           fullMsg.payload = res.errors;
-          console.log('errors getting ' + person);
+          console.log('wwsGetPersons._getPersonDetails : errors getting ' + person);
           console.log(JSON.stringify(res.errors));
           node.status({fill: "red", shape: "dot", text: 'errors getting ' + person});
           node.error('errors getting ' + person, fullMsg);
@@ -240,14 +267,14 @@ module.exports = function (RED) {
           //
           //  Successfull Result !
           //
-          fullMsg.payload.people.push(res.data);
-          console.log('Person ' + person + ' succesfully retrieved !');
+          fullMsg.payload.push(res.data);
+          console.log('wwsGetPersons._getPersonDetails : Person ' + person + ' succesfully retrieved !');
           console.log(JSON.stringify(res.data));
           node.status({fill: "green", shape: "dot", text: 'Person ' + person + ' succesfully retrieved !'});
           callback(null, person);
         }
       }).catch((err) => {
-        console.log("Errors while retrieveing " + person, err);
+        console.log("wwsGetPersons._getPersonDetails : Errors while retrieveing " + person, err);
         node.status({fill: "red", shape: "ring", text: "Errors while retrieveing " + person});
         node.error("Errors while retrieveing " + person, err);
         return;
@@ -264,11 +291,12 @@ module.exports = function (RED) {
       }
       return initialized;
     }
-      
-    //Check for token on start up
+    //
+    //  Check for token on start up
+    //
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
-      console.log("No Account Info");
+      console.log("wwsGetPersons._getPersonDetails : No Account Info");
       node.status({fill:"red", shape:"dot", text:"Please configure your account information first!"});
       node.error("Please configure your account information first!");
       return;
@@ -288,7 +316,7 @@ module.exports = function (RED) {
       var people = null;
       if ((config.wwsPersonList.trim() === '') && 
           ((msg.wwsPersonList === undefined) || (msg.wwsPersonList === null))) {
-              console.log("No Person to retrieve ");
+              console.log("wwsGetPersons._getPersonDetails : No Person to retrieve ");
               node.status({fill:"red", shape:"dot", text:"No Person to retrieve "});
               node.error("No Person to retrieve ");
               return;
@@ -321,8 +349,8 @@ module.exports = function (RED) {
       //
       //  We asynchronously execute all the things
       //
-      msg.payload = {};
-      msg.payload.people = [];
+      msg.payload = [];
+      asyncTasks = [];
       for (let k=0; k < people.length; k++) {
         asyncTasks.push(function(_dummyCallback) {
           _getPersonDetails(bearerToken, host, people[k].trim(), config.PeopleOperation, msg, _dummyCallback);
@@ -352,8 +380,9 @@ module.exports = function (RED) {
       }
       return initialized;
     }
-      
-    //Check for token on start up
+    //
+    //  Check for token on start up
+    //
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
       console.log("No Account Info");
@@ -462,7 +491,7 @@ module.exports = function (RED) {
   //
   //  This node gets the Annotation referred to by a message containing the "Action-Selected" actionId
   //
-  function wwsValidateActions(config) {
+  function wwsFilterActions(config) {
     RED.nodes.createNode(this, config);
     this.application = RED.nodes.getNode(config.application);
     var node = this;
@@ -477,10 +506,21 @@ module.exports = function (RED) {
       }
       return initialized;
     }
-    //Check for token on start up
+    function __myJSONparse(str) {
+      try {
+          let a = JSON.parse(str);
+          return a;
+      } catch (e) {
+          return str;
+      }
+    }                             
+
+    //
+    //  Check for token on start up
+    //
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
-      console.log("No Account Info");
+      console.log("wwsFilterActions: No Account Info");
       node.status({fill:"red", shape:"dot", text:"No Account Info"});
       node.error("Please configure your account information first!");
     }
@@ -493,33 +533,20 @@ module.exports = function (RED) {
     }
 
     this.on("input", (msg) => {
-      var referralMessageId;
       var actionId;
       var actionList;
+      var referralMessageId;
       var parExp = /(.*?)\s\((.*?)\)/;
 
-      if ((config.wwsReferralMessageId === '') && 
-          ((msg.wwsReferralMessageId === undefined) || (msg.wwsReferralMessageId === ''))) {
-        //
-        //  There is an issue
-        //
-        console.log("Missing referralMessageId Information");
-        node.status({fill:"red", shape:"dot", text:"Missing referralMessageId Information"});
-        node.error('Missing referralMessageId Information', msg);
-        return;
-      }
-      if (config.wwsReferralMessageId !== '') {
-        referralMessageId = config.wwsReferralMessageId.trim();
-      } else {
-        referralMessageId = msg.wwsReferralMessageId.trim();
-      }
-
+      //
+      //  Get the incoming action
+      //
       if ((config.wwsActionId === '') && 
           ((msg.wwsActionId === undefined) || (msg.wwsActionId === ''))) {
         //
         //  There is an issue
         //
-        console.log("Missing actionId Information");
+        console.log("wwsFilterActions: Missing actionId Information");
         node.status({fill:"red", shape:"dot", text:"Missing actionId Information"});
         node.error('Missing actionId Information', msg);
         return;
@@ -530,12 +557,15 @@ module.exports = function (RED) {
         actionId = msg.wwsActionId.trim();
       }
 
+      //
+      //  Get the list of Actions the node is able to deal with
+      //
       if ((config.wwsActionsList === '') && 
           ((msg.wwsActionsList === undefined) || (msg.wwsActionsList === ''))) {
         //
         //  There is an issue
         //
-        console.log("Missing ActionsList Information");
+        console.log("wwsFilterActions: Missing ActionsList Information");
         node.status({fill:"red", shape:"dot", text:"Missing ActionsList"});
         node.error('Missing ActionsList', msg);
         return;
@@ -545,8 +575,23 @@ module.exports = function (RED) {
       } else {
         actionList = msg.wwsActionsList.split(',');
       }
+
       //
-      //  Check that the incoming actionId is in the list
+      //  Preparing the attribute which contains the Skeleton for the "createTargetedMessage" Mutation
+      //
+      if (msg.wwsEvent && msg.wwsEvent.annotationPayload) {
+        let payload = JSON.parse(msg.wwsEvent.annotationPayload);
+        if (payload.conversationId && payload.targetDialogId && payload.updatedBy) {
+          msg.wwsAFMutation = _buildTargetedMessage(payload.conversationId, payload.updatedBy, payload.targetDialogId);
+          console.log("wwsFilterActions: CreateTargetedMessage Mutation succesfully built and Returned !");
+        } else {
+          console.log("wwsFilterActions: CreateTargetedMessage Mutation not built : missing parameters !");
+        }
+      } else {
+        console.log("wwsFilterActions: CreateTargetedMessage Mutation not built : missing wwsEvent or annotationPayload !");
+      }
+      //
+      //  Check if the incoming actionId is in the list
       //
       var selectedRule = -1;
       for (let i=0; i < actionList.length; i++) {
@@ -563,11 +608,11 @@ module.exports = function (RED) {
         }
       }
       if (selectedRule === -1) {
-        console.log('Selected Rule is : ' + selectedRule + ' (over ' + actionList.length + ') : OTHERWISE');
+        console.log('wwsFilterActions: Selected Rule is : ' + selectedRule + ' (over ' + actionList.length + ') : OTHERWISE');
+        console.log('wwsFilterActions: ActionId ' + actionId + ' does not match input ActionsList');
         //
-        //  Build an output array of messages where all the messages are NULL except the Last one
+        //  Build an output array of messages where all the messages are NULL except the Last one (OTHERWISE)
         //
-        console.log('ActionId ' + actionId + ' does not match input ActionsList');
         var outArray = [];
         for (let i=0; i < actionList.length; i++) {
           outArray.push(null);
@@ -578,35 +623,64 @@ module.exports = function (RED) {
         return;
       }
 
-      console.log('Selected Rule is : ' + selectedRule + ' (over ' + actionList.length + ') : ' + actionList[selectedRule].trim());
-      console.log('processing .....');
       //
       //  At this point, we know that we are trying to match an ActionId which is in the list
       //
       //  If the ActionId does not correspond to a LENS (intent), we do not have to do much....
       //
+      console.log('wwsFilterActions: Selected Rule is : ' + selectedRule + ' (over ' + actionList.length + ') : ' + actionList[selectedRule].trim());
+      console.log('wwsFilterActions: processing .....');
       var theAction = actionList[selectedRule].trim();
       if (theAction.match(parExp) === null) {
-          //
-          //  Build the output Array (as the node has multiple outputs)
-          //  all the outputs will be initialized to NULL
-          //
-          let outArray2 = [];
-          for (let i=0; i <= actionList.length; i++) {
-            outArray2.push(null);
-          }
-          //
-          //  the array item corresponding to the selectedRule is filled with the INCOMING MESSAGE
-          //
-          outArray2[selectedRule] = msg;
-          //  
-          //  Sends the output array
-          //
-          node.status({fill:"green", shape:"dot", text:"No Lens for Action " + actionId});
-          node.send(outArray2);  
-          return;      
+        console.log('wwsFilterActions: Selected Rule ' + actionList[selectedRule].trim() + ' has NO LENS. Returning....');
+        //
+        //  Build the output Array (as the node has multiple outputs)
+        //  all the outputs will be initialized to NULL
+        //
+        let outArray2 = [];
+        for (let i=0; i <= actionList.length; i++) {
+          outArray2.push(null);
+        }
+        //
+        //  the array item corresponding to the selectedRule is filled with the INCOMING MESSAGE
+        //
+        outArray2[selectedRule] = msg;
+        //  
+        //  Sends the output array
+        //
+        node.status({fill:"green", shape:"dot", text:"No Lens for Action " + actionId});
+        node.send(outArray2);  
+        return;      
       }
+
+      //
+      //  If the ActionId has a lens, then we need to get the one annotation (message-focus) which corresponds to the Actios ID.
+      //  In order to do this, we need to fetch the message to which the annotation refers to 
+      //
+      //  Check the presence of the wwsReferralMsgId input
+      //  It is only required in this case !!!!
+      //
+      if ((config.wwsReferralMsgId === '') && 
+          ((msg.wwsReferralMsgId === undefined) || (msg.wwsReferralMsgId === ''))) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsFilterActions: Missing ReferralMsgId Information");
+        node.status({fill:"red", shape:"dot", text:"Missing ReferralMsgId"});
+        node.error('Missing ReferralMsgId', msg);
+        return;
+      }
+      if (config.wwsReferralMsgId && (config.wwsReferralMsgId !== '')) {
+        referralMessageId = config.wwsReferralMsgId.trim();
+      } else {
+        referralMessageId = msg.wwsReferralMsgId.trim();
+      }
+      
+      //
+      //  Check to find the one that is "message-focus" and corresponds to the lens=ActionId
+      //
       var lens = theAction.match(parExp)[2].trim();
+      console.log('wwsFilterActions: Selected Rule ' + actionList[selectedRule].trim() + ' has Lens ' + lens);
       node.status({fill: "blue", shape: "dot", text: "Ready to get lens " + lens});
       //
       //  If the ActionId has a lens, then we need to get the one annotation from the referralMsessageId which
@@ -620,13 +694,14 @@ module.exports = function (RED) {
       //
       //  Retrieve the annotations for the given Message
       //
-      wwsGraphQL(bearerToken, host, query, null, null, "PUBLIC").then((res) => {
+      wwsGraphQL(bearerToken, host, query, null, null, "PUBLIC")
+      .then((res) => {
         if (res.errors) {
           //
           //  Should NOT BE...
           //
           msg.payload = res.errors;
-          console.log('errors from query');
+          console.log('wwsFilterActions: errors from query');
           console.log(JSON.stringify(res.errors));
           node.status({fill: "red", shape: "dot", text: "Errors from query"});
           node.error('Errors from query', msg);
@@ -634,29 +709,27 @@ module.exports = function (RED) {
           //
           //  Ok, we got the array of annotations...
           //
-          console.log('Success from graphQL query : Annotations retrieved');
-          console.log(JSON.stringify(res.data));
+          console.log('wwsFilterActions: Success from graphQL query : Annotations retrieved');
+          console.log(JSON.stringify(res.data, ' ', 2));
           node.status({fill: "green", shape: "dot", text: "Annotations retrieved..."});
           //
           //  Now we have the annotations. Check to find the one that is "message-focus" and corresponds to the lens=ActionId
           //
           var found = false;
-          if (res.data.message !== null) {
+          if (res.data.message) {
             for (let i=0; i < res.data.message.annotations.length; i++) {
               let intent = JSON.parse(res.data.message.annotations[i]);
               if ((intent.type === "message-focus") && (intent.lens === lens)) {
                 msg.payload = intent;
-                /*
-                if (msg.payload.conversationId) msg.wwsConversationId = msg.payload.conversationId;
-                if (msg.payload.targetDialogId) msg.wwsTargetDialogId = msg.payload.targetDialogId;
-                if (msg.payload.updatedBy) msg.wwsUpdatedBy = msg.payload.updatedBy;
-                */
+                if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
+                if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
                 found = true;
                 break;
               }
             }
           }
           if (found) {
+            console.log('wwsFilterActions: Lens ' + lens + ' found. Returning Message-Focus....');
             //
             //  Build the output Array (as the node has multiple outputs)
             //  all the outputs will be initialized to NULL
@@ -678,18 +751,18 @@ module.exports = function (RED) {
             //
             //  Strange situation (no annotations or the LENS was not found....)
             //
-            console.log("Error while dealing with action " + actionId + ' for lens ' + lens);
+            console.log("wwsFilterActions: Error while dealing with action " + actionId + ' for lens ' + lens);
             node.status({fill: "red", shape: "ring", text: "Error while dealing with action " + actionId + ' for lens ' + lens});
             node.error('Lens ' + lens + ' not found for action ' + actionId, msg);
           }
         }})
-      .catch((err) => {
-        msg.payload = err;
-        console.log("Error while posting GraphQL query to WWS.", err);
-        node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
-        node.error('Error while posting GraphQL query to WWS.', msg);
-      });
-      setTimeout(() => {_isInitialized();}, 2000);
+        .catch((err) => {
+          msg.payload = err;
+          console.log("wwsFilterActions: Error while posting GraphQL query to WWS.", err);
+          node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
+          node.error('Error while posting GraphQL query to WWS.', msg);
+        });
+        setTimeout(() => {_isInitialized();}, 2000);
     });
   }
 
@@ -711,8 +784,9 @@ module.exports = function (RED) {
       }
       return initialized;
     }
-      
-    //Check for token on start up
+    //
+    //  Check for token on start up
+    //
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
       console.log("No Account Info");
@@ -1262,8 +1336,9 @@ module.exports = function (RED) {
       }
       return initialized;
     };
-      
-    //Check for token on start up
+    //
+    //  Check for token on start up
+    //
     const tokenFsm = node.application.getStateMachine();
     if (!tokenFsm) {
       console.log("No Account Info");
@@ -1544,7 +1619,602 @@ module.exports = function (RED) {
     });
   }
   
-  
+
+  //
+  //  Add Focus
+  //
+  function wwsAddFocus(config) {
+    RED.nodes.createNode(this, config);
+    this.application = RED.nodes.getNode(config.application);
+    var node = this;
+
+    function _isInitialized() {
+      var initialized = false;
+      if (tokenFsm.getAccessToken()) {
+        node.status({fill: "green", shape: "dot", text: "token available"});
+        initialized = true;
+      } else {
+        node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
+      }
+      return initialized;
+    }
+    //
+    //  Check for token on start up
+    //
+    const tokenFsm = node.application.getStateMachine();
+    if (!tokenFsm) {
+      console.log("wwsAddFocus: No Account Info");
+      node.status({fill:"red", shape:"dot", text:"Please configure your account information first!"});
+      node.error("Please configure your account information first!");
+      return;
+    }
+    if (!_isInitialized()) {
+      const intervalObj = setInterval(() => {
+        if (_isInitialized()) {
+          clearInterval(intervalObj);
+        };
+      }, 2000);
+    };
+
+    this.on("input", (msg) => {
+      var messageId = '';
+      var theString = '';
+      var actionId = '';
+      var lens = '';
+      var category = '';
+      var thePayload = '';
+      //
+      //  Which Message needs to be added focus ?
+      //
+      if ((config.wwsMessageId.trim() === '') && 
+          ((msg.wwsMessageId === undefined) || (msg.wwsMessageId.trim() === ''))) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsAddFocus: Missing messageID Information");
+        node.status({fill:"red", shape:"dot", text:"Missing messageID"});
+        node.error('Missing messageID', msg);
+        return;
+      }
+      if (config.wwsMessageId.trim() !== '') {
+        messageId = config.wwsMessageId.trim();
+      } else {
+        messageId = msg.wwsMessageId.trim();
+      }
+
+      //
+      //  Which String needs to be recognized ?
+      //
+      if ((config.wwsString.trim() === '') && 
+          ((msg.wwsString === undefined) || (msg.wwsString.trim() === ''))) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsAddFocus: Missing String Information");
+        node.status({fill:"red", shape:"dot", text:"Missing String"});
+        node.error('Missing String', msg);
+        return;
+      }
+      if (config.wwsString.trim() !== '') {
+        theString = config.wwsString.trim();
+      } else {
+        theString = msg.wwsString.trim();
+      }
+
+      //
+      //  Which Actions needs to be proposed as focus ?
+      //
+      if ((config.wwsActionId.trim() === '') && 
+          ((msg.wwsActionId === undefined) || (msg.wwsActionId.trim() === ''))) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsAddFocus: Missing ActionID Information");
+        node.status({fill:"red", shape:"dot", text:"Missing ActionID"});
+        node.error('Missing ActionID', msg);
+        return;
+      }
+      if (config.wwsActionId.trim() !== '') {
+        actionId = config.wwsActionId.trim();
+      } else {
+        actionId = msg.wwsActionId.trim();
+      }
+
+      //
+      //  Which LENS needs to be proposed as focus ?
+      //
+      if ((config.wwsLens.trim() === '') && 
+          ((msg.wwsLens === undefined) || (msg.wwsLens.trim() === ''))) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsAddFocus: Missing Lens Information");
+        node.status({fill:"red", shape:"dot", text:"Missing Lens"});
+        node.error('Missing Lens', msg);
+        return;
+      }
+      if (config.wwsLens.trim() !== '') {
+        lens = config.wwsLens.trim();
+      } else {
+        lens = msg.wwsLens.trim();
+      }
+
+      //
+      //  Is there a Category (OPTIONAL) ?
+      //
+      if (config.wwsCategory.trim() !== '') {
+        category = config.wwsCategory.trim();
+      } else {
+        if ((msg.wwsCategory !== undefined) && (msg.wwsCategory.trim() !== '')) {
+          category = msg.wwsCategory.trim();
+        } else {
+          console.log("wwsAddFocus: Missing OPTIONAL Category Information");
+        }
+      }
+
+      //
+      //  Is there a Payload (OPTIONAL) ?
+      //
+      if (config.wwsPayload.trim() !== '') {
+        thePayload = config.wwsPayload.trim();
+      } else {
+        if ((msg.wwsPayload !== undefined) && (msg.wwsPayload.trim() !== '')) {
+          thePayload = msg.wwsPayload.trim();
+        } else {
+          console.log("wwsAddFocus: Missing OPTIONAL PAYLOAD Information");
+        }
+      }
+
+      //
+      //  The first thing we have to do is to get the Message from its Id
+      //
+      var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);
+      var bearerToken = msg.wwsToken || accessToken.token.access_token;
+      var host = this.application.api;
+      var query = _getMessageInformation(messageId);
+      //
+      //  Retrieve the details of the given Message
+      //
+      wwsGraphQL(bearerToken, host, query, null, null, "PUBLIC")
+      .then((res) => {
+        if (res.errors) {
+          //
+          //  Should NOT BE...
+          //
+          msg.payload = res.errors;
+          console.log('wwsAddFocus: errors from messageId query');
+          console.log(JSON.stringify(res.errors));
+          node.status({fill: "red", shape: "dot", text: "Errors from messageId query"});
+          node.error('Errors from messageId query', msg);
+        } else {
+          //
+          //  Ok, we got the information for the message...
+          //
+          console.log('wwsAddFocus: Success from graphQL query : message ' + messageId + ' retrieved');
+          console.log(JSON.stringify(res.data, ' ', 2));
+          node.status({fill: "green", shape: "dot", text: "Message " + messageId + " retrieved..."});
+          //
+          //  Now we have the message. Check if the message contains the STRING to be annotated.
+          //
+          if (res.data.message.content.indexOf(theString) >= 0) {
+            //
+            //  the STRING is part of the message
+            //  We can succesfully add the new focus !!
+            //
+            let mutation = _addFocusMutation(messageId, res.data.message.content, theString, actionId, lens, category, thePayload);
+            console.log('wwsAddFocus: String ' + theString + ' found in sentence. Going to add new Focus to ' + messageId + ' ....');
+            console.log(mutation);
+            //
+            //  Retrieve the space info
+            //
+            wwsGraphQL(bearerToken, host, mutation, null, null, BETA_EXP_FLAGS)
+            .then((res) => {
+              if (res.errors) {
+                msg.payload = res.errors;
+                console.log('wwsAddFocus: errors from addFocus mutation');
+                console.log(JSON.stringify(res.errors));
+                node.status({fill: "red", shape: "dot", text: "Errors from addFocus mutation"});
+                node.error("Errors from addFocus mutation", msg);
+                return;
+              } else {
+                //
+                //  Successfull Result !
+                //
+                msg.payload = res.data.addMessageFocus.message;
+                msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
+                msg.wwsFocusAdded = true;
+                console.log('wwsAddFocus: Success from graphQL query');
+                console.log(JSON.stringify(res.data));
+                node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
+                node.send(msg);
+              }
+            }).catch((err) => {
+              console.log("wwsAddFocus: Error while posting addFocus mutation", err);
+              node.status({fill: "red", shape: "ring", text: "Posting addFocus mutation failed."});
+              node.error("Error while posting addFocus mutation", err);
+              return;
+            });
+          } else {
+            //
+            //  The string is NOT part of the message.
+            //  We do not do anything
+            //
+            console.log('wwsAddFocus: string ' + theString + ' is not part of the text for messageId ' + messageId + '. Text follows:');
+            console.log(JSON.stringify(res.data.message.content, ' ', 2));
+            node.status({fill: "yellow", shape: "square", text: "String " + theString + " not in message..."});
+            msg.payload = res.data.message;
+            msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
+            msg.wwsFocusAdded = false;
+            node.send(msg);
+          }
+        }
+      })
+      .catch((err) => {
+        msg.payload = err;
+        console.log("wwsAddFocus: Error querying for messageId " + messageId, err);
+        node.status({fill: "red", shape: "ring", text: "error querying for messageId"});
+        node.error('Error querying for messageId ' + messageId, msg);
+      });
+      setTimeout(() => {_isInitialized(); }, 2000);
+    });
+  }
+
+  //
+  //  Add Focus
+  //
+  function wwsActionFulfillment(config) {
+    RED.nodes.createNode(this, config);
+    this.application = RED.nodes.getNode(config.application);
+    var node = this;
+
+    function _isInitialized() {
+      var initialized = false;
+      if (tokenFsm.getAccessToken()) {
+        node.status({fill: "green", shape: "dot", text: "token available"});
+        initialized = true;
+      } else {
+        node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
+      }
+      return initialized;
+    }
+    //
+    //  Check for token on start up
+    //
+    const tokenFsm = node.application.getStateMachine();
+    if (!tokenFsm) {
+      console.log("wwsActionFulfillment: No Account Info");
+      node.status({fill:"red", shape:"dot", text:"Please configure your account information first!"});
+      node.error("Please configure your account information first!");
+      return;
+    }
+    if (!_isInitialized()) {
+      const intervalObj = setInterval(() => {
+        if (_isInitialized()) {
+          clearInterval(intervalObj);
+        };
+      }, 2000);
+    };
+
+    this.on("input", (msg) => {
+      var AFElements = '';
+      var AFMutation = '';
+      //
+      //  Check for the AFElements input
+      //
+      if ( (msg.wwsAFElements === undefined) || 
+           (!Array.isArray(msg.wwsAFElements)) || 
+           (msg.wwsAFElements.length <= 0) ) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsActionFulfillment: Missing AF Elements Information");
+        node.status({fill:"red", shape:"dot", text:"Missing AF Elements"});
+        node.error('Missing AF Elements', msg);
+        return;
+      }
+      AFElements = msg.wwsAFElements;
+
+      //
+      //  Check for the AFMutation input
+      //
+      if ((msg.wwsAFMutation === undefined) || (msg.wwsAFMutation.trim() === '')) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsActionFulfillment: Missing AF Mutation Information");
+        node.status({fill:"red", shape:"dot", text:"Missing AF Mutation"});
+        node.error('Missing AF Mutation', msg);
+        return;
+      }
+      AFMutation = msg.wwsAFMutation.trim();
+
+      //
+      //  Build the replacement string for the placeholder in the AFMutation string
+      //
+      var details = '';
+      if (config.AF_Operation === 'Attachments') {
+        //
+        //  We have now to interpret the AFElements array for attachments
+        //
+        details += 'attachments : [';
+        for (let i = 0; i < AFElements.length; i++) {
+          if (i !== 0) details += ',';
+          details += '{type: CARD, cardInput: {type: INFORMATION, informationCardInput: {';
+          details += 'title: "' + (AFElements[i].title) + '",';
+          details += 'subtitle: "' + (AFElements[i].subtitle) + '",';
+          details += 'text: "' + (AFElements[i].text) + '",';
+          if (AFElements[i].text) {
+            details += 'date: "' + AFElements[i].date + '",';
+          } else {  
+            details += 'date: "' + Math.floor(new Date()) + '",';
+          }
+          details += 'buttons: [';
+          for (let j=0; j < AFElements[i].buttons.length; j++) {
+            if (j !== 0) details += ',';
+            details += '{text: "' + (AFElements[i].buttons[j].text) + '",';
+            details += 'payload: "' + (AFElements[i].buttons[j].payload) + '",';
+            details += 'style: ';
+            if (AFElements[i].buttons[j].isPrimary) {
+              details += 'PRIMARY}'
+            } else {
+              details += 'SECONDARY}'
+            }
+          }
+          details += ']';
+          details += '}}}';
+        }
+        details += ']';
+      } else {
+        //
+        //  We have now to interpret the AFElements array for annotations
+        //
+        details += 'annotations : [';
+        for (let i = 0; i < AFElements.length; i++) {
+          if (i !== 0) details += ',';
+          details += '{genericAnnotation : {';
+          details += 'title: "' + (AFElements[i].title) + '",';
+          details += 'text: "' + (AFElements[i].text) + '",';
+          details += 'buttons: [';
+          for (let j=0; j < AFElements[i].buttons.length; j++) {
+            if (j !== 0) details += ',';
+            details += '{postbackButton :';
+            details += '{title: "' + (AFElements[i].buttons[j].text) + '",';
+            details += 'id: "' + (AFElements[i].buttons[j].payload) + '",';
+            details += 'style: ';
+            if (AFElements[i].buttons[j].isPrimary) {
+              details += 'PRIMARY}'
+            } else {
+              details += 'SECONDARY}'
+            }
+            details += '}';
+          }
+          details += ']';
+          details += '}}';
+        }
+        details += ']';
+      }
+
+      //
+      //  Now we need to replace the placeholder in AFMutation with the details string we just built
+      //
+      AFMutation = AFMutation.replace('$$$$$$$$', details);
+      console.log('wwsActionFulfillment: ready to execute ActionFulfillment mutation (see here) : ');
+      console.log(AFMutation);
+      //
+      //  Send the AF Mutation
+      //
+      var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);
+      var bearerToken = msg.wwsToken || accessToken.token.access_token;
+      var host = this.application.api;
+      wwsGraphQL(bearerToken, host, AFMutation, null, null, BETA_EXP_FLAGS)
+      .then((res) => {
+        if (res.errors) {
+          msg.payload = res.errors;
+          console.log('wwsActionFulfillment: errors from mutation');
+          console.log(JSON.stringify(res.errors));
+          node.status({fill: "red", shape: "dot", text: "Errors from mutation"});
+          node.error("Errors from mutation", msg);
+          return;
+        } else {
+          //
+          //  Successfull Result !
+          //
+          msg.payload = res.data;
+          console.log('wwsActionFulfillment: ActionFulfillment mutation succesfully created');
+          console.log(JSON.stringify(res.data));
+          node.status({fill: "green", shape: "dot", text: "AF Created"});
+          node.send(msg);
+        }
+      }).catch((err) => {
+        console.log("wwsActionFulfillment: Error while posting AF mutation", err);
+        node.status({fill: "red", shape: "ring", text: "Posting AF mutation failed."});
+        node.error("Error while posting AF mutation", err);
+        return;
+      });
+      setTimeout(() => {_isInitialized(); }, 2000);
+    });
+  }
+
+
+  //
+  //  This node gets the Annotation referred to by a message containing the "Action-Selected" actionId
+  //
+  function wwsFilterAnnotations(config) {
+    RED.nodes.createNode(this, config);
+    this.application = RED.nodes.getNode(config.application);
+    var node = this;
+
+    function _isInitialized() {
+      var initialized = false;
+      if (tokenFsm.getAccessToken()) {
+        node.status({fill: "green", shape: "dot", text: "token available"});
+        initialized = true;
+      } else {
+        node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
+      }
+      return initialized;
+    }
+    function __myJSONparse(str) {
+      try {
+          let a = JSON.parse(str);
+          return a;
+      } catch (e) {
+          return str;
+      }
+    }                             
+
+    //
+    //  Check for token on start up
+    //
+    const tokenFsm = node.application.getStateMachine();
+    if (!tokenFsm) {
+      console.log("wwsFilterAnnotations: No Account Info");
+      node.status({fill:"red", shape:"dot", text:"No Account Info"});
+      node.error("Please configure your account information first!");
+    }
+    if (!_isInitialized()) {
+      const intervalObj = setInterval(() => {
+        if (_isInitialized()) {
+          clearInterval(intervalObj);
+        }
+      }, 2000);
+    }
+
+    this.on("input", (msg) => {
+      var annotationType;
+      //
+      //  Get the incoming Annotation Type
+      //
+      if ((msg.wwsAnnotationType === undefined) || (msg.wwsAnnotationType.trim() === '')) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsFilterAnnotations: Missing AnnotationType Information");
+        node.status({fill:"red", shape:"dot", text:"Missing AnnotationType Information"});
+        node.error('Missing AnnotationType Information', msg);
+        return;
+      }
+      annotationType = msg.wwsAnnotationType.trim();
+      if (config.filterOutputs2) {
+        //
+        //  Check if the incoming actionId is in the list
+        //
+        let items = config.hidden_string.split(',');
+        let theIndex = -1;
+        for (let k = 0; k < items.length; k++) {
+          if (items[k].trim() === 'message-nlp-all') {
+            //
+            //  we have the special case where all NLP annotations are delivered through a single output (nlp-all)
+            //
+            switch (annotationType) {
+              case 'message-nlp-keywords':
+                if (config.o_messageNlpKeywords) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-entities':
+                if (config.o_messageNlpEntities) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-docSentiment':
+                if (config.o_messageNlpDocSentiment) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-relations':
+                if (config.o_messageNlpRelations) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-concepts':
+                if (config.o_messageNlpConcepts) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-taxonomy':
+                if (config.o_messageNlpTaxonomy) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-dates':
+                if (config.o_messageNlpDates) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+            }
+            //
+            //  We break the outer loop if found
+            //
+            if (theIndex >=0) break;
+          } else {
+            //
+            //  This is normal behavior, where each annotationType corresponds to only one output
+            //
+            if (items[k].trim() === annotationType) {
+              theIndex = k;
+              break;
+            } 
+          }
+        }
+        if (theIndex < 0) {
+          //
+          //  Very strange situation. AnnotationType is not found ...
+          //
+          console.log("wwsFilterAnnotations: AnnotationType " + annotationType + ' is NOT Processed');
+          node.status({fill:"red", shape:"dot", text:"AnnotationType NOT processed"});
+        } else {
+          //
+          //  Build an array of NULL messages
+          //
+          let outArray = [];
+          for (let k = 0; k < items.length; k++) {
+              outArray.push(null);
+          }
+          //
+          //  Now fill the answer in the right position :-)
+          //
+          outArray[theIndex] = msg;
+          //
+          //  Provide the answer
+          //
+          console.log("wwsFilterAnnotations: Filtering annotation " + annotationType + ' through the output '+ theIndex);
+          node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
+          node.send(outArray);
+        }
+      } else {
+          //
+          //  Only one output. All Annotations go to the same
+          //
+          console.log("wwsFilterAnnotations: Pushing annotation " + annotationType + ' through the single output');
+          node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
+          node.send(msg);
+      }
+      setTimeout(() => {_isInitialized();}, 2000);
+    });
+  }
+
   RED.nodes.registerType("wws-graphql", wwsGraphQLNode);
   
   RED.nodes.registerType("wws-getMessage", wwsGetMessage);
@@ -1553,7 +2223,9 @@ module.exports = function (RED) {
   
   RED.nodes.registerType("wws-getPeople", wwsGetPersons);
 
-  RED.nodes.registerType("wws-validateActions", wwsValidateActions);
+  RED.nodes.registerType("wws-validateActions", wwsFilterActions);
+
+  RED.nodes.registerType("wws-filterAnnotations", wwsFilterAnnotations);
 
   RED.nodes.registerType("wws-getTemplate", wwsGetTemplate);
 
@@ -1562,6 +2234,10 @@ module.exports = function (RED) {
   RED.nodes.registerType("wws-updateTemplatedSpace", wwsUpdateSpace);
 
   RED.nodes.registerType("wws-createSpaceFromTemplate", wwsCreateSpaceFromTemplate);
+
+  RED.nodes.registerType("wws-addFocus", wwsAddFocus);
+
+  RED.nodes.registerType("wws-actionFulfillment", wwsActionFulfillment);
 
   //
   //  Helper functions
@@ -1849,7 +2525,43 @@ module.exports = function (RED) {
     return query;
   }
 
+  function _buildTargetedMessage(conversationId, updatedBy, targetDialogId) {
+    var mutation = 'mutation {';
+    mutation += 'createTargetedMessage(input: {';
+    mutation += ' conversationId: "' +  conversationId + '",';
+    mutation += ' targetUserId: "' +  updatedBy + '",';
+    mutation += ' targetDialogId: "' + targetDialogId + '",';
+    mutation += ' $$$$$$$$';
+    mutation += ' }) {';
+    mutation += ' successful';
+    mutation += ' }';
+    mutation += '}';
+    return mutation;
+  }
 
+  function _addFocusMutation(messageId, theSentence, theString, actionId, lens, category, thePayload) {
+    var mutation = '';
+    mutation += 'mutation {addMessageFocus(input: {';
+    mutation += 'messageId: "' + messageId + '", ';
+    mutation += 'messageFocus: {';
+    mutation += 'phrase: "' + escape(theSentence) + '", ';
+    mutation += 'lens: "' + lens + '", ';
+    if (category !== '') mutation += 'category: "' + category + '", ';
+    mutation += 'actions: ["' + actionId + '"], ';
+    mutation += 'confidence: 1, ';
+    mutation += 'start: ' + theSentence.indexOf(theString) + ', ';
+    mutation += 'end: ' + (theSentence.indexOf(theString) + theString.length) + ', ';
+    if (thePayload !== '') mutation += 'payload: "' + escape(thePayload) + '", ';
+    mutation += 'version: 1, ';
+    mutation += 'hidden: false}}';
+    mutation += ') {message {';
+    mutation += 'id content contentType annotations';
+    mutation += ' created createdBy {id displayName email customerId presence photoUrl}';
+    mutation += ' updated updatedBy {id displayName email customerId presence photoUrl}';
+    mutation += ' reactions {reaction count viewerHasReacted}'
+    mutation += '}}}';
+    return mutation;
+  }
   /*
 
   Mutation
