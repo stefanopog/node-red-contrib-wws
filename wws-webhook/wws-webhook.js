@@ -2,28 +2,24 @@
 module.exports = function(RED) {
     "use strict";
     const bodyParser = require("body-parser");
-    const OAuth2 = require('simple-oauth2');
-    const StateMachine = require('javascript-state-machine');
     const crypto = require('crypto');
     const jsonParser = bodyParser.json();
-
-
 
     function WWSWebhookNode(config) {
         RED.nodes.createNode(this,config);
         this.active = true;
-        this.account = config.account;
-        this.accountConfig = RED.nodes.getNode(this.account);
-        this.accountConfigCredentials = RED.nodes.getCredentials(this.account);
+        this.application = RED.nodes.getNode(config.application);
         this.webhookPath = config.webhookPath;
-        if (this.accountConfigCredentials) {
-            const appId = this.accountConfigCredentials.clientId;
+        if (!this.application) {
+            this.error("Please configure your Watson Workspace App first!");
+        } else {
+            var appId = this.application.clientId;
         }
 
-		var node = this;
-        if (!node.credentials.webhookSecret) {
+        if (!this.credentials.webhookSecret) {
             this.error("Missing Webhook Secret!");
         }
+        var node = this;
         
         this.on("close",function() {
             //Remove webhook when deleted
