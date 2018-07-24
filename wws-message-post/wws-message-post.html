@@ -1,7 +1,7 @@
 <script type="text/x-red" data-template-name="wws-message-post">
     <div class="form-row">
-        <label for="node-input-account"><i class="fa fa-user"></i> App Name</label>
-        <input type="text" id="node-input-account" class="form-control-lg">
+        <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+        <input type="text" id="node-input-application" class="form-control-lg">
     </div>
     <div class="form-row">
         <label for="node-input-color" title="The banner color to be used when displaying a message within Watson Work. Leave it blank for default."><i class="fa fa-paint-brush"></i> Color</label>
@@ -78,7 +78,7 @@
     <div class="form-row" id="avatar-div">
         <h4 style="margin-top: 20px;">Message Preview</h4>
         <div class="avatar">
-            <img src="#" alt="Profile Photo of the Watson Workspace App"/>
+            <img src="#" alt="Profile WWS App"/>
         </div>
         <div class="inline-div">
             <p>
@@ -174,7 +174,7 @@
         category: 'Watson Work',
         color:"#11ABA5",
         defaults: {
-            account: {type:"wws-credentials",required:true},
+            application: {type:"wws-credentials",required:true},
             color: {value:""},
             avatar: {value:""},
             picture: {value:""},
@@ -210,21 +210,26 @@
                     uploadButton.addClass("disabled");
                 }
             };
-            toggleAvatarSection($("#node-input-picture").val());
             
             //Input Account
-            var configNodeId = $("#node-input-account option:selected").val();
+            var configNodeId = $("#node-input-application option:selected").val();
             function addAppName(configNodeId) {
-                if ($("#node-input-account option:selected").html().length>0 && configNodeId !== "_ADD_" ) {
-                    $("#preview-account").html($("#node-input-account option:selected").html());
+                if ($("#node-input-application option:selected").html().length>0 && configNodeId !== "_ADD_" ) {
+                    $("#preview-account").html($("#node-input-application option:selected").html());
+                    let url = $("#node-input-picture").val();
+                    if (!url) {
+                        url = "picPlaceHolder";
+                    }
+                    toggleAvatarSection(url);
                 } else {
                     $("#preview-account").html("");
+                    toggleAvatarSection("");
                 }
             }
             addAppName(configNodeId);
-            $("#node-input-account").change(function(data,event) {
-                console.log("#node-input-account changed");
-                configNodeId = $("#node-input-account").val();
+            $("#node-input-application").change(function(data,event) {
+                console.log("#node-input-application changed");
+                configNodeId = $("#node-input-application").val();
                 addAppName(configNodeId);
                 getSpaces(configNodeId);
             });

@@ -10,45 +10,37 @@ module.exports = function(RED) {
         let stringOrDefault = (value, defaultValue) => {
             return typeof value == 'string' && value.length > 0 ? value : defaultValue;
         };
-        this.account = config.account;
         this.color = stringOrDefault(config.color, "#11ABA5");
         this.avatar = stringOrDefault(config.avatar, undefined);
         this.spaceId = stringOrDefault(config.spaceId, undefined);
         this.picture = config.picture;
         
-        //Get the account config node
-        this.accountConfig = RED.nodes.getNode(this.account);
-        this.accountConfigCredentials = RED.nodes.getCredentials(this.account);
+        //Get the application config node
+        this.application = RED.nodes.getNode(config.application);
         var node = this;
         //Check for token on start up
-        var tokenFsm;
-        if (!node.accountConfig || !node.accountConfig.getStateMachine()) {
-            node.error("Please configure your account information first!");
-            tokenFsm = {};
-        } else {
-            tokenFsm = node.accountConfig.getStateMachine();
+        if (!node.application || !node.application.hasAccessToken()) {
+            node.error("Please configure your Watson Workspace App first!");
+            node.status({fill: "red", shape: "dot", text: "token unavailable"});
         }
-
-        this.isInitialized = () => {
-            var initialized = false;
-            if (tokenFsm.getAccessToken()){
-                node.status({fill: "green", shape: "dot", text: "token available"});
-                initialized = true;
-            } else {
-                node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
-            }
-            return initialized;
-            
-        };
+        //Setting request timeouts
         var defaultTimeout = 4500;
         if (RED.settings.httpRequestTimeout) { 
             this.reqTimeout = parseInt(RED.settings.httpRequestTimeout) || defaultTimeout; 
         } else { 
             this.reqTimeout = defaultTimeout; 
         }
-        //ToDo -> Properties
-        var apiUrl = node.accountConfig.api || "https://api.watsonwork.ibm.com";
-        var createMessagePath = "/v1/spaces/:spaceId/messages";
+        
+        function _isInitialized() {
+            let token;
+            if (node.application && node.application.hasAccessToken()) {
+                token = node.application.getAccessToken(node);
+            }
+            return (token) ? true : false;
+        }
+
+        const apiUrl = node.application &&  node.application.getApiUrl()|| "https://api.watsonwork.ibm.com";
+        const sendMessagePath = "/v1/spaces/:spaceId/messages";
         
         this.prepareMessage = (msg) =>{
             //Check for defaults
@@ -74,11 +66,12 @@ module.exports = function(RED) {
             msg.reqBody = reqBody;
             return msg;
         };
+        
         //Create Message Body and send it.
-        this.sendMessage = (accessToken, msg) => {
+        this.sendMessage = (token, msg) => {
             node.status({fill:"blue",shape:"dot",text: "sending message"});
             //Get access token
-            let bearerToken = accessToken.token.access_token;
+            let bearerToken = token.access_token;
             //set http method 
             var method = "POST";
             //set authorization and content-type headers
@@ -87,7 +80,7 @@ module.exports = function(RED) {
                 "Authorization": "Bearer " + bearerToken           
             };
             //create target URL
-            var url = apiUrl + createMessagePath.replace("/:spaceId/", "/" + msg.wwsSpaceId + "/");
+            var url = apiUrl + sendMessagePath.replace("/:spaceId/", "/" + msg.wwsSpaceId + "/");
             var opts = urllib.parse(url);
             opts.method = method;
             opts.headers = headers;
@@ -125,7 +118,7 @@ module.exports = function(RED) {
                         msg.payload = msg.payload.toString('utf8'); // txt
                         try { msg.payload = JSON.parse(msg.payload); } // obj
                         catch(e) { node.warn("Could not convert the response to a JSON format!"); }
-                        node.isInitialized();
+                        _isInitialized();
                     }
                     console.log('Message-Post : sending the following message :');
                     console.log(JSON.stringify(msg, ' ', 2));
@@ -156,13 +149,14 @@ module.exports = function(RED) {
                         if (msg.statusCode>201) {
                             node.status({fill:"red",shape:"dot",text: "message failed"});
                         } else {
-                            node.status({fill:"green",shape:"dot",text: "message send"});
+                            node.status({fill:"green",shape:"dot",text: "message sent"});
                             console.log(JSON.stringify(msg, ' ', 2));
                         }
                         resolve();
                     }).then(() => {
                         setTimeout(() => {
-                            node.isInitialized();
+                            //Used to set the correct node status.
+                            _isInitialized();
                         }, 2000);
                     });
 
@@ -190,13 +184,7 @@ module.exports = function(RED) {
 
 
         this.on('input', function(msg) {
-            const fsm = node.accountConfig.getStateMachine();
-            if (!fsm.is('has_token')) {
-                node.error("Please configure your account information first!");
-                node.status({fill: "red", shape: "dot", text: "uninitialized token"});
-                return;
-            }
-            node.isInitialized();
+
             if (!msg.payload) {
                 node.error("Payload may not be empty!");
                 return;
@@ -206,15 +194,9 @@ module.exports = function(RED) {
                 return;
             }
             msg.wwsSpaceId = msg.wwsSpaceId ? msg.wwsSpaceId : node.spaceId;
-            let accessToken = fsm.appToken;
+            let accessToken = node.application.getAccessToken(node);
 
-            if (accessToken.expired()) {
-                fsm.invalidate(node);
-                fsm.renew(node).then((accessToken) => {
-                    node.sendMessage(accessToken, node.prepareMessage(msg));
-                });
-                return;
-            } else {
+            if (accessToken) {
                 node.sendMessage(accessToken, node.prepareMessage(msg));
             }
         });
@@ -226,13 +208,14 @@ module.exports = function(RED) {
             }
             done();
         });
+        
 
         this.releaseInterval = (intervalObj) => {
             clearInterval(intervalObj);
         };
-        if (!this.isInitialized()) {
+        if (!_isInitialized()) {
             const intervalObj = setInterval(() => {
-                if (this.isInitialized()) {
+                if (_isInitialized()) {
                     this.releaseInterval(intervalObj);
                 }
               }, 2000);
