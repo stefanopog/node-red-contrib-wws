@@ -1,6 +1,6 @@
 {
     "name": "node-red-contrib-wws",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "description": "Node-RED nodes to integrate with IBM Watson Workspace",
     "dependencies": {
         "body-parser": "^1.18.2",
