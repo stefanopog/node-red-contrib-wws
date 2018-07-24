@@ -8,21 +8,16 @@ module.exports = function(RED) {
     var node = this;
 
     //Check for token on start up
-    const tokenFsm = node.application.getStateMachine();
-    if (!tokenFsm) {
-        node.error("Please configure your account information first!");
+    if (!node.application || !node.application.hasAccessToken()) {
+      node.error("Please configure your Watson Workspace App first!");
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
     }
-
-    this.isInitialized = () => {
-        var initialized = false;
-        if (tokenFsm.getAccessToken()){
-            node.status({fill: "green", shape: "dot", text: "token available"});
-            initialized = true;
-        } else {
-            node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
-        }
-        return initialized;
-        
+    function _isInitialized() {
+      let token;
+      if (node.application && node.application.hasAccessToken()) {
+          token = node.application.getAccessToken(node);
+      }
+      return (token) ? true : false;
     };
 
     this.on("input", function(msg) {
@@ -32,9 +27,8 @@ module.exports = function(RED) {
         return;
       }
 
-      var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);        
-      var host = this.application.api;
-      var bearerToken = msg.wwsToken || accessToken.token.access_token;
+      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
+      let bearerToken = node.application.getAccessToken(node).access_token;
 
       _wwsFocusPost(bearerToken, text, host).then((res) => {
         if (res.errors) {
@@ -57,15 +51,15 @@ module.exports = function(RED) {
         node.error("Error getting Focus.", err);
       });
       setTimeout(() => {
-          node.isInitialized();
+          _isInitialized();
       }, 2000);
     });
     this.releaseInterval = (intervalObj) => {
       clearInterval(intervalObj);
     };
-    if (!this.isInitialized()) {
+    if (!_isInitialized()) {
         const intervalObj = setInterval(() => {
-            if (this.isInitialized()) {
+            if (_isInitialized()) {
                 this.releaseInterval(intervalObj);
             };
           }, 2000);
