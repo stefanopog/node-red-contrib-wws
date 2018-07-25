@@ -540,7 +540,7 @@ module.exports = function(RED) {
 
     });
 
-    // Http Endpoint to remove the current token
+    // Http Endpoint to get the current IMG URL of the avatar
     RED.httpAdmin.get('/wws/app/:id/photo', (req, res) => {
         var oauthConfig = getOAuthConfig(req.params.id);
         RED.log.trace("OAuthConfig: " + JSON.stringify(oauthConfig));
@@ -557,10 +557,7 @@ module.exports = function(RED) {
                 status: 404
             }
         }
-        res.json({
-            oauthConfig: oauthConfig
-        });
-        return;
+        res.json(body);
     });
 
     // HTTP Endpoint to add the app photo

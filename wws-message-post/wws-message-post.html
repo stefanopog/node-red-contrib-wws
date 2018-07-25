@@ -170,6 +170,26 @@
 </script>
 
 <script type="text/javascript">
+
+    function _getImgUrl(id) {
+        return $.getJSON("wws/app/"+ id +"/photo")
+        .done((data, textStatus, xhr) => {
+            console.log("data: " + JSON.stringify(data));
+            console.log("textStatus: " + JSON.stringify(textStatus));
+            console.log("status: " + JSON.stringify(xhr));
+        }).fail(( xhr, textStatus, error ) => {
+            console.log("xhr: " + JSON.stringify(xhr));
+            console.log("textStatus: " + JSON.stringify(textStatus));
+            console.log("error: " + JSON.stringify(error));
+            var err = textStatus + ", " + JSON.stringify(error);
+            console.log( "Request Failed: " + err );
+        }).always((data, textStatus, xhr) => {
+            console.log("data: " + JSON.stringify(data));
+            console.log("textStatus: " + JSON.stringify(textStatus));
+            console.log("status: " + JSON.stringify(xhr));
+        }); 
+    };
+
     RED.nodes.registerType('wws-message-post',{
         category: 'Watson Work',
         color:"#11ABA5",
@@ -216,11 +236,19 @@
             function addAppName(configNodeId) {
                 if ($("#node-input-application option:selected").html().length>0 && configNodeId !== "_ADD_" ) {
                     $("#preview-account").html($("#node-input-application option:selected").html());
-                    let url = $("#node-input-picture").val();
-                    if (!url) {
-                        url = "picPlaceHolder";
-                    }
-                    toggleAvatarSection(url);
+                    _getImgUrl(configNodeId)
+                    .then((result) => {
+                        let url;
+                        if (result.error) {
+                            console.error("Could not receive ImgUrl! " + result.message);
+                            url = "placeHolder";
+                        } else if (result.url) {
+                            url = result.url;
+                        } else {
+                            console.error("Check Output!");
+                        }
+                        toggleAvatarSection(url);
+                    });
                 } else {
                     $("#preview-account").html("");
                     toggleAvatarSection("");
