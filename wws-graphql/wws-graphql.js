@@ -4,6 +4,39 @@ module.exports = function (RED) {
   const ALL_FLAGS = "PUBLIC, BETA, DIRECT_MESSAGING, FAVORITES, USERSPACEATTRIBUTES, MENTION, TYPED_ANNOTATIONS, SPACE_TEMPLATE, SPACE_MEMBERS, EXPERIMENTAL";
   const BETA_EXP_FLAGS = "PUBLIC,BETA,EXPERIMENTAL";
 
+    //
+    // Helper Methods to simplify the code to initialize the token
+    //
+
+    // check if token is available in credentials - otherwise poll
+    function _initializeToken(node) {
+      //Check for token on start up
+      if (!node.application || !node.application.hasAccessToken()) {
+        node.error("Please configure your Watson Workspace App first!");
+        node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      }
+      if (!_isInitialized(node)) {
+        const intervalObj = setInterval(() => {
+          if (_isInitialized(node)) {
+            clearInterval(intervalObj);
+          }
+        }, 2000);
+      }
+    }
+    // resets the node status back to initial state - in case a call has been executed
+    function _resetStatus(node) {
+      setTimeout(() => {_isInitialized(node); }, 2000);
+    }
+    
+    // base function which checks and provides the access token - including a refresh token.
+    function _isInitialized(node) {
+      let token;
+      if (node.application && node.application.hasAccessToken()) {
+          token = node.application.getAccessToken(node);
+      }
+      return (token) ? true : false;
+    };  
+
   //
   //  Generic graphQL Node
   //
@@ -11,37 +44,7 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-
-    //Check for token on start up
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-
-    // Helper Methods to simplify the code to initialize the token
-    function _initializeToken() {
-      if (!_isInitialized()) {
-        const intervalObj = setInterval(() => {
-          if (_isInitialized()) {
-            clearInterval(intervalObj);
-          }
-        }, 2000);
-      }
-    }
-
-    function _resetStatus() {
-      setTimeout(() => {_isInitialized(); }, 2000);
-    }
-
-    function _isInitialized() {
-      let token;
-      if (node.application && node.application.hasAccessToken()) {
-          token = node.application.getAccessToken(node);
-      }
-      return (token) ? true : false;
-    };
-
-    _initializeToken();
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       if (!msg.payload) {
@@ -70,7 +73,7 @@ module.exports = function (RED) {
         console.log("Error while posting GraphQL query to WWS." + JSON.stringify(res.error, " ", 2));
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
       });
-      _resetStatus();
+      _resetStatus(node);
     });
   }
 
@@ -102,26 +105,7 @@ module.exports = function (RED) {
     this.application = RED.nodes.getNode(config.application);
     var node = this;
 
-    //Check for token on start up
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-    function _isInitialized() {
-      let token;
-      if (node.application && node.application.hasAccessToken()) {
-          token = node.application.getAccessToken(node);
-      }
-      return (token) ? true : false;
-    };
-
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        }
-      }, 2000);
-    }
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       //
@@ -348,27 +332,7 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-
-    //Check for token on start up
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-    function _isInitialized() {
-      let token;
-      if (node.application && node.application.hasAccessToken()) {
-          token = node.application.getAccessToken(node);
-      }
-      return (token) ? true : false;
-    };
-
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        }
-      }, 2000);
-    }
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       //
@@ -467,26 +431,7 @@ module.exports = function (RED) {
     this.application = RED.nodes.getNode(config.application);
     var node = this;
 
-    //Check for token on start up
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-    function _isInitialized() {
-      let token;
-      if (node.application && node.application.hasAccessToken()) {
-          token = node.application.getAccessToken(node);
-      }
-      return (token) ? true : false;
-    };
-
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        }
-      }, 2000);
-    }
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       var actionId;
@@ -643,9 +588,8 @@ module.exports = function (RED) {
       //  corresponds to the Actios ID.
       //  So we are ready to build the graphQL query to retrieve the annotations 
       //
-      var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);
-      var bearerToken = msg.wwsToken || accessToken.token.access_token;
-      var host = this.application.api;
+      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       var query = 'query getAnnotations { message(id: "' + referralMessageId + '"){annotations}}';
       //
       //  Retrieve the annotations for the given Message
@@ -730,26 +674,7 @@ module.exports = function (RED) {
     this.application = RED.nodes.getNode(config.application);
     var node = this;
 
-    //Check for token on start up
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-    function _isInitialized() {
-      let token;
-      if (node.application && node.application.hasAccessToken()) {
-          token = node.application.getAccessToken(node);
-      }
-      return (token) ? true : false;
-    };
-
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        };
-      }, 2000);
-    };
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       var templateId = '';
@@ -816,26 +741,7 @@ module.exports = function (RED) {
     this.application = RED.nodes.getNode(config.application);
     var node = this;
 
-    //Check for token on start up
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-    function _isInitialized() {
-      let token;
-      if (node.application && node.application.hasAccessToken()) {
-          token = node.application.getAccessToken(node);
-      }
-      return (token) ? true : false;
-    };
-
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        };
-      }, 2000);
-    };
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       var spaceId = '';
@@ -929,26 +835,7 @@ module.exports = function (RED) {
     var betweenQuotes = /"([^"\\]*(\\.[^"\\]*)*)"/;
     var parExp = /(\S+)\s*=\s*([^\s"]+|"[^"]*")/;
 
-    //Check for token on start up
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-    function _isInitialized() {
-      let token;
-      if (node.application && node.application.hasAccessToken()) {
-          token = node.application.getAccessToken(node);
-      }
-      return (token) ? true : false;
-    };
-
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        };
-      }, 2000);
-    };
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       //
@@ -1260,26 +1147,7 @@ module.exports = function (RED) {
     var betweenQuotes = /"([^"\\]*(\\.[^"\\]*)*)"/;
     var parExp = /(\S+)\s*=\s*([^\s"]+|"[^"]*")/;
 
-    //Check for token on start up
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-    function _isInitialized() {
-      let token;
-      if (node.application && node.application.hasAccessToken()) {
-          token = node.application.getAccessToken(node);
-      }
-      return (token) ? true : false;
-    };
-
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        };
-      }, 2000);
-    };
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       //
@@ -1554,33 +1422,7 @@ module.exports = function (RED) {
     this.application = RED.nodes.getNode(config.application);
     var node = this;
 
-    function _isInitialized() {
-      var initialized = false;
-      if (tokenFsm.getAccessToken()) {
-        node.status({fill: "green", shape: "dot", text: "token available"});
-        initialized = true;
-      } else {
-        node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
-      }
-      return initialized;
-    }
-    //
-    //  Check for token on start up
-    //
-    const tokenFsm = node.application.getStateMachine();
-    if (!tokenFsm) {
-      console.log("wwsAddFocus: No Account Info");
-      node.status({fill:"red", shape:"dot", text:"Please configure your account information first!"});
-      node.error("Please configure your account information first!");
-      return;
-    }
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        };
-      }, 2000);
-    };
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       var messageId = '';
@@ -1694,9 +1536,8 @@ module.exports = function (RED) {
       //
       //  The first thing we have to do is to get the Message from its Id
       //
-      var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);
-      var bearerToken = msg.wwsToken || accessToken.token.access_token;
-      var host = this.application.api;
+      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       var query = _getMessageInformation(messageId);
       //
       //  Retrieve the details of the given Message
@@ -1793,33 +1634,7 @@ module.exports = function (RED) {
     this.application = RED.nodes.getNode(config.application);
     var node = this;
 
-    function _isInitialized() {
-      var initialized = false;
-      if (tokenFsm.getAccessToken()) {
-        node.status({fill: "green", shape: "dot", text: "token available"});
-        initialized = true;
-      } else {
-        node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
-      }
-      return initialized;
-    }
-    //
-    //  Check for token on start up
-    //
-    const tokenFsm = node.application.getStateMachine();
-    if (!tokenFsm) {
-      console.log("wwsActionFulfillment: No Account Info");
-      node.status({fill:"red", shape:"dot", text:"Please configure your account information first!"});
-      node.error("Please configure your account information first!");
-      return;
-    }
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        };
-      }, 2000);
-    };
+    _initializeToken(node);
 
     this.on("input", (msg) => {
       var AFElements = '';
@@ -1929,9 +1744,8 @@ module.exports = function (RED) {
       //
       //  Send the AF Mutation
       //
-      var accessToken = this.application.verifyAccessToken(tokenFsm.getAccessToken(), this);
-      var bearerToken = msg.wwsToken || accessToken.token.access_token;
-      var host = this.application.api;
+      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       wwsGraphQL(bearerToken, host, AFMutation, null, null, BETA_EXP_FLAGS)
       .then((res) => {
         if (res.errors) {
@@ -1969,17 +1783,9 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
     this.application = RED.nodes.getNode(config.application);
     var node = this;
+    
+    _initializeToken(node);
 
-    function _isInitialized() {
-      var initialized = false;
-      if (tokenFsm.getAccessToken()) {
-        node.status({fill: "green", shape: "dot", text: "token available"});
-        initialized = true;
-      } else {
-        node.status({fill: "grey", shape: "dot", text: "uninitialized token"});
-      }
-      return initialized;
-    }
     function __myJSONparse(str) {
       try {
           let a = JSON.parse(str);
@@ -1988,23 +1794,6 @@ module.exports = function (RED) {
           return str;
       }
     }                             
-
-    //
-    //  Check for token on start up
-    //
-    const tokenFsm = node.application.getStateMachine();
-    if (!tokenFsm) {
-      console.log("wwsFilterAnnotations: No Account Info");
-      node.status({fill:"red", shape:"dot", text:"No Account Info"});
-      node.error("Please configure your account information first!");
-    }
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        }
-      }, 2000);
-    }
 
     this.on("input", (msg) => {
       var annotationType;
