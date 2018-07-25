@@ -1,10 +1,9 @@
-var request = require("request");
 var rp = require("request-promise-native");
 
 module.exports = function (RED) {
   const ALL_FLAGS = "PUBLIC, BETA, DIRECT_MESSAGING, FAVORITES, USERSPACEATTRIBUTES, MENTION, TYPED_ANNOTATIONS, SPACE_TEMPLATE, SPACE_MEMBERS, EXPERIMENTAL";
   const BETA_EXP_FLAGS = "PUBLIC,BETA,EXPERIMENTAL";
-  
+
   //
   //  Generic graphQL Node
   //
@@ -18,6 +17,22 @@ module.exports = function (RED) {
       node.error("Please configure your Watson Workspace App first!");
       node.status({fill: "red", shape: "dot", text: "token unavailable"});
     }
+
+    // Helper Methods to simplify the code to initialize the token
+    function _initializeToken() {
+      if (!_isInitialized()) {
+        const intervalObj = setInterval(() => {
+          if (_isInitialized()) {
+            clearInterval(intervalObj);
+          }
+        }, 2000);
+      }
+    }
+
+    function _resetStatus() {
+      setTimeout(() => {_isInitialized(); }, 2000);
+    }
+
     function _isInitialized() {
       let token;
       if (node.application && node.application.hasAccessToken()) {
@@ -26,13 +41,7 @@ module.exports = function (RED) {
       return (token) ? true : false;
     };
 
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        }
-      }, 2000);
-    }
+    _initializeToken();
 
     this.on("input", (msg) => {
       if (!msg.payload) {
@@ -43,7 +52,7 @@ module.exports = function (RED) {
       }
 
       let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       
       var viewType = "PUBLIC";
       if (config.wwsBetaFeatures) viewType += ',BETA';
@@ -61,7 +70,7 @@ module.exports = function (RED) {
         console.log("Error while posting GraphQL query to WWS." + JSON.stringify(res.error, " ", 2));
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
       });
-      setTimeout(() => {_isInitialized(); }, 2000);
+      _resetStatus();
     });
   }
 
@@ -137,7 +146,7 @@ module.exports = function (RED) {
 
 
       let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
 
       var query = _getMessageInformation(messageId);
       //
@@ -314,7 +323,7 @@ module.exports = function (RED) {
 
 
       let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
 
       //
       //  We asynchronously execute all the things
@@ -414,7 +423,7 @@ module.exports = function (RED) {
       }
 
       let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
 
 
       var mutation = _AddOrRemoveMutation(spaceId, members, config.ARoperation);
@@ -762,7 +771,7 @@ module.exports = function (RED) {
 
 
       let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
 
       var query = _getTemplateQuery(templateId);
       console.log(query);
@@ -848,7 +857,7 @@ module.exports = function (RED) {
 
 
       let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
 
       var query = _getTemplatedSpaceQuery(spaceId);
       console.log(query);
@@ -1077,7 +1086,7 @@ module.exports = function (RED) {
       //  In order to do this, we first need to get information about the template from which this space has been created
       //
       let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       var query = _getTemplatedSpaceQuery(spaceId);
       wwsGraphQL(bearerToken, host, query, BETA_EXP_FLAGS)
       .then((res) => {
@@ -1392,7 +1401,7 @@ module.exports = function (RED) {
       //  In order to do this, we first need to get information about the template
       //
       let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       //
       //  The Mutation is independent if there are Properties or not (this will change the way in which the "variables" will be defined)
       //  So we can define the mutation upfront
