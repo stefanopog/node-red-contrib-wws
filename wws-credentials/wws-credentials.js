@@ -539,6 +539,30 @@ module.exports = function(RED) {
         }
 
     });
+
+    // Http Endpoint to remove the current token
+    RED.httpAdmin.get('/wws/app/:id/photo', (req, res) => {
+        var oauthConfig = getOAuthConfig(req.params.id);
+        RED.log.trace("OAuthConfig: " + JSON.stringify(oauthConfig));
+        let body = {};
+        if (oauthConfig && oauthConfig.token) {
+            var token = oauthConfig.token;
+            res.status(200);
+            body.url = oauthConfig.api + "/photos/" + token.id;
+        } else {
+            res.status(404);
+            body.error= {
+                message: "No token information could be found for node " + req.params.id,
+                error: "Not found",
+                status: 404
+            }
+        }
+        res.json({
+            oauthConfig: oauthConfig
+        });
+        return;
+    });
+
     // HTTP Endpoint to add the app photo
     RED.httpAdmin.post('/wws/app/:id/photo', (req, res) => {
         var oauthConfig = getOAuthConfig(req.params.id);
