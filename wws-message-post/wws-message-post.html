@@ -107,7 +107,7 @@
             <span class="property-type">string | markdown</span>
         </dt>
         <dd>The message to be posted to a space.</dd>
-        <dt class="optional">wwsSpaceId <span class="property-type">string</span></dt>
+        <dt class="optional">spaceId <span class="property-type">string</span></dt>
         <dd> The space id to which the message should be posted to. The app must be a member of that space.</dd>
         <dt class="optional">title <span class="property-type">string</span></dt>
         <dd> The title (in bold) to be displayed above the message.</dd>
@@ -158,7 +158,7 @@
         <dt class="optional">Picture</dt>
             <dd>In case a custom profile photo should be shown next to a message, uplaod a JPEG file not larger than 200kB. You will receive a status message after you clicked the upload button.</dd>
         <dt class="optional">Space ID</dt>
-            <dd>The space ID to which this message should be send to. This can be overriden by <code>msg.wwsSpaceId</code></dd>
+            <dd>The space ID to which this message should be send to. This can be overriden by <code>msg.spaceId</code></dd>
     </dl>
     <h3>References</h3>
     <ul>
@@ -186,9 +186,9 @@
         icon: "wws.png",
         align: "left",
         label: function() {
-        		return this.name || "send message as app";
+        		return this.name || "send message";
         },
-        paletteLabel: "Send Message",
+        paletteLabel: "send message",
         oneditprepare: function() {
             function verifyInput(fileInputField) {
                 return fileInputField[0].files.length>0;

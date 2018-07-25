@@ -131,6 +131,14 @@ module.exports = function(RED) {
         //
         function __wwsGraphQL(accessToken, host, query, operationName, variables, viewType) {
             var uri = host + "/graphql";
+            /*
+            if (operationName) {
+              uri += "?operationName=" + operationName;
+            }
+            if (variables) {
+              uri += (uri.includes("?") ? "&" : "?") + "variables=" + variables;
+            }
+            */
             var options = {
               method: "POST",
               uri: uri,
@@ -213,10 +221,10 @@ module.exports = function(RED) {
                     return;
                 });
         }
-        //
-        //  Send the Message
-        //
         function __sendFinalMessage(msg, config, type) {
+            //
+            //  Check if there is ONLY one output for everything or we need to separate outputs
+            //
             console.log('wwsWebhook.__sendFinalMessage for type ' + type);
             //
             //  Check if we are dealing with Annotations originating from Own App
@@ -234,9 +242,6 @@ module.exports = function(RED) {
                     }
                 }
             }
-            //
-            //  Check if there is ONLY one output for everything or we need to separate outputs
-            //
             if (config.filterOutputs) {
                 //
                 //  Array of answers... only one of which is not NULL corresponding to the req.body.type
@@ -263,13 +268,11 @@ module.exports = function(RED) {
                 //
                 //  Provide the answer
                 //
-                node.status({fill: "green", shape: "dot", text: "action processed " + type});
                 node.send(outArray);
             } else {
                 //
                 //  No Filtering
                 //
-                node.status({fill: "green", shape: "dot", text: "action processed " + type});
                 node.send(msg);
             }
         }
@@ -435,7 +438,7 @@ module.exports = function(RED) {
                                     //  ....and re-add it ...
                                     //
                                     node.theCache.push(msg.wwsMessageId, req.body);
-                                     break;
+                                    break;
                                 case "message-deleted":
                                     //
                                     //  Message-Deleted
@@ -473,7 +476,6 @@ module.exports = function(RED) {
                                     //  The Annotation refers to a Message.
                                     //  Is the message already in Cache ?
                                     //
-                                    msg.wwsReferralMsgId = __whichOriginalMessage(msg);
                                     msgToBeRetrieved = __whichOriginalMessage(msg);
                                     originalMessage = node.theCache.getById(msgToBeRetrieved);
                                     if (originalMessage) {
@@ -505,7 +507,6 @@ module.exports = function(RED) {
                                     //  The Annotation refers to a Message.
                                     //  Is the message already in Cache ?
                                     //
-                                    msg.wwsReferralMsgId = __whichOriginalMessage(msg);
                                     msgToBeRetrieved = __whichOriginalMessage(msg);
                                     originalMessage = node.theCache.getById(msgToBeRetrieved);
                                     if (originalMessage) {
@@ -558,7 +559,6 @@ module.exports = function(RED) {
                                     //  The Reaction refers to a Message.
                                     //  Is the message already in Cache ?
                                     //
-                                    msg.wwsReferralMsgId = __whichOriginalMessage(msg);
                                     msgToBeRetrieved = __whichOriginalMessage(msg);
                                     originalMessage = node.theCache.getById(msgToBeRetrieved);
                                     if (originalMessage) {
@@ -584,7 +584,6 @@ module.exports = function(RED) {
                                     //  The Reaction refers to a Message.
                                     //  Is the message already in Cache ?
                                     //
-                                    msg.wwsReferralMsgId = __whichOriginalMessage(msg);
                                     msgToBeRetrieved = __whichOriginalMessage(msg);
                                     originalMessage = node.theCache.getById(msgToBeRetrieved);
                                     if (originalMessage) {
