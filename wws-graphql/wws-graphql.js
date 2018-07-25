@@ -169,7 +169,7 @@ module.exports = function (RED) {
         node.error("errors getting Message " + messageId, err);
         return;
       });
-      setTimeout(() => {_isInitialized(); }, 2000);
+      _resetStatus(node);
     });
   }
 
@@ -251,27 +251,6 @@ module.exports = function (RED) {
       });
     }
 
-    //Check for token on start up
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-    function _isInitialized() {
-      let token;
-      if (node.application && node.application.hasAccessToken()) {
-          token = node.application.getAccessToken(node);
-      }
-      return (token) ? true : false;
-    };
-
-    if (!_isInitialized()) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized()) {
-          clearInterval(intervalObj);
-        }
-      }, 2000);
-    }
-
     this.on("input", (msg) => {
       //
       //  Get People
@@ -320,7 +299,7 @@ module.exports = function (RED) {
         });
       }
       _beforeSend(msg);
-      setTimeout(() => {_isInitialized(); }, 2000);
+      _resetStatus(node);
     });
   }
 
@@ -419,7 +398,7 @@ module.exports = function (RED) {
         node.error("Errors while adding/removing Members...", err);
         return;
       });
-      setTimeout(() => {_isInitialized(); }, 2000);
+      _resetStatus(node);
     });
   }
 
@@ -728,7 +707,7 @@ module.exports = function (RED) {
         node.error("Sending query failed...", err);
         return;
       });
-      setTimeout(() => {_isInitialized(); }, 2000);
+      _resetStatus(node);
     });
   }
   
@@ -820,7 +799,7 @@ module.exports = function (RED) {
         node.error("Sending query failed...", err);
         return;
       });
-      setTimeout(() => {_isInitialized(); }, 2000);
+      _resetStatus(node);
     });
   }
 
@@ -1131,7 +1110,7 @@ module.exports = function (RED) {
         node.error("Error while getting templatedSpace.", err);
         return;
       });
-      setTimeout(() => {_isInitialized(); }, 2000);
+      _resetStatus(node);
     });
   }
 
@@ -1409,7 +1388,7 @@ module.exports = function (RED) {
         node.error("Sending query failed...", err);
         return;
       });
-      setTimeout(() => {_isInitialized(); }, 2000);       
+      _resetStatus(node);       
     });
   }
   
@@ -1622,7 +1601,7 @@ module.exports = function (RED) {
         node.status({fill: "red", shape: "ring", text: "error querying for messageId"});
         node.error('Error querying for messageId ' + messageId, msg);
       });
-      setTimeout(() => {_isInitialized(); }, 2000);
+      _resetStatus(node);
     });
   }
 
@@ -1771,7 +1750,7 @@ module.exports = function (RED) {
         node.error("Error while posting AF mutation", err);
         return;
       });
-      setTimeout(() => {_isInitialized(); }, 2000);
+      _resetStatus(node);
     });
   }
 
