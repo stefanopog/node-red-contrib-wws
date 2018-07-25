@@ -49,7 +49,7 @@ module.exports = function(RED) {
       }
 
       const host = node.application &&  node.application.getApiUrl()|| "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
 
 
       wwsFilePost(bearerToken, space, file, host).then((res) => {

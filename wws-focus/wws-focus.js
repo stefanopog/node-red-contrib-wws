@@ -28,7 +28,7 @@ module.exports = function(RED) {
       }
 
       let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = node.application.getAccessToken(node).access_token;
+      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
 
       _wwsFocusPost(bearerToken, text, host).then((res) => {
         if (res.errors) {

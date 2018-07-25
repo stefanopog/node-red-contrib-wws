@@ -71,7 +71,7 @@ module.exports = function(RED) {
         this.sendMessage = (token, msg) => {
             node.status({fill:"blue",shape:"dot",text: "sending message"});
             //Get access token
-            let bearerToken = token.access_token;
+            let bearerToken = msg.wwsToken || token.access_token;
             //set http method 
             var method = "POST";
             //set authorization and content-type headers
