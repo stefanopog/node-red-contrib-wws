@@ -3,8 +3,6 @@ var rp = require("request-promise-native");
 module.exports = function(RED) {
     "use strict";
     const bodyParser = require("body-parser");
-    const OAuth2 = require('simple-oauth2');
-    const StateMachine = require('javascript-state-machine');
     const crypto = require('crypto');
     const jsonParser = bodyParser.json();
     //
@@ -97,11 +95,13 @@ module.exports = function(RED) {
     function WWSWebhookNode(config) {
         RED.nodes.createNode(this,config);
         this.active = true;
-        this.account = config.account;
-        this.accountConfig = RED.nodes.getNode(this.account);
-        this.accountConfigCredentials = RED.nodes.getCredentials(this.account);
+        this.application = RED.nodes.getNode(config.application);
         this.webhookPath = config.webhookPath;
-        const appId = this.accountConfigCredentials.clientId;    
+        if (!this.application) {
+            this.error("Please configure your Watson Workspace App first!");
+        } else {
+            var appId = this.application.clientId;
+        }  
         //
         //  Cache management
         //
@@ -112,8 +112,6 @@ module.exports = function(RED) {
         }
         this.theCache.dumpCache();
         var node = this;
-
-        const tokenFsm = node.accountConfig.getStateMachine();
         //
         //  Helper to build the graphQL query string
         //
@@ -151,9 +149,8 @@ module.exports = function(RED) {
         //  Get Message Details
         //
         function __wwsGetMessage(msg, messageId, type) {
-            var accessToken = node.accountConfig.verifyAccessToken(tokenFsm.getAccessToken(), node);
-            var bearerToken = accessToken.token.access_token;
-            var host = node.accountConfig.api;
+            let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
+            let bearerToken = node.application.getAccessToken(node).access_token;
             //
             //  Build the query
             //
@@ -282,11 +279,10 @@ module.exports = function(RED) {
         //
         //  Check for token on start up
         //
-        if (!tokenFsm) {
-            console.log("WWSWebhookNode: No Account Info");
-            node.status({fill: "red", shape: "dot", text: "Please configure your account information first!"});
-            node.error("WWSWebhookNode: Please configure your account information first!");
-            return;
+        //Check for token on start up
+        if (!node.application || !node.application.hasAccessToken()) {
+            node.error("Please configure your Watson Workspace App first!");
+            node.status({fill: "red", shape: "dot", text: "token unavailable"});
         }
         //
         //  Remove webhook when deleted
