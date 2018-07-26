@@ -18,150 +18,15 @@ module.exports = function(RED) {
         this.clientSecret = config.clientSecret;
         this.picture = config.picture;
 
-        /* Remove this for productive usage*/
-        console.log("Credentials for [" + this.id + "] " + (this.accountName ? this.accountName : ""));
-        console.log("=>" + JSON.stringify(this.credentials, "", 2));
-        
-        /*
-        let stringOrDefault = (value, defaultValue) => {
-            return typeof value == 'string' && value.length > 0 ? value : defaultValue;
-        }
-        this.api = config.api;
-        this.tokenPath = stringOrDefault(config.tokenPath, undefined);
-        this.revokePath = stringOrDefault(config.revokePath, undefined);
-        this.authorizePath = stringOrDefault(config.authorizePath, undefined);
-        this.tokenType = config.tokenType;
-        
-        const node = this;
-        const credentials = {
-            client: {
-                id: node.credentials.clientId,
-                secret: node.credentials.clientSecret
-            },
-            auth: {
-                tokenHost: config.api,
-                tokenPath: config.tokenPath,
-                revokePath: config.revokePath,
-                authorizeHost: config.api,
-                authorizePath: config.authorizePath
-            }
-        };
-        const oauth2 = OAuth2.create(credentials);
-        var oauthConfig = _getOAuthConfig(this.id);
-        if (!oauthConfig) {
-            RED.log.info("Creating new oauthConfig");
-            _createOAuthConfig(this.id);
-            oauthConfig = _getOAuthConfig(this.id);
-        }
-        if (!oauthConfig.credentials) {
-            oauthConfig.credentials = credentials;
-            _storeOAuthConfig(node.id, oauthConfig);
-        }
-        
-        const fsm = new StateMachine({
-            init: 'no_token',
-            transitions: [
-                { name: 'obtain', from: 'no_token', to: 'has_token' },
-                { name: 'invalidate', from: 'has_token', to: 'token_expired' },
-                { name: 'renew', from: 'token_expired', to: 'has_token' },
-                { name: 'failed', from: 'token_expired', to: 'no_token' }
-            ],
-            data: {
-                token:"",
-                tokenType: tokenType
-            },
-            methods: {
-                onObtain: function(transition, statusNode) {
-                    let tokenConfig = {};
-                    return new Promise((resolve, reject) => {
-                        oauth2.clientCredentials.getToken(tokenConfig)
-                            .then((result) => {
-                                this.appToken = oauth2.accessToken.create(result);
-                                var oauthConfig = _getOAuthConfig(node.id);
-                                if (!oauthConfig) {
-                                    oauthConfig = _createOAuthConfig(node.id);
-                                }
-                                oauthConfig.app = this.appToken;
-                                _storeOAuthConfig(node.id, oauthConfig);
-                                if (statusNode) {
-                                    statusNode.status({fill: "green", shape: "dot", text: "token available"});
-                                }
-                                resolve();
-                            })
-                            .catch((error) => {
-                                node.error("Obtaining Access Token Failed: " + error.message, error);
-                                if (statusNode) {
-                                    statusNode.status({fill: "red", shape: "dot", text: "error"});
-                                }
-                                resolve();
-                            });
-                    });
-                },
-                onRenew: function(transition, statusNode) {
-                	let tokenConfig = {};
-                    return new Promise((resolve, reject) => {
-                        oauth2.clientCredentials.getToken(tokenConfig)
-                        .then((result) => {
-                            this.appToken = oauth2.accessToken.create(result);
-                            var oauthConfig = _getOAuthConfig(node.id);
-                            if (!oauthConfig) {
-                                oauthConfig = _createOAuthConfig(node.id);
-                            }
-                            oauthConfig.app = this.appToken;
-                            _storeOAuthConfig(node.id, oauthConfig);
-                            node.log(JSON.stringify(this.appToken));
-                            //TODO: Store in RED.settings.
-                            node.context().global.set(node.id, this);
-                            if (statusNode) {
-                                statusNode.status({fill: "green", shape: "dot", text: "token available"});
-                            }
-                            resolve(this.appToken);
-                        })
-                        .catch((error) => {
-                            node.error("Access Token Renew Failed: " + error.message, error);
-                            done();
-                            fsm.failed(statusNode);
-                        });
-                    });
-                },
-                onInvalidate: function(transition, statusNode) {
-                    if (statusNode) {
-                        statusNode.status({fill: "red", shape: "dot", text: "token expired"});
-                    }
-                },
-                onFailed: function(transition, statusNode) {
-                    if (statusNode) {
-                        statusNode.status({fill: "grey", shape: "dot", text: "uninitialized token"});
-                    }
-                },
-                getAccessToken: function() {
-                    return this.appToken;
-                }
-            }
-        });
-        this.getStateMachine = function() {
-            return fsm;
-        };
-        
-        this.verifyAccessToken = (accessToken, statusNode) => {
-            if (accessToken.expired()) {
-                RED.log.log("Access Token expired, renewing token...")
-                fsm.invalidate(statusNode);
-                fsm.renew(statusNode)
-                .then((accessToken) => {
-                    RED.log.log("Access Token expired, renewing token...")
-                    return accessToken;
-                })
-                .catch((error) => {
-                    RED.log.log("Renew access token failed. Reason: " + JSON.stringify(error));
-                });
-            } else {
-                return accessToken;
-            }
-        };
-        */
+        console.log("*****************************************");
+        console.log("* Debug mode is " + (process.env.debug ? "enabled":"disabled"));
+        console.log("*****************************************");
+
+        _log("###############################################");
+        _log("Credentials for [" + this.id + "] " + (this.accountName ? this.accountName : ""));
+        _logJson("=>", this.credentials);
+        _log("###############################################");
         this.on('close', function(removed, done) {
-            RED.log.info("Close Event called");
             if (removed) {
                 // This node has been deleted
                 RED.log.info("Deleting node "+ this.name +"["+this.id+"] from persistent cache....");
@@ -195,7 +60,7 @@ module.exports = function(RED) {
             const oauth2 = OAuth2.create(wwsCredentials.getCredentials());
             let tokenHelper = oauth2.accessToken.create(accessToken);
             if (tokenHelper && tokenHelper.expired()) {
-                console.log("Access Token expired, renewing token...")
+                _log("Access Token expired, renewing token...")
                 switch (this.credentials.tokenType) {
                     case "bot":
                         let tokenConfig = {};
@@ -209,8 +74,8 @@ module.exports = function(RED) {
                             return wwsCredentials.credentials.token;
                         })
                         .catch((error) => {
-                            RED.log.error("Error: " + error.message);
-                            console.log("Error: " + JSON.stringify(error));
+                            statusNode.error("Error: " + error.message);
+                            _logJson("Error: ", error);
                         });
                         break;
                     case "user":
@@ -224,8 +89,8 @@ module.exports = function(RED) {
                             return wwsCredentials.credentials.token;
                         })
                         .catch((error) => {
-                            RED.log.error("Error: " + error.message);
-                            console.log("Error: " + JSON.stringify(error));
+                            statusNode.error("Error: " + error.message);
+                            _logJson("Error: ", error);
                         });
                         break;
                 }
@@ -276,11 +141,11 @@ module.exports = function(RED) {
                 reject(error);
             }
             if (!retries) {
-                console.log("# of retries have not been provided for " + req.uri + ". Setting # of retries to '1'!");
+                _log("wwsRequest => # of retries have not been provided for " + req.uri + ". Setting # of retries to '1'!");
                 retries = 1;
             }
             if (!req.method) {
-                console.log("method has not been provided for " + req.uri + ". Setting method to 'GET'!");
+                _log("wwsRequest => method has not been provided for " + req.uri + ". Setting method to 'GET'!");
                 req.method = 'GET';
             }
             let token = wwsCredentials.credentials.token;
@@ -308,16 +173,17 @@ module.exports = function(RED) {
                 req.json = true;
             }
             
-            console.log("Options object => " + JSON.stringify(req, " ", 2));
+            _logJson("wwsRequest => Options object => ", req);
             rp(req)
             .then((response) => {
-                console.log("Response object (success) => " + JSON.stringify(response, " ", 2));
+                _logJson("wwsRequest => Response object (success) => ", response);
                 resolve(response);
             })
             .catch((error) => {
-                console.log("Response object (error) => " + JSON.stringify(error, " ", 2));
+                _logJson("wwsRequest => Response object (error) => ", error);
                 if (error.statusCode === 401 && retries > 0) {
                     wwsCredentials.warn('***** Token has expired, trying to refresh it ******** ');
+                    _log("wwsRequest => Token has expired, trying to refresh it");
                     retries--;
                     _refreshToken(wwsCredentials)
                     .then((success) => {
@@ -332,7 +198,7 @@ module.exports = function(RED) {
                                 reject(error);
                             });;
                         } else {
-                            wwsCredentials.error('Could not refresh the token, use the Editor to refresh it manually!');
+                            wwsCredentials.error('wwsRequest => Could not refresh the token, use Editor to refresh it manually!');
                             reject(error);
                         }
                     })
@@ -340,7 +206,7 @@ module.exports = function(RED) {
                         reject(error);
                     });
                 } else {
-                    console.log("Number of retries reached. Stopping here...")
+                    _log("wwsRequest => Number of retries reached. Stopping here...")
                     reject(error);
                 }
                 
@@ -367,7 +233,7 @@ module.exports = function(RED) {
     // HTTP Endpoint to receive the name based on tokenType
     RED.httpAdmin.get('/wws/app/:id/name/:userId', RED.auth.needsPermission('wws.read'), function(req, res) {
         var oauthConfig = _getOAuthConfig(req.params.id);
-        RED.log.trace("/name: " + JSON.stringify(oauthConfig));
+        _logJson("/name: ", oauthConfig);
         var bearerToken;
         var host;
         if (oauthConfig && oauthConfig.token) {
@@ -384,11 +250,9 @@ module.exports = function(RED) {
             res.sendStatus(400);
             return;
         }
-        RED.log.log("Token: " + bearerToken);
-        RED.log.log("Host: " + host);
         
         var query = "query getDisplayName { person (id: \"" + userId + "\") { id displayName } }";
-        RED.log.log("Query: " + query);
+        _log("/name/:userId => Query: " + query);
 
         function getDisplayName(host, bearerToken, query) {
             var uri = host + "/graphql";
@@ -403,13 +267,12 @@ module.exports = function(RED) {
                 query: query
               }
             };
-            RED.log.log(JSON.stringify(options));
             return rp(options);
         }
         if (bearerToken && host) {
             getDisplayName(host, bearerToken, query).then((response) => {
                 let userInformation = response.data.person;
-                RED.log.log("UserInformation: ", JSON.stringify(userInformation));
+                _logJson("/name/:userId => Success: ", userInformation);
                 let displayName;
                 switch (oauthConfig.tokenType) {
                     case "user":
@@ -424,8 +287,8 @@ module.exports = function(RED) {
                     appName: displayName
                 });
               }).catch((err) => {
+                _logJson("/name/:userId => Failure: ", err);
                 RED.log.error("Error while reading the display name. Reason: " +  err.message);
-                RED.log.log(JSON.stringify(err));
                 let displayMessage = err.message;
                 if (err.statusCode) {
                     switch (err.statusCode) {
@@ -477,14 +340,13 @@ module.exports = function(RED) {
                 }
                 oauthConfig.callback = callback;
                 oauthConfig.credentials = credentials;
-                RED.log.log("OAuthConfig:" + JSON.stringify(oauthConfig));
                 _storeOAuthConfig(req.params.id, oauthConfig);
                 var url = oauth2.authorizationCode.authorizeURL({
                     client_id: credentials.client.id,
                     redirect_uri: callback.callbackUrl,
                     state: callback.state
                 })
-                RED.log.log("Callback URL:" + url);
+               _log("/auth/url => Callback URL:" + url);
                 res.send({
                     'url': url
                 });
@@ -494,7 +356,7 @@ module.exports = function(RED) {
                 let tokenConfig = {};
                 oauth2.clientCredentials.getToken(tokenConfig)
                 .then((result) => {
-                    RED.log.info("AccessToken:" + JSON.stringify(result));
+                    _logJson("/auth/url => Success:" , result);
                     var scopes = result.scope.trim().split(" ");
                     result.scope = scopes;
                     res.json(result);
@@ -505,7 +367,7 @@ module.exports = function(RED) {
                     _storeOAuthConfig(req.params.id, oauthConfig);
                 })
                 .catch((error) => {
-                    RED.log.log("Error:" + JSON.stringify(error));
+                    _logJson("/auth/url => Error:" , error);
                     RED.log.error("Receiving Access Token failed: " + error.message);
                     res.sendStatus(error.status);
                 });
@@ -521,7 +383,7 @@ module.exports = function(RED) {
         }
 
         var oauthConfig = _getOAuthConfig(req.params.id);
-        RED.log.trace("Outh after callback: " + JSON.stringify(oauthConfig));
+        _logJson("/auth/callback => Outh after callback: ", oauthConfig);
         var state = "";
         if (oauthConfig && oauthConfig.callback) {
             state = oauthConfig.callback.state;
@@ -535,8 +397,8 @@ module.exports = function(RED) {
         }
         _getUserToken(oauthConfig.credentials, req.query.code, req.query.scope, oauthConfig.callback.callbackUrl)
         .then((response) => {
+            _logJson("/auth/callback => Success: ", response);
             var oauthConfig = _getOAuthConfig(req.params.id);
-            RED.log.info("User Token: " + JSON.stringify(response.token));
             var userToken = response.token;
             var scopes = userToken.scope.trim().split(" ");
             userToken.scope = scopes;
@@ -549,6 +411,7 @@ module.exports = function(RED) {
             _storeOAuthConfig(req.params.id, oauthConfig);
             res.sendStatus(200);
         }).catch((failure) => {
+            _logJson("/auth/callback => Failure: ", response);
             res.status(failure.status);
             res.json(failure);
         });
@@ -557,9 +420,8 @@ module.exports = function(RED) {
     // Http Endpoint to remove the current token
     RED.httpAdmin.get('/wws/app/:id/remove', (req, res) => {
         var oauthConfig = _getOAuthConfig(req.params.id);
-        RED.log.trace("OAuthConfig: " + JSON.stringify(oauthConfig));
         if (oauthConfig && oauthConfig.token) {
-
+            _logJson("/remove => Removing credentials: ", oauthConfig);
             _createOAuthConfig(req.params.id, oauthConfig.tokenType);
             res.status(200);
         } else {
@@ -597,16 +459,15 @@ module.exports = function(RED) {
                 query: query
               }
             };
-            RED.log.log(JSON.stringify(options));
             return rp(options);
         }
         if (bearerToken && host) {
             getSpaces(host, bearerToken, query).then((response) => {
                 var spaces = response.data.spaces.items;
-                RED.log.log("SPACES: ", JSON.stringify(spaces));
+                _logJson("/spaces => Success", response);
                 res.json(spaces);
               }).catch((err) => {
-                RED.log.log("Error while getting list of spaces.", err);
+                _logJson("/spaces => Failure", err);
                 res.json({
                     error: err
                 });
@@ -622,7 +483,6 @@ module.exports = function(RED) {
     // Http Endpoint to get the current IMG URL of the avatar
     RED.httpAdmin.get('/wws/app/:id/photo', (req, res) => {
         var oauthConfig = _getOAuthConfig(req.params.id);
-        RED.log.trace("OAuthConfig: " + JSON.stringify(oauthConfig));
         let body = {};
         if (oauthConfig && oauthConfig.token) {
             var token = oauthConfig.token;
@@ -729,6 +589,21 @@ module.exports = function(RED) {
     /*
      * Internal Helper Functions
      */
+
+    //Common logging function with JSON Objects
+    function _logJson(logMsg, jsonObject) {
+        var isDebug = process.env.debug || false;
+        if (isDebug) {
+            console.log("wws-credentials => " + (logMsg ? logMsg : "") + JSON.stringify(jsonObject, " ", 2));
+        };
+    }
+    //Common logging function
+    function _log(logMsg) {
+        var isDebug = process.env.debug || false;
+        if (isDebug) {
+            console.log("wws-credentials => " + logMsg);
+        };
+    }
     
     //	returns the credentials object from 
     //	RED.nodes.getCredentials or undefined otherwise
@@ -755,7 +630,7 @@ module.exports = function(RED) {
 
     //  stores the modified credentials object back to credentials store
     function _storeOAuthConfig(id/*wws-credentials.id*/, oauthConfig/*wws-credentials.credentials*/) {
-        RED.log.info("Storing => " + JSON.stringify(oauthConfig));
+        _logJson("Storing => " , oauthConfig);
         RED.nodes.addCredentials(id, oauthConfig);
     }
 
@@ -770,11 +645,12 @@ module.exports = function(RED) {
         return new Promise((resolve, reject) => {
             oauth2.authorizationCode.getToken(tokenConfig)
                 .then((result) => {
+                    _logJson("_getUserToken => Success:", result);
                     var token = oauth2.accessToken.create(result);
                     resolve(token);
                 })
                 .catch((error) => {
-                    RED.log.error('Obtaining Access Token Failed: ' + error.message, error);
+                    _logJson("_getUserToken => Failure:", error);
                     reject(error);
                 });
         });
@@ -784,8 +660,8 @@ module.exports = function(RED) {
     function _refreshToken(wwsCredentials/*wws-credentials*/) {
         return new Promise((resolve, reject) => {
             if (!wwsCredentials.credentials) {
-                wwsCredentials.error("Error: Not credentials could be found!");
-                console.log("Error: No credentials could be found for " + JSON.stringify(wwsCredentials));
+                wwsCredentials.error("_refreshToken => Error: No credentials could be found!");
+                _logJson("_refreshToken => Error: No credentials could be found for ", wwsCredentials);
                 let error = {
                     message: "Required object credentials could not be found!",
                     statusCode: 500,
@@ -800,6 +676,7 @@ module.exports = function(RED) {
                     let tokenConfig = {};
                     oauth2.clientCredentials.getToken(tokenConfig)
                     .then((result) => {
+                        _logJson("_refreshToken(Bot) => Success:", result);
                         refreshedToken = _convertScopes(result);
                         wwsCredentials.credentials.token = refreshedToken;
                         _storeOAuthConfig(wwsCredentials.id, wwsCredentials.credentials);
@@ -807,7 +684,7 @@ module.exports = function(RED) {
                     })
                     .catch((error) => {
                         RED.log.error("Error: " + error.message);
-                        console.log("Error: " + JSON.stringify(error));
+                        _logJson("_refreshToken(Bot) => Failure:", error);
                         reject(error);
                     });
                     break;
@@ -816,6 +693,7 @@ module.exports = function(RED) {
                     let tokenHelper = oauth2.accessToken.create(accessToken);
                     tokenHelper.refresh()
                     .then((result) => {
+                        _logJson("_refreshToken(User) => Success:", result);
                         refreshedToken = _convertScopes(result.token);
                         wwsCredentials.credentials.token = refreshedToken;
                         _storeOAuthConfig(wwsCredentials.id, wwsCredentials.credentials);
@@ -823,7 +701,7 @@ module.exports = function(RED) {
                     })
                     .catch((error) => {
                         RED.log.error("Error: " + error.message);
-                        console.log("Error: " + JSON.stringify(error));
+                        _logJson("_refreshToken(User) => Failure:", error);
                         reject(error);
                     });
                     break;
@@ -837,110 +715,4 @@ module.exports = function(RED) {
         token.scope = scopes;
         return token;
     };
-    /*
-    function createStateMachine(credentials, tokenType, tokenConfig) {
-        var fsm = new StateMachine({
-            init: 'no_token',
-            transitions: [
-                { name: 'obtain', from: 'no_token', to: 'has_token' },
-                { name: 'invalidate', from: 'has_token', to: 'token_expired' },
-                { name: 'renew', from: 'token_expired', to: 'has_token' },
-                { name: 'failed', from: 'token_expired', to: 'no_token' }
-            ],
-            data: {
-                    credentials: credentials,
-                    token:"",
-                    tokenConfig: tokenConfig,
-                    tokenType: tokenType
-            },
-            methods: {
-                initOAuthService: () => {
-                    return OAuth2.create(this.credentials);
-                },
-                onObtain: function(transition, statusNode) {
-                    const oauth2 = this.initOAuthService();
-                    if (this.tokenType === "user") {
-                        return new Promise((resolve, reject) => {
-                            oauth2.authorizationCode.getToken(tokenConfig)
-                                .then((result) => {
-                                    this.token = oauth2.accessToken.create(result);
-                                    resolve(token);
-                                })
-                                .catch((error) => {
-                                    RED.log.error('Obtaining Access Token Failed: ' + error.message, error);
-                                    reject(error);
-                                });
-                        }); 
-                    } else {
-                        return new Promise((resolve, reject) => {
-                            oauth2.clientCredentials.getToken(tokenConfig)
-                                .then((result) => {
-                                    this.token = oauth2.accessToken.create(result);
-                                    if (statusNode) {
-                                        statusNode.status({fill: "green", shape: "dot", text: "token available"});
-                                    }
-                                    resolve(this.token);
-                                })
-                                .catch((error) => {
-                                    RED.log.error("Obtaining Access Token Failed: " + error.message, error);
-                                    if (statusNode) {
-                                        statusNode.status({fill: "red", shape: "dot", text: "error"});
-                                    }
-                                    reject(error);
-                                });
-                        });
-                    }
-                },
-                onRenew: function(transition, statusNode) {
-                    const oauth2 = this.initOAuthService();
-                    if (this.tokenType === "user") {
-                        return new Promise(() => {
-                            try {
-                                this.token = this.token.refresh();
-                                resolve(this.token);
-                            } catch (error) {
-                                RED.log.error("Obtaining Access Token Failed: " + error.message, error);
-                                if (statusNode) {
-                                    statusNode.status({fill: "red", shape: "dot", text: "error"});
-                                }
-                                reject(error);
-                            }
-                        });
-                    } else {
-                        return new Promise((resolve, reject) => {
-                            oauth2.clientCredentials.getToken(this.tokenConfig)
-                            .then((result) => {
-                                this.token = oauth2.accessToken.create(result);
-                                if (statusNode) {
-                                    statusNode.status({fill: "green", shape: "dot", text: "token available"});
-                                }
-                                resolve(this.appToken);
-                            })
-                            .catch((error) => {
-                                RED.log.error("Obtaining Access Token Failed: " + error.message, error);
-                                if (statusNode) {
-                                    statusNode.status({fill: "red", shape: "dot", text: "error"});
-                                }
-                                reject(error);
-                            });
-                        });
-                    }
-                },
-                onInvalidate: function(transition, statusNode) {
-                    this.token="";
-                    if (statusNode) {
-                        statusNode.status({fill: "red", shape: "dot", text: "token expired"});
-                    }
-                },
-                onFailed: function(transition, statusNode) {
-                    this.token="";
-                    if (statusNode) {
-                        statusNode.status({fill: "grey", shape: "dot", text: "uninitialized token"});
-                    }
-                }
-            }
-        });
-        return fsm;
-    }
-    */
 }
