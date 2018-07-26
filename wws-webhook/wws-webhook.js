@@ -206,7 +206,7 @@ module.exports = function(RED) {
                     console.log("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId);
                     console.log(err);
                     node.status({fill: "red", shape: "ring", text: "errors getting Message " + messageId});
-                    node.error("errors getting Message " + messageId, err);
+                    node.error("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId, err);
                     return;
                 });
         }
