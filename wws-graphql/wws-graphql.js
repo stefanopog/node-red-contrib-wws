@@ -588,7 +588,7 @@ module.exports = function (RED) {
           node.error('wwsFilterActions: Error while posting GraphQL query to WWS.', msg);
           return;
         });
-        setTimeout(() => {_isInitialized();}, 2000);
+        _resetStatus(node);
     });
   }
 
@@ -1562,7 +1562,6 @@ module.exports = function (RED) {
     var node = this;
 
     _initializeToken(node);
-
     this.on("input", (msg) => {
       var AFElements = '';
       var AFMutation = '';
@@ -1712,7 +1711,6 @@ module.exports = function (RED) {
     var node = this;
     
     _initializeToken(node);
-
     this.on("input", (msg) => {
       var annotationType;
       //
@@ -1935,6 +1933,14 @@ module.exports = function (RED) {
       return theAnnotations;
     }
   }
+  function __myJSONparse(str) {
+    try {
+        let a = JSON.parse(str);
+        return a;
+    } catch (e) {
+        return str;
+    }
+  }                             
 
   //
   //  Helper functions to execute GraphQL Query
