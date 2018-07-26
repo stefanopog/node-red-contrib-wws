@@ -169,7 +169,7 @@ module.exports = function(RED) {
             }
             
             //assuming that the body does contain json by default
-            if (req.body) {
+            if (req.body || req.formData) {
                 req.json = true;
             }
             
@@ -212,6 +212,11 @@ module.exports = function(RED) {
                 
             });
         });
+    };
+
+    WWSNode.prototype.refreshToken = function() {
+        var wwsCredentials = this;
+        return _refreshToken(wwsCredentials);
     };
     
     // Http Endpoint to display token user
