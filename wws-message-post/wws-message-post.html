@@ -11,21 +11,22 @@
         <label for="node-input-avatar" title="The Name of the App or User who is posting this message."><i class="fa fa-address-card"></i> Avatar</label>
         <input type="text" id="node-input-avatar" placeholder="My WWS APP">
     </div>
-
+<!-- Only .jpg files are currently accpeted by WWS
     <div class="form-row">
-            <label for="node-input-file" title="Use a profile foto for your app which should be displayed when messages are send to a space!"><i class="fa fa-camera"></i> Picture</label>
-            <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
-            <!--Only .jpg files are currently accpeted by WWS -->
-                <input type="file" id="node-input-file" accept=".jpg">
-                <a id="node-input-upload-file" href="#" class="editor-button" style="position: absolute; right: 0px; top: 0px; cursor: not-allowed;"><i class="fa fa-upload"></i></a>
-            </div>
+        <label for="node-input-file" title="Use a profile foto for your app which should be displayed when messages are send to a space!"><i class="fa fa-camera"></i> Picture</label>
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+
+            <input type="file" id="node-input-file" accept=".jpg">
+            <a id="node-input-upload-file" href="#" class="editor-button" style="position: absolute; right: 0px; top: 0px; cursor: not-allowed;"><i class="fa fa-upload"></i></a>
+        </div>
     </div>
     <div class="form-row" id="node-input-upload-file-status-success" style="color:green; display:none;">
         <small class="form-text text-muted"><span>Photo has been successfully uploaded to Watson Work.</span></small>
     </div>
     <div class="form-row" id="node-input-upload-file-status-failure" style="color:red; display:none;">
-            <small class="form-text text-muted"><span>The request could not be processed. Please check the Debug Tab for further information!</span></small>
-        </div>
+         <small class="form-text text-muted"><span>The request could not be processed. Please check the Debug Tab for further information!</span></small>
+    </div>
+-->
     <div class="form-row">
             <label for="node-input-spaceName" title="In case all incoming messages should be directed into a particular space, enter the space id here!"><i class="fa fa-cloud-upload"></i> Space ID</span></label>
             <select id="node-input-spaceName"/>
@@ -172,22 +173,7 @@
 <script type="text/javascript">
 
     function _getImgUrl(id) {
-        return $.getJSON("wws/app/"+ id +"/photo")
-        .done((data, textStatus, xhr) => {
-            console.log("data: " + JSON.stringify(data));
-            console.log("textStatus: " + JSON.stringify(textStatus));
-            console.log("status: " + JSON.stringify(xhr));
-        }).fail(( xhr, textStatus, error ) => {
-            console.log("xhr: " + JSON.stringify(xhr));
-            console.log("textStatus: " + JSON.stringify(textStatus));
-            console.log("error: " + JSON.stringify(error));
-            var err = textStatus + ", " + JSON.stringify(error);
-            console.log( "Request Failed: " + err );
-        }).always((data, textStatus, xhr) => {
-            console.log("data: " + JSON.stringify(data));
-            console.log("textStatus: " + JSON.stringify(textStatus));
-            console.log("status: " + JSON.stringify(xhr));
-        }); 
+        return $.getJSON("wws/app/"+ id +"/photo"); 
     };
 
     RED.nodes.registerType('wws-message-post',{
@@ -210,9 +196,6 @@
         },
         paletteLabel: "send message",
         oneditprepare: function() {
-            function verifyInput(fileInputField) {
-                return fileInputField[0].files.length>0;
-            };
             function toggleAvatarSection(url) {
                 if (!url) {
                     $("#avatar-div").hide();
@@ -221,16 +204,7 @@
                     $("#avatar-div").show();
                 }
             }
-            function activateUploadButton(toggle) {
-                if (toggle) {
-                    uploadButton.css("cursor", "pointer");
-                    uploadButton.removeClass("disabled");
-                } else {
-                    uploadButton.css("cursor", "not-allowed");
-                    uploadButton.addClass("disabled");
-                }
-            };
-            
+
             //Input Account
             var configNodeId = $("#node-input-application option:selected").val();
             function addAppName(configNodeId) {
@@ -288,54 +262,6 @@
             addAvatarName();
             inputAvatar.change(function() {
                 addAvatarName();
-            });
-            
-            function getUploadFotoUrl() {
-                return "wws/app/"+ configNodeId +"/photo";
-            };
-            var fileInputField = $("#node-input-file");
-            fileInputField.change(function(event) {
-                activateUploadButton(verifyInput(fileInputField));
-                event.preventDefault();
-            });
-            
-            //Upload Button
-            var uploadButton = $("#node-input-upload-file");
-            uploadButton.addClass("disabled");
-            uploadButton.click(function(event) {
-                //Send form data
-                if (verifyInput(fileInputField)) {
-                    var data = new FormData();
-                    $.each(fileInputField[0].files, function(i, file) {
-                        data.append('file', file);
-                    });
-                    $.ajax({
-                        url: getUploadFotoUrl(),
-                        data: data,
-                        cache: false,
-                        contentType: false,
-                        processData: false,
-                        method: "POST",
-                        type: "POST", // For jQuery < 1.9
-                        success: function(data){
-                            $("#node-input-upload-file-status-success").show();
-                            $("#node-input-upload-file-status-failure").hide();
-                            activateUploadButton(false);
-                            fileInputField.val("");
-                            if (data) {
-                                var result = JSON.parse(data);
-                                $("#node-input-picture").val(result.photoUrl);
-                                toggleAvatarSection(result.photoUrl);
-                            }
-                        },
-                        error: function(data) {
-                            $("#node-input-upload-file-status-success").hide();
-                            $("#node-input-upload-file-status-failure").show();
-                            activateUploadButton(false);
-                        }
-                    });
-                }
-                event.preventDefault();
             });
 
             //Input spaceId

@@ -31,6 +31,7 @@ module.exports = function(RED) {
             this.reqTimeout = defaultTimeout; 
         }
         
+        /*
         function _isInitialized() {
             let token;
             if (node.application && node.application.hasAccessToken()) {
@@ -41,6 +42,7 @@ module.exports = function(RED) {
 
         const apiUrl = node.application &&  node.application.getApiUrl()|| "https://api.watsonwork.ibm.com";
         const sendMessagePath = "/v1/spaces/:spaceId/messages";
+        */
         
         this.prepareMessage = (msg) =>{
             //Check for defaults
@@ -66,7 +68,7 @@ module.exports = function(RED) {
             msg.reqBody = reqBody;
             return msg;
         };
-        
+        /*
         //Create Message Body and send it.
         this.sendMessage = (token, msg) => {
             node.status({fill:"blue",shape:"dot",text: "sending message"});
@@ -181,7 +183,7 @@ module.exports = function(RED) {
             }
             req.end();
         };
-
+		*/
 
         this.on('input', function(msg) {
 
@@ -194,11 +196,27 @@ module.exports = function(RED) {
                 return;
             }
             msg.wwsSpaceId = msg.wwsSpaceId ? msg.wwsSpaceId : node.spaceId;
+            msg = node.prepareMessage(msg);
+            var req = {
+            		method: 'POST',
+            		uri: this.application.getApiUrl() + "/v1/spaces/" + msg.wwsSpaceId + "/messages",
+            		body: msg.reqBody
+            }
+            node.application.wwsRequest(req)
+            .then((response) => {
+            		node.warn(response);
+            })
+            .catch((error) => {
+            		node.error(error);	
+            });
+            
+            /*
             let accessToken = node.application.getAccessToken(node);
 
             if (accessToken) {
                 node.sendMessage(accessToken, node.prepareMessage(msg));
             }
+            */
         });
         this.on('close', function(removed, done) {
             if (removed) {
@@ -209,7 +227,7 @@ module.exports = function(RED) {
             done();
         });
         
-
+        /*
         this.releaseInterval = (intervalObj) => {
             clearInterval(intervalObj);
         };
@@ -220,6 +238,7 @@ module.exports = function(RED) {
                 }
               }, 2000);
         }
+        */
 
     }
     RED.nodes.registerType("wws-message-post",WWSAppMessageNode);
