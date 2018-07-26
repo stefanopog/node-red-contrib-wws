@@ -97,11 +97,7 @@ module.exports = function(RED) {
         this.active = true;
         this.application = RED.nodes.getNode(config.application);
         this.webhookPath = config.webhookPath;
-        if (!this.application) {
-            this.error("Please configure your Watson Workspace App first!");
-        } else {
-            var appId = this.application.clientId;
-        }  
+
         //
         //  Cache management
         //
@@ -112,6 +108,12 @@ module.exports = function(RED) {
         }
         this.theCache.dumpCache();
         var node = this;
+        if (!node.application) {
+            node.error("Please configure your Watson Workspace App first!");
+            node.status({fill: "red", shape: "dot", text: "token unavailable"});
+        } else {
+            var appId = node.application.clientId;
+        }
         //
         //  Helper to build the graphQL query string
         //
