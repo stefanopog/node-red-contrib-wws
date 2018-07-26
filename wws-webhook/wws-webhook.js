@@ -127,7 +127,7 @@ module.exports = function(RED) {
         //
         //  Helper to perform GraphQL calls
         //
-        function __wwsGraphQL(accessToken, host, query, operationName, variables, viewType) {
+        function __wwsGraphQL(accessToken, host, query, viewType, operationName, variables) {
             var uri = host + "/graphql";
             var options = {
               method: "POST",
@@ -158,7 +158,7 @@ module.exports = function(RED) {
             //
             //  Perform the operation
             //
-            __wwsGraphQL(bearerToken, host, query, null, null, 'PUBLIC')
+            __wwsGraphQL(bearerToken, host, query,'PUBLIC')
                 .then((res) => {
                     if (res.errors) {
                         //
