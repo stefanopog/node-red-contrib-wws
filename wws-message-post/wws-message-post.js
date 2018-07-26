@@ -10,47 +10,26 @@ module.exports = function(RED) {
         this.color = stringOrDefault(config.color, "#11ABA5");
         this.avatar = stringOrDefault(config.avatar, undefined);
         this.spaceId = stringOrDefault(config.spaceId, undefined);
-        this.picture = config.picture;
+        this.picture = stringOrDefault(config.picture, undefined);
         
         //Get the application config node
         this.application = RED.nodes.getNode(config.application);
         var node = this;
+        
         //Check for token on start up
-        if (!node.application || !node.application.hasAccessToken()) {
+        if (!node.application) {
             node.error("Please configure your Watson Workspace App first!");
             node.status({fill: "red", shape: "dot", text: "token unavailable"});
         }
-        //Setting request timeouts
-        var defaultTimeout = 4500;
-        if (RED.settings.httpRequestTimeout) { 
-            this.reqTimeout = parseInt(RED.settings.httpRequestTimeout) || defaultTimeout; 
-        } else { 
-            this.reqTimeout = defaultTimeout; 
-        }
-        
-        /*
-        function _isInitialized() {
-            let token;
-            if (node.application && node.application.hasAccessToken()) {
-                token = node.application.getAccessToken(node);
-            }
-            return (token) ? true : false;
-        }
-
-        const apiUrl = node.application &&  node.application.getApiUrl()|| "https://api.watsonwork.ibm.com";
-        const sendMessagePath = "/v1/spaces/:spaceId/messages";
-        */
 
         this.on('input', function(msg) {
 
             if (!msg.payload) {
-                console.log("wws-message-post: No Payload Info");
                 node.status({fill:"red", shape:"dot", text:"No Payload"});
                 node.error("wws-message-post: Missing required input in msg object: payload");
                 return;
             }
             if (!msg.wwsSpaceId && !node.spaceId) {
-                console.log("wws-message-post: No SpaceId provided");
                 node.status({fill:"red", shape:"dot", text:"No Payload"});
                 node.error("wws-message-post: Missing required input in msg object: wwsSpaceId");
                 return;
@@ -75,7 +54,8 @@ module.exports = function(RED) {
                 }, 2000);
             })
             .catch((error) => {
-            	node.error(error);	
+                node.status({fill:"red", shape:"dot", text:"Sending message failed!"});
+            		node.error(error);
             });
         });
         this.on('close', function(removed, done) {
