@@ -16,6 +16,7 @@ module.exports = function(RED) {
         var intervalObj = undefined;
         console.log("refreshPeriod: " + config.refreshPeriod);
         if (config.refreshPeriod>0) {
+            node.warn("Token refresh Period has been set to " + config.refreshPeriod + " min");
             let pollingPeriod = config.refreshPeriod*60*1000;
 
             intervalObj = setInterval(() => {
@@ -30,6 +31,12 @@ module.exports = function(RED) {
                     node.status({fill: "red", shape: "dot", text: "token uninitialized"});
                 });
             }, pollingPeriod);
+        } else {
+            node.warn(
+                `Token refresh has been disabled.
+                Refresh Period has been set to ` + config.refreshPeriod + `
+                In order to enable refresh token - set a value greater than 0`
+            );
         }
         node.checkToken(config.application);
 

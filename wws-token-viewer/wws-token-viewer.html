@@ -15,8 +15,21 @@
       },
       paletteLabel: "inspect",
       align: "right",
-      oneditprepare: function() {}
+      oneditprepare: function() {
+          var refreshPeriod = $('#node-input-refreshPeriod');
+          refreshPeriod.change(() => {
+            _changeValue();
+          });
+          refreshPeriod.mousemove(() => {
+            _changeValue();
+          });
+
+      }
     });
+
+    function _changeValue() {
+        $('#refreshPeriod-value').val($('#node-input-refreshPeriod').val() + " min");
+    }
   </script>
   
   <script type="text/x-red" data-template-name="wws-token-viewer">
@@ -26,7 +39,10 @@
     </div>
     <div class="form-row">
       <label for="node-input-refreshPeriod"><i class="icon-tag"></i> Refresh in</label>
-      <input type="range" min="0" max="60" id="node-input-refreshPeriod">
+      <div style="display: inline-block; position: relative; width: 77%; height: 20px;">
+            <input type="range" min="0" max="60" id="node-input-refreshPeriod" style="width:73%">
+            <input type="text" id="refreshPeriod-value" style="width:20%; padding:6" disabled="">
+        </div>
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
