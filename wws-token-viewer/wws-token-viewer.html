@@ -1,0 +1,59 @@
+<script type="text/javascript">
+    RED.nodes.registerType("wws-token-viewer", {
+      category: 'Watson Work',
+      color:"#11ABA5",
+      defaults: {
+        application: { type: "wws-credentials", required: true },
+        refreshPeriod: { value: 55 },
+        name: { value: "" }
+      },
+      inputs: 1,
+      outputs: 1,
+      icon: "inspect20x20.png",
+      label: function() {
+        return this.name || "inspect token";
+      },
+      paletteLabel: "inspect",
+      align: "right",
+      oneditprepare: function() {}
+    });
+  </script>
+  
+  <script type="text/x-red" data-template-name="wws-token-viewer">
+    <div class="form-row">
+      <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+      <input type="text" id="node-input-application">
+    </div>
+    <div class="form-row">
+      <label for="node-input-refreshPeriod"><i class="icon-tag"></i> Refresh in</label>
+      <input type="range" min="0" max="60" id="node-input-refreshPeriod">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+  </script>
+  
+  <script type="text/x-red" data-help-name="wws-token-viewer">
+    <p>A node that inspects the token used to access <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">refreshPeriod <span class="property-type"Number</span></dt>
+        <dd>The period after the token should be refreshed automatically. The range is between [0, 60]. A value of '0' will not automatically refresh the token.</dd>
+    </dl>
+    <h3>Details</h3>
+    <p>This node inspects either on access the token configured by this node. After the given time<br/>
+        Provide the following information:
+    </p>
+    <dl class="message-properties">
+        <dt>App Name</dt>
+        <dd>The configured name for a specific Watson Work App.</dd>
+    </dl>
+    <h3>References</h3>
+    <ul>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+        <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+    </ul>
+  </script>
+  
