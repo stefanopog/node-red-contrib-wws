@@ -42,11 +42,14 @@ module.exports = function(RED) {
 
         this.on("input", function(msg) {
             //Input validation
-            node.checkToken(config.application);
+            let token = node.checkToken(config.application);
 
-            //just bypassing the msg
+            if (token) {
+                //Adding token to msg object if available
+                //can be used to overwrite (if required) the token
+                msg.wwsToken = token;
+            }
             node.send(msg);
-
         });
         this.on('close', function(removed, done) {
             clearInterval(intervalObj);
@@ -71,6 +74,7 @@ module.exports = function(RED) {
             } else {
                 node.status({fill: "green", shape: "dot", text: "token available"});
             }
+            return tokenHelper.token;
         } else {
             node.status({fill: "red", shape: "dot", text: "token unavailable"});
         }
