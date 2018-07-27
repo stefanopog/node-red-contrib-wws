@@ -42,6 +42,13 @@ module.exports = function(RED) {
             		uri: this.application.getApiUrl() + "/v1/spaces/" + msg.wwsSpaceId + "/messages",
             		body: msg.reqBody
             }
+
+            //Fallback to support external provided tokens
+            if (msg.wwsToken) {
+                req.headers = {
+                    Authorization: "Bearer" + msg.wwsToken
+                };
+            }
             node.status({fill:"blue", shape:"dot", text:"Sending message..."});
             node.application.wwsRequest(req)
             .then((response) => {

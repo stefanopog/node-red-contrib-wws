@@ -52,6 +52,15 @@ module.exports = function(RED) {
           file: file
         }
       }
+
+      //Fallback to support external provided tokens
+      if (msg.wwsToken) {
+        req.headers = {
+            Authorization: "Bearer" + msg.wwsToken
+        };
+      }
+    
+
       node.status({fill:"blue", shape:"dot", text:"Sending file..."});
       node.application.wwsRequest(req)
       .then((response) => {

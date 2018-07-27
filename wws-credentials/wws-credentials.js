@@ -160,7 +160,8 @@ module.exports = function(RED) {
             
             //Setting access token from credentials
             var accessToken = "Bearer " + token.access_token;
-            if (req.headers) {
+            
+            if (req.header && !req.headers.Authorization) {
                 req.headers.Authorization = accessToken;
             } else {
                 req.headers = {
