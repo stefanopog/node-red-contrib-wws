@@ -18,7 +18,7 @@ module.exports = function(RED) {
         
         //Check for token on start up
         if (!node.application) {
-            node.error("Please configure your Watson Workspace App first!");
+            node.error("wws-message-post: Please configure your Watson Workspace App first!");
             node.status({fill: "red", shape: "dot", text: "token unavailable"});
         }
 
