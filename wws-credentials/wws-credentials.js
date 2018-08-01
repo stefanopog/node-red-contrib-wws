@@ -162,9 +162,28 @@ module.exports = function(RED) {
             //Setting access token from credentials
             var accessToken = "Bearer " + token.access_token;
             
-            if (req.headers && !req.headers.Authorization) {
-                req.headers.Authorization = accessToken;
+            if (req.headers) {
+                //
+                // Headers exist !!!!
+                //
+                if (req.headers.Authorization) {
+                    //
+                    // An authroization already exists.
+                    // DO NOT SUPERSEED IT
+                    // So we do not do anything
+                    //
+                } else {
+                    //
+                    // We need to set the authorization coming from Credentials
+                    //
+                    req.headers.Authorization = accessToken;
+                }
             } else {
+                //
+                // headers do not exist yet
+                // So we can create them and add the authorization
+                // coming from credentials
+                //
                 req.headers = {
                     Authorization: accessToken
                 };
