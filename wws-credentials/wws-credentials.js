@@ -148,6 +148,7 @@ module.exports = function(RED) {
                 _log("wwsRequest => method has not been provided for " + req.uri + ". Setting method to 'GET'!");
                 req.method = 'GET';
             }
+
             let token = wwsCredentials.credentials.token;
             if (!token) {
                 let error = {
@@ -161,7 +162,7 @@ module.exports = function(RED) {
             //Setting access token from credentials
             var accessToken = "Bearer " + token.access_token;
             
-            if (req.header && !req.headers.Authorization) {
+            if (req.headers && !req.headers.Authorization) {
                 req.headers.Authorization = accessToken;
             } else {
                 req.headers = {
