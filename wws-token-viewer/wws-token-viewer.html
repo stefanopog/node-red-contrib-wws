@@ -63,13 +63,16 @@
         <dd>The current available token - no modification if expired</dd>
     </dl>
     <h3>Details</h3>
-    <p>This node inspects either on access the token configured by this node. After the given time<br/>
-        Provide the following information:
+    <p>This node inspects and returns for a registered Watson Work App the corresponding access token.<br/>
+        Once the node is loaded it displays its token status.
     </p>
-    <dl class="message-properties">
-        <dt>App Name</dt>
-        <dd>The configured name for a specific Watson Work App.</dd>
-    </dl>
+    <ul>
+        <li><span style="color:yellow;">[X] </span><b>Token expired</b> - in case refreshPeriod is set to 0 the token needs to be updated manually using the WWS App config node</li>
+        <li><span style="color:green;">[X] </span><b>Token available</b> - the token is not expired and can be used</li>
+        <li><span style="color:green;">[X] </span><b>Token refreshed</b> - in case refreshPeriod is set to a value greater than 0 the token was expired but has been refreshed</li>
+        <li><span style="color:red;">[X] </span><b>Token unavailable</b> - no token could be found. A manual update of the WWS App config node is required.</li>    
+    </ul>
+    <p>Setting the refreshPeriod to a value greater than 0 will automatically refresh the token after the provided refresh period. The validation period of an issued token is 60 min. Hence the range for the refresh period is between 0 and 60.
     <h3>References</h3>
     <ul>
         <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
