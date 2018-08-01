@@ -1,5 +1,3 @@
-var rp = require("request-promise-native");
-
 module.exports = function (RED) {
   const ALL_FLAGS = "PUBLIC, BETA, DIRECT_MESSAGING, FAVORITES, USERSPACEATTRIBUTES, MENTION, TYPED_ANNOTATIONS, SPACE_TEMPLATE, SPACE_MEMBERS, EXPERIMENTAL";
   const BETA_EXP_FLAGS = "PUBLIC,BETA,EXPERIMENTAL";
@@ -9,10 +7,24 @@ module.exports = function (RED) {
   //
   function wwsGraphQLNode(config) {
     RED.nodes.createNode(this, config);
+
+    //
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-    _initializeToken(node);
-
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsGraphQLNode: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       if (!msg.payload) {
         console.log("wwsGraphQLNode: No Payload Info");
@@ -20,9 +32,6 @@ module.exports = function (RED) {
         node.error("wwsGraphQLNode: Missing required input in msg object: payload");
         return;
       }
-
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       
       var viewType = "PUBLIC";
       if (config.wwsBetaFeatures) viewType += ',BETA';
@@ -30,20 +39,33 @@ module.exports = function (RED) {
 
       console.log('wwsGraphQLNode: executing GraphQL statement : ' + msg.payload)
       console.log('wwsGraphQLNode: using the following Flags = ' + viewType);
-      wwsGraphQL(bearerToken, host, msg.payload, viewType, msg.operationName, msg.variables)
+      node.status({fill:"blue", shape:"dot", text:"executing GraphQL query..."});
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, msg.payload, viewType, msg.operationName, msg.variables);
+      node.application.wwsRequest(req)
       .then((res) => {
         msg.payload = res.data;
         node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
         console.log('wwsGraphQLNode: Success from graphQL query');
         console.log(JSON.stringify(res, " ", 2));
         node.send(msg);
+        //
+        //  Reset visual status on success
+        //
+        setTimeout(() => {node.status({});}, 2000);
       }).catch((res) => {
         console.log("wwsGraphQLNode: Error while posting GraphQL query to WWS." + JSON.stringify(res.error, " ", 2));
         node.status({fill: "red", shape: "ring", text: "Sending GraphQL failed..."});
         node.error("wwsGraphQLNode: Error while posting GraphQL query to WWS");
         return;
       });
-      _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
 
@@ -52,10 +74,24 @@ module.exports = function (RED) {
   //
   function wwsGetMessage(config) {
     RED.nodes.createNode(this, config);
+
+    //
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-    _initializeToken(node);
-
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsGetMessage: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       //
       //  get Space Id
@@ -76,15 +112,16 @@ module.exports = function (RED) {
       } else {
         messageId = msg.wwsMessageId;
       }
-
-
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
+      //
+      //  Prepare the operation
+      //
       var query = _getMessageInformation(messageId);
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, BETA_EXP_FLAGS);
       //
       //  Perform the operation
       //
-      wwsGraphQL(bearerToken, host, query, BETA_EXP_FLAGS)
+      node.status({fill:"blue", shape:"dot", text:"Getting message..."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           msg.payload = res.errors;
@@ -99,8 +136,8 @@ module.exports = function (RED) {
           //
           if (res.data.message) {
             msg.payload = res.data.message;
-            console.log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' succesfully completed!');
             msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
+            console.log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' succesfully completed!');
           } else {
             //
             //  Message is VOID
@@ -109,8 +146,12 @@ module.exports = function (RED) {
             console.log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
             console.log(JSON.stringify(res.data));
           }
-          node.status({fill: "green", shape: "dot", text: 'Retrieving Message for messageID ' + messageId + ' succesfully completed!'});
+          node.status({fill: "green", shape: "dot", text: 'message ' + messageId + ' succesfully retrieved!'});
           node.send(msg);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
         }
       }).catch((err) => {
         console.log("wwsGetMessage: errors getting Message " + messageId, err);
@@ -118,7 +159,14 @@ module.exports = function (RED) {
         node.error("wwsGetMessage: errors getting Message " + messageId, err);
         return;
       });
-      _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
 
@@ -127,8 +175,6 @@ module.exports = function (RED) {
   //
   function wwsGetPersons(config) {
     RED.nodes.createNode(this, config);
-    this.application = RED.nodes.getNode(config.application);
-    var node = this;
     var async = require("async");
     var asyncTasks = [];
         
@@ -142,29 +188,42 @@ module.exports = function (RED) {
         //  This is where the MAGIC of Async happens
         //
         if (asyncTasks.length > 0) {
-            async.parallel(asyncTasks, function(err, results) {
-                                            //
-                                            // All tasks are done now
-                                            //  We can return
-                                            //
-                                            console.log("wwsGetPersons._beforeSend : ready to send final information....");
-                                            node.send(theMsg);
-                                        }
+            async.parallel(asyncTasks, 
+                           function(err, results) {
+                              //
+                              // All tasks are done now. We can return
+                              //
+                              console.log("wwsGetPersons._beforeSend : ready to send final information....");
+                              node.send(theMsg);
+                              //
+                              //  Reset visual status on success
+                              //
+                              setTimeout(() => {node.status({});}, 2000);
+                          }
             );                  
         } else {
-            //
-            //  Nothing asynchronous to do
-            //  We can return immediatealy
-            //
-            node.send(theMsg);
+          //
+          //  Nothing asynchronous to do
+          //  We can return immediatealy
+          //
+          node.send(theMsg);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
         }
     }
-    function _getPersonDetails(token, host, person, type, fullMsg, callback) {
+    function _getPersonDetails(token, graphQL_url, person, type, fullMsg, callback) {
+      //
+      //  Prepare the operation
+      //
       var query = _getPersonInformation(type, person);
+      var req = _graphQL_options(token, graphQL_url, query, BETA_EXP_FLAGS);
       //
       //  Perform the operation
       //
-      wwsGraphQL(token, host, query, BETA_EXP_FLAGS)
+      node.status({fill:"blue", shape:"dot", text:"Getting details..."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           fullMsg.payload = res.errors;
@@ -180,7 +239,7 @@ module.exports = function (RED) {
           fullMsg.payload.push(res.data);
           console.log('wwsGetPersons._getPersonDetails : Person ' + person + ' succesfully retrieved !');
           console.log(JSON.stringify(res.data));
-          node.status({fill: "green", shape: "dot", text: 'Person ' + person + ' succesfully retrieved !'});
+          node.status({fill: "green", shape: "dot", text: 'Person ' + person + ' retrieved !'});
           callback(null, person);
         }
       }).catch((err) => {
@@ -190,8 +249,23 @@ module.exports = function (RED) {
         return;
       });
     }
-    
-    _initializeToken(node);
+    //
+    //  Get the application config node
+    //
+    this.application = RED.nodes.getNode(config.application);
+    var node = this;
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsGetPersons: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       //
       //  Get People
@@ -199,34 +273,28 @@ module.exports = function (RED) {
       var people = null;
       if ((config.wwsPersonList.trim() === '') && 
           ((msg.wwsPersonList === undefined) || (msg.wwsPersonList === null))) {
-              console.log("wwsGetPersons._getPersonDetails : No Person to retrieve ");
-              node.status({fill:"red", shape:"dot", text:"No Person to retrieve "});
-              node.error("wwsGetPersons: No Person to retrieve ");
-              return;
+            console.log("wwsGetPersons : No Person to retrieve ");
+            node.status({fill:"red", shape:"dot", text:"No Person to retrieve "});
+            node.error("wwsGetPersons: No Person to retrieve ");
+            return;
       } else {
+        let theList = null;
         if (config.wwsPersonList.trim() !== '') {
           //
           //  List of properties is a comma-separated list of  name=value
           //
-          let theList = config.wwsPersonList.trim().split(',');
-          for (let i=0; i < theList.length; i++) {
-            theList[i] = theList[i].trim();
-          }
-          people = theList;
+          theList = config.wwsPersonList.trim().split(',');
         } else {
           //
           //  List of properties is a comma-separated list of  name=value
           //
-          let theList = msg.wwsPersonList.trim().split(',');
-          for (let i=0; i < theList.length; i++) {
-            theList[i] = theList[i].trim();
-          }
-          people = theList;
+          theList = msg.wwsPersonList.trim().split(',');
         }
+        for (let i=0; i < theList.length; i++) {
+          theList[i] = theList[i].trim();
+        }
+        people = theList;
       }
-
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       //
       //  We asynchronously execute all the things
       //
@@ -234,12 +302,19 @@ module.exports = function (RED) {
       asyncTasks = [];
       for (let k=0; k < people.length; k++) {
         asyncTasks.push(function(_dummyCallback) {
-          _getPersonDetails(bearerToken, host, people[k].trim(), config.PeopleOperation, msg, _dummyCallback);
+          _getPersonDetails(msg.wwsToken, graphQL_url, people[k].trim(), config.PeopleOperation, msg, _dummyCallback);
         });
       }
       _beforeSend(msg);
-      _resetStatus(node);
     });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
+  });
   }
 
 
@@ -248,10 +323,24 @@ module.exports = function (RED) {
   //
   function wwsAddRemoveMembers(config) {
     RED.nodes.createNode(this, config);
+
+    //
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-    _initializeToken(node);
-
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsAddRemoveMembers: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       //
       //  get Space Id
@@ -287,35 +376,33 @@ module.exports = function (RED) {
           node.send(msg);
           return;
       } else {
+        let theList = null;
         if (config.wwsMemberList.trim() !== '') {
           //
           //  List of properties is a comma-separated list of  name=value
           //
-          let theList = config.wwsMemberList.trim().split(',');
-          for (let i=0; i < theList.length; i++) {
-            theList[i] = theList[i].trim();
-          }
-          members = theList;
+          theList = config.wwsMemberList.trim().split(',');
         } else {
           //
           //  List of properties is a comma-separated list of  name=value
           //
-          let theList = msg.wwsMemberList.trim().split(',');
-          for (let i=0; i < theList.length; i++) {
-            theList[i] = theList[i].trim();
-          }
-          members = theList;
+          theList = msg.wwsMemberList.trim().split(',');
         }
+        for (let i=0; i < theList.length; i++) {
+          theList[i] = theList[i].trim();
+        }
+        members = theList;
       }
-
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
-
+      //
+      //  Prepare the operation
+      //
       var mutation = _AddOrRemoveMutation(spaceId, members, config.ARoperation);
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS);
       //
       //  Perform the operation
       //
-      wwsGraphQL(bearerToken, host, mutation, BETA_EXP_FLAGS)
+      node.status({fill:"blue", shape:"dot", text:"performing operation..."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           msg.payload = res.errors;
@@ -333,6 +420,10 @@ module.exports = function (RED) {
           console.log(JSON.stringify(res.data));
           node.status({fill: "green", shape: "dot", text: 'Members operation ' + config.ARoperation + ' succesfully completed !'});
           node.send(msg);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
         }
       }).catch((err) => {
         console.log("wwsAddRemoveMembers: Errors while adding/removing Members", err);
@@ -340,7 +431,14 @@ module.exports = function (RED) {
         node.error("wwsAddRemoveMembers: Errors while adding/removing Members...", err);
         return;
       });
-      _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
 
@@ -349,10 +447,24 @@ module.exports = function (RED) {
   //
   function wwsFilterActions(config) {
     RED.nodes.createNode(this, config);
+
+    //
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-
-    _initializeToken(node);
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsFilterActions: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       var actionId;
       var actionList;
@@ -495,7 +607,7 @@ module.exports = function (RED) {
         node.error('wwsFilterActions: Missing ReferralMsgId', msg);
         return;
       }
-      if (config.wwsReferralMsgId && (config.wwsReferralMsgId !== '')) {
+      if (config.wwsReferralMsgId !== '') {
         referralMessageId = config.wwsReferralMsgId.trim();
       } else {
         referralMessageId = msg.wwsReferralMsgId.trim();
@@ -512,13 +624,13 @@ module.exports = function (RED) {
       //  corresponds to the Actios ID.
       //  So we are ready to build the graphQL query to retrieve the annotations 
       //
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       var query = 'query getAnnotations { message(id: "' + referralMessageId + '"){annotations}}';
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, "PUBLIC");
       //
       //  Retrieve the annotations for the given Message
       //
-      wwsGraphQL(bearerToken, host, query, "PUBLIC")
+      node.status({fill:"blue", shape:"dot", text:"Getting annotations.."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           //
@@ -571,6 +683,10 @@ module.exports = function (RED) {
             //
             node.status({fill: "green", shape: "dot", text: "Lens " + lens + " returned"});
             node.send(outArray);
+            //
+            //  Reset visual status on success
+            //
+            setTimeout(() => {node.status({});}, 2000);
           } else {
             //
             //  Strange situation (no annotations or the LENS was not found....)
@@ -588,7 +704,14 @@ module.exports = function (RED) {
           node.error('wwsFilterActions: Error while posting GraphQL query to WWS.', msg);
           return;
         });
-        _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
 
@@ -597,10 +720,24 @@ module.exports = function (RED) {
   //
   function wwsGetTemplate(config) {
     RED.nodes.createNode(this, config);
+
+    //
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-
-    _initializeToken(node);
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsGetTemplate: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       var templateId = '';
       if ((config.wwsTemplateId === '') && 
@@ -608,9 +745,9 @@ module.exports = function (RED) {
         //
         //  There is an issue
         //
-        console.log("wwsFilterActions: Missing templateID Information");
+        console.log("wwsGetTemplate: Missing templateID Information");
         node.status({fill:"red", shape:"dot", text:"Missing TemplateID"});
-        node.error('wwsFilterActions: Missing TemplateID', msg);
+        node.error('wwsGetTemplate: Missing TemplateID', msg);
         return;
       }
       if (config.wwsTemplateId !== '') {
@@ -618,40 +755,52 @@ module.exports = function (RED) {
       } else {
         templateId = msg.wwsTemplateId;
       }
-
-
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
+      //
+      //  Prepare the operation
+      //
       var query = _getTemplateQuery(templateId);
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, BETA_EXP_FLAGS);
       //
-      //  Retrieve the space info
+      //  Perform the operation
       //
-      wwsGraphQL(bearerToken, host, query, BETA_EXP_FLAGS)
+      node.status({fill:"blue", shape:"dot", text:"Getting Template..."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           msg.payload = res.errors;
-          console.log('wwsFilterActions: errors from query');
-          console.log(JSON.stringify(res.errors));
+          console.log('1wwsGetTemplate: errors from query');
+          console.log(JSON.stringify(res));
           node.status({fill: "red", shape: "dot", text: "Errors from query"});
-          node.error("wwsFilterActions: Errors from query", msg);
+          node.error("wwsGetTemplate: Errors from query", msg);
           return;
         } else {
           //
           //  Successfull Result !
           //
           msg.payload = res.data;
-          console.log('wwsFilterActions: Success from graphQL query');
+          console.log('wwsGetTemplate: Success from graphQL query');
           console.log(JSON.stringify(res.data));
           node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
           node.send(msg);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
         }
       }).catch((err) => {
-        console.log("wwsFilterActions: Error while posting GraphQL query to WWS.", err);
+        console.log("wwsGetTemplate: Error while posting GraphQL query to WWS.", err);
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
-        node.error("wwsFilterActions: Sending query failed...", err);
+        node.error("wwsGetTemplate: Sending query failed...", err);
         return;
       });
-      _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
   
@@ -661,11 +810,24 @@ module.exports = function (RED) {
   //
   function wwsGetTemplatedSpace(config) {
     RED.nodes.createNode(this, config);
+
+    //
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-
-    _initializeToken(node);
-
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsGetTemplatedSpace: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       var spaceId = '';
       if ((config.wwsSpaceId === '') && 
@@ -683,16 +845,16 @@ module.exports = function (RED) {
       } else {
         spaceId = msg.wwsSpaceId;
       }
-
-
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
-
+      //
+      //  Prepare the operation
+      //
       var query = _getTemplatedSpaceQuery(spaceId);
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, BETA_EXP_FLAGS);
       //
-      //  Retrieve the space info
+      //  Perform the operation
       //
-      wwsGraphQL(bearerToken, host, query, BETA_EXP_FLAGS)
+      node.status({fill:"blue", shape:"dot", text:"Getting Space..."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           msg.payload = res.errors;
@@ -705,14 +867,19 @@ module.exports = function (RED) {
           //
           //  Successfull Result !
           //
-          msg.payload = res.data;
           console.log('wwsGetTemplatedSpace: Success from graphQL query');
-          console.log(JSON.stringify(res.data));
-          node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
+          msg.payload = res.data;
+          console.log(JSON.stringify(msg.payload, ' ', 2));
+          node.status({fill: "green", shape: "dot", text: "space " + spaceId + " retrieved"});
           //
           //  Now we need to modify the properties in the output to be more descriptive
           //
-          msg.payload.space.propertyValueIds = _propertiesIdsToNames(msg.payload.space.propertyValueIds, msg.payload.space.templateInfo.properties.items);
+          if (msg.payload.space.propertyValueIds && msg.payload.space.templateInfo.properties) {
+            msg.payload.space.propertyValueIds = _propertiesIdsToNames(msg.payload.space.propertyValueIds, msg.payload.space.templateInfo.properties.items);
+          } else {
+            console.log('wwsGetTemplatedSpace : No properties !!!');
+            node.warn('wwsGetTemplatedSpace: No Properties');
+          }
           //
           //  And now we need to add the name of the status
           //
@@ -727,7 +894,7 @@ module.exports = function (RED) {
           }
           if (!found) {
             //
-            //  We cannot Set a status that does not exist
+            //  We cannot get the name of a status that does not exist
             //
             console.log('wwsGetTemplatedSpace: Status ' + msg.payload.space.statusValueId + ' is unknown!');
             node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.space.statusValueId + ' is unknown!'});
@@ -737,6 +904,10 @@ module.exports = function (RED) {
             console.log('wwsGetTemplatedSpace: operation completed');
             node.status({fill: "green", shape: "dot", text: 'operation completed'});
             node.send(msg);
+            //
+            //  Reset visual status on success
+            //
+            setTimeout(() => {node.status({});}, 2000);
           }
         }
       }).catch((err) => {
@@ -745,7 +916,14 @@ module.exports = function (RED) {
         node.error("wwsGetTemplatedSpace: Sending query failed...", err);
         return;
       });
-      _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
 
@@ -754,13 +932,27 @@ module.exports = function (RED) {
   //
   function wwsUpdateSpace(config) {
     RED.nodes.createNode(this, config);
-    this.application = RED.nodes.getNode(config.application);
-    var node = this;
 
     var betweenQuotes = /"([^"\\]*(\\.[^"\\]*)*)"/;
     var parExp = /(\S+)\s*=\s*([^\s"]+|"[^"]*")/;
 
-    _initializeToken(node);
+    //
+    //  Get the application config node
+    //
+    this.application = RED.nodes.getNode(config.application);
+    var node = this;
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsUpdateSpace: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       //
       //  Get the SpaceID
@@ -860,25 +1052,22 @@ module.exports = function (RED) {
         //  I am fine with this
         //
       } else {
+        let theList = null;
         if (config.wwsMemberList.trim() !== '') {
           //
           //  List of properties is a comma-separated list of  name=value
           //
-          let theList = config.wwsMemberList.trim().split(',');
-          for (let i=0; i < theList.length; i++) {
-            theList[i] = theList[i].trim();
-          }
-          members = theList;
+          theList = config.wwsMemberList.trim().split(',');
         } else {
           //
           //  List of properties is a comma-separated list of  name=value
           //
-          let theList = msg.wwsMemberList.trim().split(',');
-          for (let i=0; i < theList.length; i++) {
-            theList[i] = theList[i].trim();
-          }
-          members = theList;
+          theList = msg.wwsMemberList.trim().split(',');
         }
+        for (let i=0; i < theList.length; i++) {
+          theList[i] = theList[i].trim();
+        }
+        members = theList;
       }
       //
       //  If there is nothing to be modified, then we exit without doing anything :-)
@@ -897,10 +1086,16 @@ module.exports = function (RED) {
       //  Since there is something to do, we need to translate property names, property values (for lists) and statusValues from readable strings to IDs
       //  In order to do this, we first need to get information about the template from which this space has been created
       //
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
+      //
+      //  Prepare the operation
+      //
       var query = _getTemplatedSpaceQuery(spaceId);
-      wwsGraphQL(bearerToken, host, query, BETA_EXP_FLAGS)
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, BETA_EXP_FLAGS);
+      //
+      //  Perform the operation
+      //
+      node.status({fill:"blue", shape:"dot", text:"Getting Space first..."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           msg.payload = res.errors;
@@ -914,7 +1109,7 @@ module.exports = function (RED) {
           //  Ok, we should have the information about the teamplate.
           //  We need to parse them
           //
-          node.status({fill: "green", shape: "dot", text: "Template succesfully retrieved"});
+          node.status({fill: "green", shape: "dot", text: "Space succesfully retrieved"});
           var templateInfo = res.data.space.templateInfo;
           if (newStatus) {
             //
@@ -955,11 +1150,6 @@ module.exports = function (RED) {
               return;
             }
           }
-          //
-          //  Now we can proceed building the mutation to modify the space
-          //  Build the mutation
-          //
-          var mutation = _updateSpaceMutation();
           //
           //  Build the Variables
           //
@@ -1002,9 +1192,16 @@ module.exports = function (RED) {
           console.log(variables);
           console.log('------------------');
           //
+          //  Now we can proceed building the mutation to modify the space
+          //  Build the mutation
+          //
+          var mutation = _updateSpaceMutation();
+          var req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, ALL_FLAGS, variables);
+          //
           //  Issue the Update Statement
           //
-          wwsGraphQL(bearerToken, host, mutation, ALL_FLAGS, variables)
+          node.status({fill:"blue", shape:"dot", text:"Updating Space..."});
+          node.application.wwsRequest(req)
           .then((res) => {
             if (res.errors) {
               msg.payload = res.errors;
@@ -1043,6 +1240,10 @@ module.exports = function (RED) {
                 return;
               }
               node.send(msg);
+              //
+              //  Reset visual status on success
+              //
+              setTimeout(() => {node.status({});}, 2000);
             }
           }).catch((err) => {
             console.log("wwsUpdateSpace: Error updating space.", err);
@@ -1057,7 +1258,14 @@ module.exports = function (RED) {
         node.error("wwsUpdateSpace: Error while getting templatedSpace.", err);
         return;
       });
-      _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
 
@@ -1067,13 +1275,27 @@ module.exports = function (RED) {
   //
   function wwsCreateSpaceFromTemplate(config) {
     RED.nodes.createNode(this, config);
-    this.application = RED.nodes.getNode(config.application);
-    var node = this;
 
     var betweenQuotes = /"([^"\\]*(\\.[^"\\]*)*)"/;
     var parExp = /(\S+)\s*=\s*([^\s"]+|"[^"]*")/;
 
-    _initializeToken(node);
+    //
+    //  Get the application config node
+    //
+    this.application = RED.nodes.getNode(config.application);
+    var node = this;
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsCreateSpaceFromTemplate: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       //
       //  Get the templateID
@@ -1137,7 +1359,6 @@ module.exports = function (RED) {
               //
               let theProperty = {};
               theProperty.name = tt[1].trim();
-
               let tmpS = tt[2].trim();
               if (tmpS.match(betweenQuotes)) {
                 theProperty.value = tmpS.match(betweenQuotes)[1];
@@ -1149,11 +1370,12 @@ module.exports = function (RED) {
             }
           }
           //
-          //  Now we shoudl have processed all the pairs in the config input
+          //  Now we should have processed all the pairs in the config input
           //
         } else {
           //
-          //  if inpput comes as "msg.wwsPropertyList" we assume that it is already formatted as an array of name and values
+          //  if inpput comes as "msg.wwsPropertyList" we assume that it is 
+          //  already formatted as an array of name and values
           //
           properties = msg.wwsPropertyList;
         }
@@ -1169,37 +1391,23 @@ module.exports = function (RED) {
         //  I am fine with this
         //
       } else {
+        let theList = null;
         if (config.wwsMemberList.trim() !== '') {
           //
           //  List of properties is a comma-separated list of  name=value
           //
-          let theList = config.wwsMemberList.trim().split(',');
-          for (let i=0; i < theList.length; i++) {
-            theList[i] = theList[i].trim();
-          }
-          members = theList;
+          theList = config.wwsMemberList.trim().split(',');
         } else {
           //
           //  List of properties is a comma-separated list of  name=value
           //
-          let theList = msg.wwsMemberList.trim().split(',');
-          for (let i=0; i < theList.length; i++) {
-            theList[i] = theList[i].trim();
-          }
-          members = theList;
+          theList = msg.wwsMemberList.trim().split(',');
         }
+        for (let i=0; i < theList.length; i++) {
+          theList[i] = theList[i].trim();
+        }
+        members = theList;
       }
-      //
-      //  Since there is something to do, we need to translate property names, property values (fooor lists) and statusValues from readable strings to IDs
-      //  In order to do this, we first need to get information about the template
-      //
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
-      //
-      //  The Mutation is independent if there are Properties or not (this will change the way in which the "variables" will be defined)
-      //  So we can define the mutation upfront
-      //
-      var mutation = _createSpaceMutation();
       //
       //  start build the variables
       //
@@ -1225,10 +1433,12 @@ module.exports = function (RED) {
       //  At this point, we need to get the Template
       //
       let query = _getTemplateQuery(templateId);
+      let req = _graphQL_options(msg.wwsToken, graphQL_url, query, BETA_EXP_FLAGS);
       //
-      //  Retrieve the template info
+      //  Perform the operation
       //
-      wwsGraphQL(bearerToken, host, query, BETA_EXP_FLAGS)
+      node.status({fill:"blue", shape:"dot", text:"Getting Template..."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           msg.payload = res.errors;
@@ -1272,7 +1482,6 @@ module.exports = function (RED) {
           } else {
             //
             //  No Properties
-            //  We can build a very simple "variables"
             //
           }
           variables += '}}';
@@ -1280,9 +1489,16 @@ module.exports = function (RED) {
           console.log(variables);
           console.log('------------------');
           //
+          //  The Mutation is independent if there are Properties or not (this will change the way in which the "variables" will be defined)
+          //  So we can define the mutation upfront
+          //
+          let mutation = _createSpaceMutation();
+          let req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS, variables);
+          //
           //  Issue the create Statement
           //
-          wwsGraphQL(bearerToken, host, mutation, BETA_EXP_FLAGS, variables)
+          node.status({fill:"blue", shape:"dot", text:"Creating Space..."});
+          node.application.wwsRequest(req)
           .then((res) => {
             if (res.errors) {
               msg.payload = res.errors;
@@ -1318,9 +1534,12 @@ module.exports = function (RED) {
                 node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.space.statusValueId + ' is unknown!'});
                 node.error('wwsCreateSpaceFromTemplate: Status ' + msg.payload.space.statusValueId + ' is unknown!', msg);
                 return;
-              } else {
-                node.send(msg);
-              }
+              } 
+              node.send(msg);
+              //
+              //  Reset visual status on success
+              //
+              setTimeout(() => {node.status({});}, 2000);
             }
           }).catch((err) => {
             console.log("wwsCreateSpaceFromTemplate: Error creating space " + spaceName + ' from template ' + templateId, err);
@@ -1335,7 +1554,14 @@ module.exports = function (RED) {
         node.error("wwsCreateSpaceFromTemplate: Error while posting GraphQL query to WWS.", err);
         return;
       });
-      _resetStatus(node);       
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
   
@@ -1345,11 +1571,24 @@ module.exports = function (RED) {
   //
   function wwsAddFocus(config) {
     RED.nodes.createNode(this, config);
+
+    //
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-
-    _initializeToken(node);
-
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsAddFocus: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       var messageId = '';
       var theString = '';
@@ -1458,18 +1697,16 @@ module.exports = function (RED) {
           console.log("wwsAddFocus: Missing OPTIONAL PAYLOAD Information");
         }
       }
-
       //
-      //  The first thing we have to do is to get the Message from its Id
+      //  Prepare the operation
       //
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
       var query = _getMessageInformation(messageId);
-      console.log("wwsAddFocus: issuing query : " + query);
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, 'PUBLIC');
       //
-      //  Retrieve the details of the given Message
+      //  Perform the operation
       //
-      wwsGraphQL(bearerToken, host, query, "PUBLIC")
+      node.status({fill:"blue", shape:"dot", text:"Getting Message..."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           //
@@ -1491,17 +1728,18 @@ module.exports = function (RED) {
           //  Now we have the message. Check if the message contains the STRING to be annotated.
           //
           if (res.data.message.content.indexOf(theString) >= 0) {
+            console.log('wwsAddFocus: String ' + theString + ' found in sentence. Going to add new Focus to ' + messageId + ' ....');
             //
             //  the STRING is part of the message
             //  We can succesfully add the new focus !!
             //
             let mutation = _addFocusMutation(messageId, res.data.message.content, theString, actionId, lens, category, thePayload);
-            console.log('wwsAddFocus: String ' + theString + ' found in sentence. Going to add new Focus to ' + messageId + ' ....');
-            console.log(mutation);
+            let req = w_graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS);
             //
-            //  Retrieve the space info
+            //  Perform the operation
             //
-            wwsGraphQL(bearerToken, host, mutation, BETA_EXP_FLAGS)
+            node.status({fill:"blue", shape:"dot", text:"Adding Focus..."});
+            node.application.wwsRequest(req)
             .then((res) => {
               if (res.errors) {
                 msg.payload = res.errors;
@@ -1519,8 +1757,12 @@ module.exports = function (RED) {
                 msg.wwsFocusAdded = true;
                 console.log('wwsAddFocus: Success from graphQL query');
                 console.log(JSON.stringify(res.data));
-                node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
+                node.status({fill: "green", shape: "dot", text: "Focus added"});
                 node.send(msg);
+                //
+                //  Reset visual status on success
+                //
+                setTimeout(() => {node.status({});}, 2000);
               }
             }).catch((err) => {
               console.log("wwsAddFocus: Error while posting addFocus mutation", err);
@@ -1539,6 +1781,7 @@ module.exports = function (RED) {
             msg.payload = res.data.message;
             msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
             msg.wwsFocusAdded = false;
+            node.warn('wwsAddFocus: Focus not addes as ' + theString + ' is not part of the text for messageid ' + messageId + ' ...')
             node.send(msg);
           }
         }
@@ -1549,7 +1792,14 @@ module.exports = function (RED) {
         node.status({fill: "red", shape: "ring", text: "error querying for messageId"});
         node.error('wwsAddFocus: Error querying for messageId ' + messageId, msg);
       });
-      _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
 
@@ -1558,10 +1808,24 @@ module.exports = function (RED) {
   //
   function wwsActionFulfillment(config) {
     RED.nodes.createNode(this, config);
+
+    //
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-
-    _initializeToken(node);
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsActionFulfillment: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       var AFElements = '';
       var AFMutation = '';
@@ -1667,12 +1931,12 @@ module.exports = function (RED) {
       AFMutation = AFMutation.replace('$$$$$$$$', details);
       console.log('wwsActionFulfillment: ready to execute ActionFulfillment mutation (see here) : ');
       console.log(AFMutation);
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, host, AFMutation, BETA_EXP_FLAGS);
       //
-      //  Send the AF Mutation
+      //  Perform the operation
       //
-      let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-      let bearerToken = msg.wwsToken || node.application.getAccessToken(node).access_token;
-      wwsGraphQL(bearerToken, host, AFMutation, BETA_EXP_FLAGS)
+      node.status({fill:"blue", shape:"dot", text:"creating ActionFulfillment..."});
+      node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           msg.payload = res.errors;
@@ -1690,6 +1954,10 @@ module.exports = function (RED) {
           console.log(JSON.stringify(res.data));
           node.status({fill: "green", shape: "dot", text: "AF Created"});
           node.send(msg);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
         }
       }).catch((err) => {
         console.log("wwsActionFulfillment: Error while posting AF mutation", err);
@@ -1697,7 +1965,14 @@ module.exports = function (RED) {
         node.error("wwsActionFulfillment: Error while posting AF mutation", err);
         return;
       });
-      _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
 
@@ -1707,10 +1982,24 @@ module.exports = function (RED) {
   //
   function wwsFilterAnnotations(config) {
     RED.nodes.createNode(this, config);
+
+    //
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-    
-    _initializeToken(node);
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsFilterAnnotations: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
     this.on("input", (msg) => {
       var annotationType;
       //
@@ -1835,16 +2124,31 @@ module.exports = function (RED) {
           console.log("wwsFilterAnnotations: Filtering annotation " + annotationType + ' through the output '+ theIndex);
           node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
           node.send(outArray);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
         }
       } else {
-          //
-          //  Only one output. All Annotations go to the same
-          //
-          console.log("wwsFilterAnnotations: Pushing annotation " + annotationType + ' through the single output');
-          node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
-          node.send(msg);
+        //
+        //  Only one output. All Annotations go to the same
+        //
+        console.log("wwsFilterAnnotations: Pushing annotation " + annotationType + ' through the single output');
+        node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
+        node.send(msg);
+        //
+        //  Reset visual status on success
+        //
+        setTimeout(() => {node.status({});}, 2000);
       }
-      _resetStatus(node);
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
     });
   }
 
@@ -1879,42 +2183,6 @@ module.exports = function (RED) {
   //
 
   //
-  //  check if token is available in credentials - otherwise poll
-  //
-  function _initializeToken(node) {
-    //
-    //  Check for token on start up
-    //
-    if (!node.application || !node.application.hasAccessToken()) {
-      node.error("_initializeToken: Please configure your Watson Workspace App first!");
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-    }
-    if (!_isInitialized(node)) {
-      const intervalObj = setInterval(() => {
-        if (_isInitialized(node)) {
-          clearInterval(intervalObj);
-        }
-      }, 2000);
-    }
-  }
-  //
-  // resets the node status back to initial state - in case a call has been executed
-  //
-  function _resetStatus(node) {
-    setTimeout(() => {_isInitialized(node); }, 2000);
-  }
-  //
-  //  base function which checks and provides the access token - including a refresh token.
-  //
-  function _isInitialized(node) {
-    let token;
-    if (node.application && node.application.hasAccessToken()) {
-        token = node.application.getAccessToken(node);
-    }
-    return (token) ? true : false;
-  };  
-
-  //
   //  Helper function to parse Annotations to JSON
   //  =============================================
   //
@@ -1943,16 +2211,14 @@ module.exports = function (RED) {
   }                             
 
   //
-  //  Helper functions to execute GraphQL Query
+  //  Helper functions to prepare GraphQL Query
   //  ==========================================
   //
-  function wwsGraphQL(accessToken, host, query, viewType, variables, operationName) {
-    var uri = host + "/graphql";
+  function _graphQL_options(runtimeToken, graphQL_url, query, viewType, variables, operationName) {
     var options = {
       method: "POST",
-      uri: uri,
+      uri: graphQL_url,
       headers: {
-        "Authorization": "Bearer " + accessToken,
         "x-graphql-view": viewType
       },
       json: true,
@@ -1960,9 +2226,19 @@ module.exports = function (RED) {
         query: query
       }
     };
+    //
+    //  Fallback to support external provided tokens
+    //
+    if (runtimeToken) {
+      options.headers.Authorization = "Bearer" + runtimeToken;
+    }
     if (variables) options.body.variables = variables;
     if (operationName) options.body.operationName = operationName;
-    return rp(options);
+
+    console.log("_graphQL_options : executing graphQL call with these options");
+    console.log(JSON.stringify(options, ' ', 2));
+    console.log('-------------------------------------------------------')
+    return options;
   }
 
   //

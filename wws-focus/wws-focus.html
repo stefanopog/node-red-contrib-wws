@@ -38,32 +38,58 @@
     <p>A node that retrieves a list of foccuses based on a sentence that is given in input. See <a href="https://developer.watsonwork.ibm.com/docs/api-reference/focus">IBM Watson Workspace Focus API</a>.</p>
     <h3>Inputs</h3>
     <dl class="message-properties">
-        <dt class="optional">payload <span class="property-type">String</span></dt>
-        <dd>The sentence hat needs to be processed. </b> Its value superseeds the <code>Text</code> value from the Configuration Panel
+        <dt class="optional">
+          payload <span class="property-type">String</span>
+        </dt>
+        <dd>
+          The sentence that needs to be processed. <br/> 
+          Its value superseeds the <code>Text</code> value from the Configuration Panel
+        </dd>
+      
+        <dt class="optional">wwsToken 
+            <span class="property-type">string</span>
+        </dt>
+        <dd>
+          Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
+          application(s) for this particular message.</br />
+          <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        </dd>
+
+        <dt>App Name
+            <span class="property-type">string</span>
+        </dt>
+        <dd>
+          The configured name for a specific Watson Work App.
         </dd>
     </dl>
+
     <h3>Details</h3>
-    <p>This node sends request using the Focus API. Check the <a href="https://developer.watsonwork.ibm.com/docs/api-reference/focus" target="_blank">Reference Documentation</a> for further information.<br/>
-        Provide the following information:
+    <p>
+
+    <h3>Returns</h3>
+    <p>
+      If the operation succeeds, it returns:
     </p>
     <dl class="message-properties">
-        <dt>App Name</dt>
-        <dd>The configured name for a specific Watson Work App.</dd>
-        <dt>Text</dt>
-        <dd>The text to be parsed. Can be overriden with <code>msg.payload</code>.</dd>
-    </dl>
-    <h3>Returns</h3>
-    <p>If the operation succeeds, it returns:</p>
-    <dl class="message-properties">
-        <dt>wwsFocuses <span class="property-type">Object</span></dt>
-        <dd>An object which contains:
+        <dt>wwsFocuses 
+          <span class="property-type">Object</span>
+        </dt>
+        <dd>
+          An object which contains:
             <dl class="message-properties">
-                <dt>requestId <span class="property-type">String</span></dt>
-                <dd>The request Id from the API</dd>
-            </dl>
-            <dl class="message-properties">
-                <dt>focuses <span class="property-type">Array</span></dt>
-                <dd>Array of Focus information. It can be empty</dd>
+                <dt>requestId 
+                  <span class="property-type">String</span>
+                </dt>
+                <dd>
+                  The request Id from the API
+                </dd>
+
+                <dt>focuses 
+                  <span class="property-type">Array</span>
+                </dt>
+                <dd>
+                  Array of Focus information. It can be empty
+                </dd>
             </dl>
         </dd>
     </dl>

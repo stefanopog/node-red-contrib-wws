@@ -6,34 +6,35 @@ module.exports = function(RED) {
 
     //Check for token on start up
     if (!node.application) {
-      node.error("Please configure your Watson Workspace App first!");
       node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsFilePost: Please configure your Watson Workspace App first!");
+      return;
     }
 
     this.on("input", function(msg) {
 
       //Input validation 
       if (!msg.wwsFile && !msg.wwsImage) {
-        node.error("Missing required input in msg object: [msg.wwsFile | msg.wwsImage]");
         node.status({fill: "red", shape: "dot", text: "missing input: [wwsFile | wwsImage]"});
+        node.error("wwsFilePost: Missing required input in msg object: [msg.wwsFile | msg.wwsImage]");
         return;
       }
       var space = msg.wwsSpaceId || config.space;
       if (!space) {
-        node.error("Missing required input: [spaceId | msg.wwsSpaceId]");
         node.status({fill: "red", shape: "dot", text: "missing input: spaceId"});
+        node.error("wwsFilePost: Missing required input: [spaceId | msg.wwsSpaceId]");
         return;
       }
       var file = msg.wwsFile;
       if (file && !file.options) {
-        node.error("File object is not provided in the correct format. Please check the node help for details!");
         node.status({fill: "red", shape: "dot", text: "incorrect format: msg.wwsFile"});
+        node.error("wwsFilePost: File object is not provided in the correct format. Please check the node help for details!");
         return;
       }
       if (msg.wwsImage) {
         if (!msg.wwsImage.options) {
-          node.error("Image object is not provided in the correct format. Please check the node help for details!");
           node.status({fill: "red", shape: "dot", text: "incorrect format: msg.wwsImage"});
+          node.error("wwsFilePost: Image object is not provided in the correct format. Please check the node help for details!");
           return;
         } else {
           file = msg.wwsImage;
@@ -75,7 +76,7 @@ module.exports = function(RED) {
       })
       .catch((error) => {
           node.status({fill:"red", shape:"dot", text:"Sending file failed!"});
-        node.error(error);
+          node.error('wwsFilePost: error sending file', error);
       });
     });
   }

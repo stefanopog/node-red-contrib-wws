@@ -161,57 +161,58 @@ module.exports = function(RED) {
             //  Perform the operation
             //
             __wwsGraphQL(bearerToken, host, query,'PUBLIC')
-                .then((res) => {
-                    if (res.errors) {
+            .then((res) => {
+                if (res.errors) {
+                    //
+                    //  Strange Errors
+                    //
+                    msg.payload = res.errors;
+                    console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : errors getting Message ' + messageId);
+                    console.log(JSON.stringify(res.errors));
+                    node.status({fill: "red", shape: "dot", text: "errors getting Message " + messageId});
+                    node.error("errors getting Message " + messageId, msg);
+                    return;
+                } else {
+                    //
+                    //  Successfull Result !
+                    //
+                    msg.wwsOriginalMessage = res.data.message;
+                    if (msg.wwsOriginalMessage) {
+                        console.log('wwsWebhook.__wwsGetMessage : ORIGINAL Message (' + msg.wwsOriginalMessage.id + ') for messageID ' + messageId + ' succesfully retrieved!');
                         //
-                        //  Strange Errors
+                        //  Parsing Annotations
                         //
-                        msg.payload = res.errors;
-                        console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : errors getting Message ' + messageId);
-                        console.log(JSON.stringify(res.errors));
-                        node.status({fill: "red", shape: "dot", text: "errors getting Message " + messageId});
-                        node.error("errors getting Message " + messageId, msg);
-                        return;
+                        if (msg.wwsOriginalMessage.annotations) {
+                            if (msg.wwsOriginalMessage.annotations.length > 0) {
+                                let annotations = [];
+                                for (let i = 0; i < msg.wwsOriginalMessage.annotations.length; i++) {
+                                    annotations.push(JSON.parse(msg.wwsOriginalMessage.annotations[i]));
+                                }
+                                msg.wwsOriginalMessage.annotations = annotations;
+                            }
+                        }
                     } else {
                         //
-                        //  Successfull Result !
+                        //  Strange Error. The retrieved message is empty
+                        //  Payload is the original message
                         //
-                        msg.wwsOriginalMessage = res.data.message;
-                        if (msg.wwsOriginalMessage) {
-                            console.log('wwsWebhook.__wwsGetMessage : ORIGINAL Message (' + msg.wwsOriginalMessage.id + ') for messageID ' + messageId + ' succesfully retrieved!');
-                            //
-                            //  Parsing Annotations
-                            //
-                            if (msg.wwsOriginalMessage.annotations) {
-                                if (msg.wwsOriginalMessage.annotations.length > 0) {
-                                    let annotations = [];
-                                    for (let i = 0; i < msg.wwsOriginalMessage.annotations.length; i++) {
-                                        annotations.push(JSON.parse(msg.wwsOriginalMessage.annotations[i]));
-                                    }
-                                    msg.wwsOriginalMessage.annotations = annotations;
-                                }
-                            }
-                        } else {
-                            //
-                            //  Strange Error. The retrieved message is empty
-                            //  Payload is the original message
-                            //
-                            msg.payload = JSON.parse(msg.wwsEvent.annotationPayload);
-                            console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
-                            console.log(JSON.stringify(res.data));
-                        }
-                        node.status({fill: "green", shape: "dot", text: messageId + ' retrieved!'});
-                        node.theCache.push(messageId, res.data.message);
-                        __sendFinalMessage(msg, config, type);
-                    }})
-                .catch((err) => {
-                    console.log("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId);
-                    console.log(err);
-                    node.status({fill: "red", shape: "ring", text: "errors getting Message " + messageId});
-                    node.error("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId, err);
-                    return;
-                });
-        }
+                        msg.payload = JSON.parse(msg.wwsEvent.annotationPayload);
+                        console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
+                        console.log(JSON.stringify(res.data));
+                    }
+                    node.status({fill: "green", shape: "dot", text: messageId + ' retrieved!'});
+                    node.theCache.push(messageId, res.data.message);
+                    __sendFinalMessage(msg, config, type);
+                }
+            })
+            .catch((err) => {
+                console.log("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId);
+                console.log(err);
+                node.status({fill: "red", shape: "ring", text: "errors getting Message " + messageId});
+                node.error("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId, err);
+                return;
+            });
+    }
         //
         //  Send the Message
         //

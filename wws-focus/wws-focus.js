@@ -3,20 +3,25 @@ module.exports = function(RED) {
 
   function wwsFocusNode(config) {
     RED.nodes.createNode(this, config);
-        
-    //Get the application config node
+    //   
+    //  Get the application config node
+    //
     this.application = RED.nodes.getNode(config.application);
     var node = this;
-
-    //Check for token on start up
+    //
+    //  Check for token on start up
+    //
     if (!node.application) {
-      node.error("wwsFocusNode: Please configure your Watson Workspace App first!");
       node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsFocusNode: Please configure your Watson Workspace App first!");
     }
-
+    //
+    //  Start Real Processing
+    //
     this.on("input", function(msg) {
-      var text = msg.payload || config.theText;
-      if (!text) {
+      var theText = msg.payload || config.theText;
+      if (!theText) {
+        node.status({fill: "red", shape: "dot", text: "No Payload"});
         node.error("wwsFocusNode: Missing required input: PAYLOAD");
         return;
       }
@@ -26,7 +31,17 @@ module.exports = function(RED) {
         json: true,
         body : {text: theText}
       };
-
+      //
+      //  Fallback to support external provided tokens
+      //
+      if (msg.wwsToken) {
+        req.headers = {
+            Authorization: "Bearer" + msg.wwsToken
+        };
+      }
+      //
+      //  Execute operation
+      //
       node.status({fill:"blue", shape:"dot", text:"Getting Focus..."});
       node.application.wwsRequest(req)
       .then((res) => {
@@ -35,21 +50,21 @@ module.exports = function(RED) {
           console.log('wwsFocusNode: errors posting Focus');
           console.log(JSON.stringify(res.errors));
           node.status({fill: "red", shape: "dot", text: "errors getting FOCUSes"});
-          node.error("wwsFocusNode: errors posting FOCUS", msg);
+          node.error("wwsFocusNode: errors getting FOCUSes", msg);
         } else {
           console.log('wwsFocusNode: Succesfully retrieved');
-          console.log(JSON.stringify(res, ' ', 2));
           msg.wwsFocuses = res;
           node.status({ fill: "green", shape: "dot", text: "FOCUSes retrieved" });
           node.send(msg);
-          setTimeout(() => {
-            node.status({});
-          }, 2000);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
         }
       })
       .catch((err) => {
         console.log("wwsFocusNode : Error getting Focus.", err);
-        node.status({ fill: "red", shape: "ring", text: "Error Getting FOCUSes..." });
+        node.status({fill: "red", shape: "ring", text: "Error Getting FOCUSes..." });
         node.error("wwsFocusNode: Error getting Focus.", err);
       });
     });
@@ -60,7 +75,7 @@ module.exports = function(RED) {
           // This node is being restarted
       }
       done();
-  });
+    });
 }
 
   RED.nodes.registerType("wws-focus", wwsFocusNode);
