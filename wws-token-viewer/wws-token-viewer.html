@@ -55,12 +55,26 @@
     <h3>Inputs</h3>
     <dl class="message-properties">
         <dt class="optional">refreshPeriod <span class="property-type">Number</span></dt>
-        <dd>The period after the token should be refreshed automatically. The range is between [0, 60]. A value of '0' will not automatically refresh the token.</dd>
+        <dd>The period in Minutes after the token should be refreshed automatically. The range is between [0, 60]. A value of '0' will not automatically refresh the token.</dd>
     </dl>
     <h3>Outputs</h3>
     <dl class="message-properties">
         <dt>wwsToken <span class="property-type">Object</span></dt>
         <dd>The current available token - no modification if expired</dd>
+    </dl>
+    <h3>Behavior</h3>
+    <p>This node is usefull if you require to monitor several access tokens within a flow. It gives you per WWS Application a visual feedback of the token status.</p>
+    <dl>
+        <dt>Monitor token</dt>
+        <dd>For each WWS application (and each tokenType <code>User</code> or <code>Bot</code>) you need to verify that the issued token(s) are still valid.<dd>
+    </dl>
+    <dl>
+        <dt>Refresh token</dt>
+        <dd>For each WWS application (and <code>tokenType=User</code>) you need to ensure that the refresh token is not expiring due to inactivity. In this case you are setting the value of refreshPeriod to a value greater than 0.<dd>
+    </dl>
+    <dl>
+        <dt>Token override</dt>
+        <dd>In case you would like to override a token with higher access rights (<code>tokenType=User</code>) you can use the output <code>msg.wwsToken</code> of this node to inject it e.g. into a graphQL Node which requires higher access rights than a bot issued token.<dd>
     </dl>
     <h3>Details</h3>
     <p>This node inspects and returns for a registered Watson Work App the corresponding access token.<br/>
