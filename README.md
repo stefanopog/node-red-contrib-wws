@@ -39,9 +39,16 @@ The following packages are required to be present in node-red prior to this inst
 ## Credentials node
   * creates a configuration node for a dedicated Watson Work Application, 
   * containing App ID and App Secret, 
+  * pulls Application name from Watson Work,
   * plus additional OAuth configuration elements
   * Note : **this node is used by all the other nodes**
-  * Note : **This nodes currently supports ONLY Authorization as app**
+  * Note : **This nodes supports now BOTH Authorization as app AND Authorize as user**
+
+### Authorization as app
+![Token Type Bot](wws-credentials/icons/tokenType_Bot.png)
+
+### Authorize as user
+![Token Type User](wws-credentials/icons/tokenType_User.png)
 
 ## Webhook node
   * Configure the webhook url
