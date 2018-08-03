@@ -235,6 +235,12 @@
                 addAppName(configNodeId);
                 getSpaces(configNodeId);
             });
+            
+            //In case the node has been dragged from the palette
+            //application is not enabled yet.
+            if (!this.application) {
+                $("#node-input-application").val("_ADD_");
+            }
 
             //Input Color
             var inputColor = $("#node-input-color");

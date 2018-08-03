@@ -9,7 +9,7 @@
       },
       inputs: 1,
       outputs: 1,
-      icon: "inspect20x20.png",
+      icon: "watch.png",
       label: function() {
         return this.name || "inspect token";
       },
@@ -23,6 +23,12 @@
           refreshPeriod.mousemove(() => {
             _changeValue();
           });
+                      
+        //In case the node has been dragged from the palette
+        //application is not enabled yet.
+        if (!this.application) {
+            $("#node-input-application").val("_ADD_");
+        }
 
       }
     });

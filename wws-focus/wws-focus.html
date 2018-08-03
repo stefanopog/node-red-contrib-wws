@@ -15,6 +15,13 @@
       paletteLabel: "get Focus",
       align: "left",
       oneditprepare: function() {
+                    
+        //In case the node has been dragged from the palette
+        //application is not enabled yet.
+        if (!this.application) {
+            $("#node-input-application").val("_ADD_");
+        }
+        
       }
     });
   </script>
