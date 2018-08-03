@@ -24,10 +24,10 @@ This packages installs using the standard **Manage Palette** feature in the Node
 The following packages are required to be present in node-red prior to this installation
 * `"body-parser": "^1.18.2"`
 * `"simple-oauth2": "^1.5.2"`
-* `"javascript-state-machine":"^3.0.1"`
 * `"follow-redirects":"^1.3.0"`
 * `"request-promise-native": "^1.0.5"`
 * `"request": "^2.87.0"`
+* `"crypto": "^1.0.1"`
 
 
 ## Manual Installation
@@ -121,6 +121,10 @@ The following packages are required to be present in node-red prior to this inst
   * The node provides a convenience tool for creating Action Fulfillment **Attachments** and **Annotations** and to execute the relevat GraphQL mutation.
   * It works in conjunction with information that are passed by the previously described **Webhook** node.
 
+## Inspect Token
+  * The node inspects the token used to access <a href="https://workspace.ibm.com">IBM Watson Workspace</a> and displays its status as node status message.
+  * In case the token is used as <code>Authorize on behalf of a user</code> this node can be used to automatically refresh the token after a user provided refresh period.
+  ![Inspect Node](/Users/asutor/Documents/workspaces/sci/enablement/git/node-red-contrib-wws/wws-token-viewer/icons/token_viewer.png)
    
 # Known Issues
 * None
