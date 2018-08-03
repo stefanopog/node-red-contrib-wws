@@ -124,7 +124,7 @@ The following packages are required to be present in node-red prior to this inst
 ## Inspect Token
   * The node inspects the token used to access <a href="https://workspace.ibm.com">IBM Watson Workspace</a> and displays its status as node status message.
   * In case the token is used as <code>Authorize on behalf of a user</code> this node can be used to automatically refresh the token after a user provided refresh period.
-  ![Inspect Node](/Users/asutor/Documents/workspaces/sci/enablement/git/node-red-contrib-wws/wws-token-viewer/icons/token_viewer.png)
+  ![Inspect Node](wws-token-viewer/icons/token_viewer.png)
    
 # Known Issues
 * None
