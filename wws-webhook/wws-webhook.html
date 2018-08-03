@@ -4,7 +4,7 @@
         category: 'Watson Work',
         color:"#11ABA5",
         defaults: {
-            account: {
+            application: {
                 type: "wws-credentials",
                 required: true
             },
@@ -126,6 +126,12 @@
 
 
     function _setupWebhookNode() {
+                    
+        //In case the node has been dragged from the palette
+        //application is not enabled yet.
+        if (!this.application) {
+            $("#node-input-application").val("_ADD_");
+        }
         _filterOutputsWebhookNode();
     }
 
@@ -167,8 +173,8 @@
 
 <script type="text/x-red" data-template-name="wws-webhook">
     <div class="form-row">
-        <label for="node-input-account"><i class="fa fa-user"></i> App Name</label>
-        <input type="text" id="node-input-account">
+        <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+        <input type="text" id="node-input-application">
     </div>
     <div class="form-row">
         <label for="node-input-webhookSecret"><i class="fa fa-user-secret"></i> Hook Secret</label>

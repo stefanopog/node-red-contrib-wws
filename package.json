@@ -1,14 +1,14 @@
 {
     "name": "node-red-contrib-wws",
-    "version": "1.4.1",
+    "version": "2.0.0",
     "description": "Node-RED nodes to integrate with IBM Watson Workspace",
     "dependencies": {
         "body-parser": "^1.18.2",
         "simple-oauth2": "^1.5.2",
-        "javascript-state-machine": "^3.0.1",
         "follow-redirects": "^1.3.0",
         "request-promise-native": "^1.0.5",
-        "request": "^2.87.0"
+        "request": "^2.87.0",
+        "crypto": "^1.0.1"
     },
     "repository": {
         "type": "git",
@@ -30,7 +30,8 @@
             "wws-graphql": "wws-graphql/wws-graphql.js",
             "wws-message-post": "wws-message-post/wws-message-post.js",
             "wws-webhook:": "wws-webhook/wws-webhook.js",
-            "wws-focus:": "wws-focus/wws-focus.js"
+            "wws-focus:": "wws-focus/wws-focus.js",
+            "wws-token-viewer": "wws-token-viewer/wws-token-viewer.js"
         }
     },
     "contributors": [

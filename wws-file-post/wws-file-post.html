@@ -5,7 +5,6 @@
       defaults: {
         application: { type: "wws-credentials", required: true },
         space: { value: "" },
-        author: { value: "" },
         name: { value: "" }
       },
       inputs: 1,
@@ -22,9 +21,17 @@
         $("#node-input-application").change(function(data,event) {
             console.log("#node-input-application changed");
             configNodeId = $("#node-input-application").val();
-            getSpaces(configNodeId);
+            if (configNodeId) {
+                getSpaces(configNodeId);
+            }
         });
-  
+        
+        //In case the node has been dragged from the palette
+        //application is not enabled yet.
+        if (!this.application) {
+            $("#node-input-application").val("_ADD_");
+        }
+        
         //Input space
         var inputSpaceName = $("#node-input-spaceName");
         function getSpaces(configNodeId) {

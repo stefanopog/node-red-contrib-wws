@@ -1,0 +1,103 @@
+<script type="text/javascript">
+    RED.nodes.registerType("wws-token-viewer", {
+      category: 'Watson Work',
+      color:"#11ABA5",
+      defaults: {
+        application: { type: "wws-credentials", required: true },
+        refreshPeriod: { value: 55 },
+        name: { value: "" }
+      },
+      inputs: 1,
+      outputs: 1,
+      icon: "watch.png",
+      label: function() {
+        return this.name || "inspect token";
+      },
+      paletteLabel: "inspect",
+      align: "right",
+      oneditprepare: function() {
+          var refreshPeriod = $('#node-input-refreshPeriod');
+          refreshPeriod.change(() => {
+            _changeValue();
+          });
+          refreshPeriod.mousemove(() => {
+            _changeValue();
+          });
+                      
+        //In case the node has been dragged from the palette
+        //application is not enabled yet.
+        if (!this.application) {
+            $("#node-input-application").val("_ADD_");
+        }
+
+      }
+    });
+
+    function _changeValue() {
+        $('#refreshPeriod-value').val($('#node-input-refreshPeriod').val() + " min");
+    }
+  </script>
+  
+  <script type="text/x-red" data-template-name="wws-token-viewer">
+    <div class="form-row">
+      <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
+      <input type="text" id="node-input-application">
+    </div>
+    <div class="form-row">
+      <label for="node-input-refreshPeriod"><i class="icon-tag"></i> Refresh in</label>
+      <div style="display: inline-block; position: relative; width: 77%; height: 20px;">
+            <input type="range" min="0" max="60" id="node-input-refreshPeriod" style="width:73%">
+            <input type="text" id="refreshPeriod-value" style="width:17%; padding:6" disabled="">
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+  </script>
+  
+  <script type="text/x-red" data-help-name="wws-token-viewer">
+    <p>A node that inspects the token used to access <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">refreshPeriod <span class="property-type">Number</span></dt>
+        <dd>The period in Minutes after the token should be refreshed automatically. The range is between [0, 60]. A value of '0' will not automatically refresh the token.</dd>
+    </dl>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>wwsToken <span class="property-type">Object</span></dt>
+        <dd>The current available token - no modification if expired</dd>
+    </dl>
+    <h3>Behavior</h3>
+    <p>This node is usefull if you require to monitor several access tokens within a flow. It gives you per WWS Application a visual feedback of the token status.</p>
+    <dl>
+        <dt>Monitor token</dt>
+        <dd>For each WWS application (and each tokenType <code>User</code> or <code>Bot</code>) you need to verify that the issued token(s) are still valid.<dd>
+    </dl>
+    <dl>
+        <dt>Refresh token</dt>
+        <dd>For each WWS application (and <code>tokenType=User</code>) you need to ensure that the refresh token is not expiring due to inactivity. In this case you are setting the value of refreshPeriod to a value greater than 0.<dd>
+    </dl>
+    <dl>
+        <dt>Token override</dt>
+        <dd>In case you would like to override a token with higher access rights (<code>tokenType=User</code>) you can use the output <code>msg.wwsToken</code> of this node to inject it e.g. into a graphQL Node which requires higher access rights than a bot issued token.<dd>
+    </dl>
+    <h3>Details</h3>
+    <p>This node inspects and returns for a registered Watson Work App the corresponding access token.<br/>
+        Once the node is loaded it displays its token status.
+    </p>
+    <ul>
+        <li><span style="color:yellow;">[X] </span><b>Token expired</b> - in case refreshPeriod is set to 0 the token needs to be updated manually using the WWS App config node</li>
+        <li><span style="color:green;">[X] </span><b>Token available</b> - the token is not expired and can be used</li>
+        <li><span style="color:green;">[X] </span><b>Token refreshed</b> - in case refreshPeriod is set to a value greater than 0 the token was expired but has been refreshed</li>
+        <li><span style="color:red;">[X] </span><b>Token unavailable</b> - no token could be found. A manual update of the WWS App config node is required.</li>    
+    </ul>
+    <p>Setting the refreshPeriod to a value greater than 0 will automatically refresh the token after the provided refresh period. The validation period of an issued token is 60 min. Hence the range for the refresh period is between 0 and 60.
+    <h3>References</h3>
+    <ul>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
+        <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
+        <li>TODO: <a>GitHub</a> - the nodes github repository</li>
+    </ul>
+  </script>
+  
