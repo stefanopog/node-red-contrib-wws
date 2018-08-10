@@ -107,15 +107,45 @@
         <dt>payload
             <span class="property-type">string | markdown</span>
         </dt>
-        <dd>The message to be posted to a space.</dd>
-        <dt class="optional">spaceId <span class="property-type">string</span></dt>
-        <dd> The space id to which the message should be posted to. The app must be a member of that space.</dd>
-        <dt class="optional">title <span class="property-type">string</span></dt>
-        <dd> The title (in bold) to be displayed above the message.</dd>
-        <dt class="optional">avatar <span class="property-type">string</span></dt>
-        <dd> The name of the avatar (app name) which is displayed as prefix to the title.</dd>
-        <dt class="optional">color <span class="property-type">hex</span></dt>
-        <dd> The <a href="https://www.google.de/search?q=%2311ABA5">color (in hex)</a> to be used as banner color to visualize the app message. Default is <code>#11ABA5</code></dd>
+        <dd>
+            The message to be posted to a space.
+        </dd>
+
+        <dt class="optional">wwsSpaceId 
+            <span class="property-type">string</span>
+        </dt>
+        <dd>
+            The space id to which the message should be posted to. The app must be a member of that space.<br />
+            The value in the Configuration Panel overrides the value in <code>msg.wwsSpaceId</code>.
+        </dd>
+
+        <dt class="optional">title 
+            <span class="property-type">string</span>
+        </dt>
+        <dd>
+            The title (in bold) to be displayed above the message.
+        </dd>
+
+        <dt class="optional">avatar 
+            <span class="property-type">string</span>
+        </dt>
+        <dd>
+            The name of the avatar (app name) which is displayed as prefix to the title.
+        </dd>
+
+        <dt class="optional">color 
+            <span class="property-type">hex</span>
+        </dt>
+        <dd>
+            The <a href="https://www.google.de/search?q=%2311ABA5">color (in hex)</a> to be used as banner color to visualize the app message. Default is <code>#11ABA5</code>
+        </dd>
+
+        <dt class="optional">wwsToken 
+            <span class="property-type">string</span>
+        </dt>
+        <dd>
+            Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace application(s) for this particular message.
+        </dd>
     </dl>
     <h3>Outputs</h3>
     <dl class="message-properties">
@@ -146,21 +176,9 @@
             </dd>
     </dl>
     <h3>Details</h3>
-    <p>This node sends messages (incl. minimal supported markdown) to a given space. Check the <a href="https://developer.watsonwork.ibm.com/docs/message/send-a-message-into-a-conversation" target="_blank">refernce manual</a> for further information.<br/>
-        Provide the following information:
+    <p>This node sends messages (incl. minimal supported markdown) to a given space. Check the <a href="https://developer.watsonwork.ibm.com/docs/message/send-a-message-into-a-conversation" target="_blank">refernce manual</a> for further information.
     </p>
-    <dl class="message-properties">
-        <dt>App Name</dt>
-            <dd>The configured name for a specific Watson Work App.</dd>
-        <dt class="optional">Color</dt>
-            <dd>Color of the banner which is shown vertically to a posted message. This can be overriden by <code>msg.color</code></dd>
-        <dt class="optional">Avatar</dt>
-            <dd>The short name of the application which is posting the message. It will be displayed next to the message title. This can be overriden by <code>msg.avatar</code></dd>
-        <dt class="optional">Picture</dt>
-            <dd>In case a custom profile photo should be shown next to a message, uplaod a JPEG file not larger than 200kB. You will receive a status message after you clicked the upload button.</dd>
-        <dt class="optional">Space ID</dt>
-            <dd>The space ID to which this message should be send to. This can be overriden by <code>msg.spaceId</code></dd>
-    </dl>
+
     <h3>References</h3>
     <ul>
         <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
@@ -275,7 +293,7 @@
             function getSpaces(configNodeId) {
                 var found = false;
                 $.getJSON("wws/app/"+ configNodeId +"/spaces", function(spaces) {
-                    var optionList = "<option>Select space...</option>";
+                    var optionList = '<option value=" ">Select space...</option>';
                     $.each(spaces, function(index, value) {
                         console.log("id=" + value.id + " title=" + value.title);
                         if (value.id == $("#node-input-spaceId").val()) {

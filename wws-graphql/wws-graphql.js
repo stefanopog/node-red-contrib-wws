@@ -68,7 +68,6 @@ module.exports = function (RED) {
       done();
     });
   }
-
   //
   //  Get Message Details
   //
@@ -169,7 +168,6 @@ module.exports = function (RED) {
       done();
     });
   }
-
   //
   //  Retrieve information about a list of people
   //
@@ -236,6 +234,10 @@ module.exports = function (RED) {
           //
           //  Successfull Result !
           //
+          if (res.data.me) {
+            res.data.person = res.data.me;
+            delete res.data.me;
+          }
           fullMsg.payload.push(res.data);
           console.log('wwsGetPersons._getPersonDetails : Person ' + person + ' succesfully retrieved !');
           console.log(JSON.stringify(res.data));
@@ -267,43 +269,54 @@ module.exports = function (RED) {
     //  Now wait for the input to this node
     //
     this.on("input", (msg) => {
-      //
-      //  Get People
-      //
-      var people = null;
-      if ((config.wwsPersonList.trim() === '') && 
-          ((msg.wwsPersonList === undefined) || (msg.wwsPersonList === null))) {
-            console.log("wwsGetPersons : No Person to retrieve ");
-            node.status({fill:"red", shape:"dot", text:"No Person to retrieve "});
-            node.error("wwsGetPersons: No Person to retrieve ");
-            return;
-      } else {
-        let theList = null;
-        if (config.wwsPersonList.trim() !== '') {
-          //
-          //  List of properties is a comma-separated list of  name=value
-          //
-          theList = config.wwsPersonList.trim().split(',');
-        } else {
-          //
-          //  List of properties is a comma-separated list of  name=value
-          //
-          theList = msg.wwsPersonList.trim().split(',');
-        }
-        for (let i=0; i < theList.length; i++) {
-          theList[i] = theList[i].trim();
-        }
-        people = theList;
-      }
-      //
-      //  We asynchronously execute all the things
-      //
-      msg.payload = [];
-      asyncTasks = [];
-      for (let k=0; k < people.length; k++) {
+      if (config.PeopleOperation === "me") {
+        //
+        //  We asynchronously execute the call
+        //
+        msg.payload = [];
+        asyncTasks = [];
         asyncTasks.push(function(_dummyCallback) {
-          _getPersonDetails(msg.wwsToken, graphQL_url, people[k].trim(), config.PeopleOperation, msg, _dummyCallback);
+          _getPersonDetails(msg.wwsToken, graphQL_url, 'MYSELF', config.PeopleOperation, msg, _dummyCallback);
         });
+      } else {
+        //
+        //  Get People
+        //
+        let people = null;
+        if ((config.wwsPersonList.trim() === '') && 
+            ((msg.wwsPersonList === undefined) || (msg.wwsPersonList === null))) {
+              console.log("wwsGetPersons : No Person to retrieve ");
+              node.status({fill:"red", shape:"dot", text:"No Person to retrieve "});
+              node.error("wwsGetPersons: No Person to retrieve ");
+              return;
+        } else {
+          let theList = null;
+          if (config.wwsPersonList.trim() !== '') {
+            //
+            //  List of properties is a comma-separated list of  name=value
+            //
+            theList = config.wwsPersonList.trim().split(',');
+          } else {
+            //
+            //  List of properties is a comma-separated list of  name=value
+            //
+            theList = msg.wwsPersonList.trim().split(',');
+          }
+          for (let i=0; i < theList.length; i++) {
+            theList[i] = theList[i].trim();
+          }
+          people = theList;
+        }
+        //
+        //  We asynchronously execute all the things
+        //
+        msg.payload = [];
+        asyncTasks = [];
+        for (let k=0; k < people.length; k++) {
+          asyncTasks.push(function(_dummyCallback) {
+            _getPersonDetails(msg.wwsToken, graphQL_url, people[k].trim(), config.PeopleOperation, msg, _dummyCallback);
+          });
+        }
       }
       _beforeSend(msg);
     });
@@ -316,8 +329,6 @@ module.exports = function (RED) {
       done();
   });
   }
-
-
   //
   //  Add/Remove Members from a space
   //
@@ -441,7 +452,6 @@ module.exports = function (RED) {
       done();
     });
   }
-
   //
   //  This node gets the Annotation referred to by a message containing the "Action-Selected" actionId
   //
@@ -714,7 +724,180 @@ module.exports = function (RED) {
       done();
     });
   }
+  //
+  //  This node gets the Annotation referred to by a message containing the "Action-Selected" actionId
+  //
+  function wwsFilterAnnotations(config) {
+    RED.nodes.createNode(this, config);
 
+    //
+    //  Get the application config node
+    //
+    this.application = RED.nodes.getNode(config.application);
+    var node = this;
+    //
+    //  Check for token on start up
+    //
+    if (!node.application) {
+      node.status({fill: "red", shape: "dot", text: "token unavailable"});
+      node.error("wwsFilterAnnotations: Please configure your Watson Workspace App first!");
+      return;
+    }
+    var graphQL_url = node.application.getApiUrl() + "/graphql";
+    //
+    //  Now wait for the input to this node
+    //
+    this.on("input", (msg) => {
+      var annotationType;
+      //
+      //  Get the incoming Annotation Type
+      //
+      if ((msg.wwsAnnotationType === undefined) || (msg.wwsAnnotationType.trim() === '')) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsFilterAnnotations: Missing AnnotationType Information");
+        node.status({fill:"red", shape:"dot", text:"Missing AnnotationType Information"});
+        node.error('wwsFilterAnnotations: Missing AnnotationType Information', msg);
+        return;
+      }
+      annotationType = msg.wwsAnnotationType.trim();
+      if (config.filterOutputs2) {
+        //
+        //  Check if the incoming actionId is in the list
+        //
+        let items = config.hidden_string.split(',');
+        let theIndex = -1;
+        for (let k = 0; k < items.length; k++) {
+          if (items[k].trim() === 'message-nlp-all') {
+            //
+            //  we have the special case where all NLP annotations are delivered through a single output (nlp-all)
+            //
+            switch (annotationType) {
+              case 'message-nlp-keywords':
+                if (config.o_messageNlpKeywords) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-entities':
+                if (config.o_messageNlpEntities) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-docSentiment':
+                if (config.o_messageNlpDocSentiment) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-relations':
+                if (config.o_messageNlpRelations) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-concepts':
+                if (config.o_messageNlpConcepts) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-taxonomy':
+                if (config.o_messageNlpTaxonomy) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+              case 'message-nlp-dates':
+                if (config.o_messageNlpDates) {
+                  //
+                  //  we deliver this NLP through the NLP-ALL output
+                  //
+                  theIndex = k;
+                }
+                break;
+            }
+            //
+            //  We break the outer loop if found
+            //
+            if (theIndex >=0) break;
+          } else {
+            //
+            //  This is normal behavior, where each annotationType corresponds to only one output
+            //
+            if (items[k].trim() === annotationType) {
+              theIndex = k;
+              break;
+            } 
+          }
+        }
+        if (theIndex < 0) {
+          //
+          //  Very strange situation. AnnotationType is not found ...
+          //
+          console.log("wwsFilterAnnotations: AnnotationType " + annotationType + ' is NOT Processed');
+          node.status({fill:"red", shape:"dot", text:"AnnotationType NOT processed"});
+          node.error('wwsFilterAnnotations:  AnnotationType ' + annotationType + ' is NOT Processed', msg);
+          return;
+        } else {
+          //
+          //  Build an array of NULL messages
+          //
+          let outArray = [];
+          for (let k = 0; k < items.length; k++) {
+              outArray.push(null);
+          }
+          //
+          //  Now fill the answer in the right position :-)
+          //
+          outArray[theIndex] = msg;
+          //
+          //  Provide the answer
+          //
+          console.log("wwsFilterAnnotations: Filtering annotation " + annotationType + ' through the output '+ theIndex);
+          node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
+          node.send(outArray);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
+        }
+      } else {
+        //
+        //  Only one output. All Annotations go to the same
+        //
+        console.log("wwsFilterAnnotations: Pushing annotation " + annotationType + ' through the single output');
+        node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
+        node.send(msg);
+        //
+        //  Reset visual status on success
+        //
+        setTimeout(() => {node.status({});}, 2000);
+      }
+    });
+    this.on('close', function(removed, done) {
+      if (removed) {
+          // This node has been deleted
+      } else {
+          // This node is being restarted
+      }
+      done();
+    });
+  }
   //
   //  Get Template
   //
@@ -803,8 +986,6 @@ module.exports = function (RED) {
       done();
     });
   }
-  
-
   //
   //  Get Templated Space
   //
@@ -829,27 +1010,100 @@ module.exports = function (RED) {
     //  Now wait for the input to this node
     //
     this.on("input", (msg) => {
-      var spaceId = '';
-      if ((config.wwsSpaceId === '') && 
-          ((msg.wwsSpaceId === undefined) || (msg.wwsSpaceId === ''))) {
-        //
-        //  There is an issue
-        //
-        console.log("wwsGetTemplatedSpace: Missing spaceID Information");
-        node.status({fill:"red", shape:"dot", text:"Missing SpaceID"});
-        node.error('wwsGetTemplatedSpace: Missing SpaceID', msg);
-        return;
-      }
-      if (config.wwsSpaceId !== '') {
-        spaceId = config.wwsSpaceId;
-      } else {
-        spaceId = msg.wwsSpaceId;
-      }
       //
-      //  Prepare the operation
+      //  Helper to make property values and Statuses readable
       //
-      var query = _getTemplatedSpaceQuery(spaceId);
-      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, BETA_EXP_FLAGS);
+      function __makePropertiesAndStatusReadable(theSpace) {
+        if (theSpace.propertyValueIds && theSpace.templateInfo.properties) {
+          theSpace.propertyValueIds = _propertiesIdsToNames(theSpace.propertyValueIds, theSpace.templateInfo.properties.items);
+        } else {
+          console.log('wwsGetTemplatedSpace : No properties for space ' + theSpace.title + ' !!!');
+          node.warn('wwsGetTemplatedSpace: No Properties for space ' + theSpace.title);
+        }
+        //
+        //  And now we need to add the name of the status
+        //
+        if (theSpace.statusValueId) {
+          let statuses = theSpace.templateInfo.spaceStatus.acceptableValues;
+          let found = false;
+          for (let i = 0; i < statuses.length; i++) {
+            if (theSpace.statusValueId === statuses[i].id) {
+              found = true;
+              theSpace.statusValueName = statuses[i].displayName;
+              break;
+            }
+          }
+          if (!found) {
+            //
+            //  We cannot get the name of a status that does not exist
+            //
+            console.log('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!');
+            node.status({fill: "red", shape: "dot", text: 'Status ' + theSpace.statusValueId + ' is unknown!'});
+            node.error('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!', msg);
+            return false;
+          } else {
+            return true;
+          }
+        } else {
+          console.log('wwsGetTemplatedSpace : No Status Information for space ' + theSpace.title + ' !!!');
+          node.warn('wwsGetTemplatedSpace: No Status Information for space ' + theSpace.title);
+          return true;
+        }
+      }
+      var query = '';
+      var theSpace = '';
+      switch (config.SpaceOperation) {
+        case 'byId':
+          if ((config.wwsSpaceId === '') && 
+              ((msg.wwsSpaceId === undefined) || (msg.wwsSpaceId === ''))) {
+            //
+            //  There is an issue
+            //
+            console.log("wwsGetTemplatedSpace: Missing spaceID Information");
+            node.status({fill:"red", shape:"dot", text:"Missing SpaceID"});
+            node.error('wwsGetTemplatedSpace: Missing SpaceID', msg);
+            return;
+          }
+          if (config.wwsSpaceId !== '') {
+            theSpace = config.wwsSpaceId;
+          } else {
+            theSpace = msg.wwsSpaceId;
+          }
+          //
+          //  Prepare the operation
+          //
+          query = _getTemplatedSpaceQuery(theSpace);
+          break;
+        case 'byName':
+          if ((config.wwsSpaceName === '') && 
+              ((msg.wwsSpaceName === undefined) || (msg.wwsSpaceName === ''))) {
+            //
+            //  There is an issue
+            //
+            console.log("wwsGetTemplatedSpace: Missing spaceName Information");
+            node.status({fill:"red", shape:"dot", text:"Missing SpaceName"});
+            node.error('wwsGetTemplatedSpace: Missing SpaceName', msg);
+            return;
+          }
+          if (config.wwsSpaceName !== '') {
+            theSpace = config.wwsSpaceName;
+          } else {
+            theSpace = msg.wwsSpaceName;
+          }
+          //
+          //  Prepare the operation
+          //
+          query = _getSearchSpaces(theSpace);
+          break;
+        case 'mySpaces':
+          //
+          //  Prepare the operation
+          //
+          query = _getMySpaces(theSpace);
+          break;
+        default:
+      }
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, ALL_FLAGS);
       //
       //  Perform the operation
       //
@@ -870,44 +1124,43 @@ module.exports = function (RED) {
           console.log('wwsGetTemplatedSpace: Success from graphQL query');
           msg.payload = res.data;
           console.log(JSON.stringify(msg.payload, ' ', 2));
-          node.status({fill: "green", shape: "dot", text: "space " + spaceId + " retrieved"});
+          node.status({fill: "green", shape: "dot", text: "space " + theSpace + " retrieved"});
           //
           //  Now we need to modify the properties in the output to be more descriptive
           //
-          if (msg.payload.space.propertyValueIds && msg.payload.space.templateInfo.properties) {
-            msg.payload.space.propertyValueIds = _propertiesIdsToNames(msg.payload.space.propertyValueIds, msg.payload.space.templateInfo.properties.items);
-          } else {
-            console.log('wwsGetTemplatedSpace : No properties !!!');
-            node.warn('wwsGetTemplatedSpace: No Properties');
-          }
-          //
-          //  And now we need to add the name of the status
-          //
-          let statuses = msg.payload.space.templateInfo.spaceStatus.acceptableValues;
-          let found = false;
-          for (let i = 0; i < statuses.length; i++) {
-            if (msg.payload.space.statusValueId === statuses[i].id) {
-              found = true;
-              msg.payload.space.statusValueName = statuses[i].displayName;
+          switch (config.SpaceOperation) {
+            case 'byId':
+              if (__makePropertiesAndStatusReadable(msg.payload.space)) {
+                console.log('wwsGetTemplatedSpace: operation completed');
+                node.status({fill: "green", shape: "dot", text: 'operation completed'});
+                node.send(msg);
+                //
+                //  Reset visual status on success
+                //
+                setTimeout(() => {node.status({});}, 2000);
+              };
               break;
-            }
-          }
-          if (!found) {
-            //
-            //  We cannot get the name of a status that does not exist
-            //
-            console.log('wwsGetTemplatedSpace: Status ' + msg.payload.space.statusValueId + ' is unknown!');
-            node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.space.statusValueId + ' is unknown!'});
-            node.error('wwsGetTemplatedSpace: Status ' + msg.payload.space.statusValueId + ' is unknown!', msg);
-            return;
-          } else {
-            console.log('wwsGetTemplatedSpace: operation completed');
-            node.status({fill: "green", shape: "dot", text: 'operation completed'});
-            node.send(msg);
-            //
-            //  Reset visual status on success
-            //
-            setTimeout(() => {node.status({});}, 2000);
+            case 'byName':
+            case 'mySpaces':
+              let allOk = true;
+              msg.payload.spaces = msg.payload.spaces.items;
+              for (let i = 0; i < msg.payload.spaces.length; i++) {
+                if (! __makePropertiesAndStatusReadable(msg.payload.spaces[i])) {
+                  allOk = false;
+                  break;
+                }
+              }
+              if (allOk) {
+                console.log('wwsGetTemplatedSpace: operation completed');
+                node.status({fill: "green", shape: "dot", text: 'operation completed'});
+                node.send(msg);
+                //
+                //  Reset visual status on success
+                //
+                setTimeout(() => {node.status({});}, 2000);
+              };
+              break;
+            default:
           }
         }
       }).catch((err) => {
@@ -926,7 +1179,6 @@ module.exports = function (RED) {
       done();
     });
   }
-
   //
   //  Update Templated Space
   //
@@ -1268,8 +1520,6 @@ module.exports = function (RED) {
       done();
     });
   }
-
-
   //
   //  Create Space from Template
   //
@@ -1564,8 +1814,6 @@ module.exports = function (RED) {
       done();
     });
   }
-  
-
   //
   //  Add Focus
   //
@@ -1734,7 +1982,7 @@ module.exports = function (RED) {
             //  We can succesfully add the new focus !!
             //
             let mutation = _addFocusMutation(messageId, res.data.message.content, theString, actionId, lens, category, thePayload);
-            let req = w_graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS);
+            let req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS);
             //
             //  Perform the operation
             //
@@ -1802,7 +2050,6 @@ module.exports = function (RED) {
       done();
     });
   }
-
   //
   //  Add Focus
   //
@@ -1931,7 +2178,7 @@ module.exports = function (RED) {
       AFMutation = AFMutation.replace('$$$$$$$$', details);
       console.log('wwsActionFulfillment: ready to execute ActionFulfillment mutation (see here) : ');
       console.log(AFMutation);
-      var req = _graphQL_options(msg.wwsToken, graphQL_url, host, AFMutation, BETA_EXP_FLAGS);
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, AFMutation, BETA_EXP_FLAGS);
       //
       //  Perform the operation
       //
@@ -1977,203 +2224,18 @@ module.exports = function (RED) {
   }
 
 
-  //
-  //  This node gets the Annotation referred to by a message containing the "Action-Selected" actionId
-  //
-  function wwsFilterAnnotations(config) {
-    RED.nodes.createNode(this, config);
-
-    //
-    //  Get the application config node
-    //
-    this.application = RED.nodes.getNode(config.application);
-    var node = this;
-    //
-    //  Check for token on start up
-    //
-    if (!node.application) {
-      node.status({fill: "red", shape: "dot", text: "token unavailable"});
-      node.error("wwsFilterAnnotations: Please configure your Watson Workspace App first!");
-      return;
-    }
-    var graphQL_url = node.application.getApiUrl() + "/graphql";
-    //
-    //  Now wait for the input to this node
-    //
-    this.on("input", (msg) => {
-      var annotationType;
-      //
-      //  Get the incoming Annotation Type
-      //
-      if ((msg.wwsAnnotationType === undefined) || (msg.wwsAnnotationType.trim() === '')) {
-        //
-        //  There is an issue
-        //
-        console.log("wwsFilterAnnotations: Missing AnnotationType Information");
-        node.status({fill:"red", shape:"dot", text:"Missing AnnotationType Information"});
-        node.error('wwsFilterAnnotations: Missing AnnotationType Information', msg);
-        return;
-      }
-      annotationType = msg.wwsAnnotationType.trim();
-      if (config.filterOutputs2) {
-        //
-        //  Check if the incoming actionId is in the list
-        //
-        let items = config.hidden_string.split(',');
-        let theIndex = -1;
-        for (let k = 0; k < items.length; k++) {
-          if (items[k].trim() === 'message-nlp-all') {
-            //
-            //  we have the special case where all NLP annotations are delivered through a single output (nlp-all)
-            //
-            switch (annotationType) {
-              case 'message-nlp-keywords':
-                if (config.o_messageNlpKeywords) {
-                  //
-                  //  we deliver this NLP through the NLP-ALL output
-                  //
-                  theIndex = k;
-                }
-                break;
-              case 'message-nlp-entities':
-                if (config.o_messageNlpEntities) {
-                  //
-                  //  we deliver this NLP through the NLP-ALL output
-                  //
-                  theIndex = k;
-                }
-                break;
-              case 'message-nlp-docSentiment':
-                if (config.o_messageNlpDocSentiment) {
-                  //
-                  //  we deliver this NLP through the NLP-ALL output
-                  //
-                  theIndex = k;
-                }
-                break;
-              case 'message-nlp-relations':
-                if (config.o_messageNlpRelations) {
-                  //
-                  //  we deliver this NLP through the NLP-ALL output
-                  //
-                  theIndex = k;
-                }
-                break;
-              case 'message-nlp-concepts':
-                if (config.o_messageNlpConcepts) {
-                  //
-                  //  we deliver this NLP through the NLP-ALL output
-                  //
-                  theIndex = k;
-                }
-                break;
-              case 'message-nlp-taxonomy':
-                if (config.o_messageNlpTaxonomy) {
-                  //
-                  //  we deliver this NLP through the NLP-ALL output
-                  //
-                  theIndex = k;
-                }
-                break;
-              case 'message-nlp-dates':
-                if (config.o_messageNlpDates) {
-                  //
-                  //  we deliver this NLP through the NLP-ALL output
-                  //
-                  theIndex = k;
-                }
-                break;
-            }
-            //
-            //  We break the outer loop if found
-            //
-            if (theIndex >=0) break;
-          } else {
-            //
-            //  This is normal behavior, where each annotationType corresponds to only one output
-            //
-            if (items[k].trim() === annotationType) {
-              theIndex = k;
-              break;
-            } 
-          }
-        }
-        if (theIndex < 0) {
-          //
-          //  Very strange situation. AnnotationType is not found ...
-          //
-          console.log("wwsFilterAnnotations: AnnotationType " + annotationType + ' is NOT Processed');
-          node.status({fill:"red", shape:"dot", text:"AnnotationType NOT processed"});
-          node.error('wwsFilterAnnotations:  AnnotationType ' + annotationType + ' is NOT Processed', msg);
-          return;
-        } else {
-          //
-          //  Build an array of NULL messages
-          //
-          let outArray = [];
-          for (let k = 0; k < items.length; k++) {
-              outArray.push(null);
-          }
-          //
-          //  Now fill the answer in the right position :-)
-          //
-          outArray[theIndex] = msg;
-          //
-          //  Provide the answer
-          //
-          console.log("wwsFilterAnnotations: Filtering annotation " + annotationType + ' through the output '+ theIndex);
-          node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
-          node.send(outArray);
-          //
-          //  Reset visual status on success
-          //
-          setTimeout(() => {node.status({});}, 2000);
-        }
-      } else {
-        //
-        //  Only one output. All Annotations go to the same
-        //
-        console.log("wwsFilterAnnotations: Pushing annotation " + annotationType + ' through the single output');
-        node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
-        node.send(msg);
-        //
-        //  Reset visual status on success
-        //
-        setTimeout(() => {node.status({});}, 2000);
-      }
-    });
-    this.on('close', function(removed, done) {
-      if (removed) {
-          // This node has been deleted
-      } else {
-          // This node is being restarted
-      }
-      done();
-    });
-  }
 
   RED.nodes.registerType("wws-graphql", wwsGraphQLNode);
-  
   RED.nodes.registerType("wws-getMessage", wwsGetMessage);
-  
   RED.nodes.registerType("wws-addRemoveMembers", wwsAddRemoveMembers);
-  
   RED.nodes.registerType("wws-getPeople", wwsGetPersons);
-
   RED.nodes.registerType("wws-validateActions", wwsFilterActions);
-
   RED.nodes.registerType("wws-filterAnnotations", wwsFilterAnnotations);
-
   RED.nodes.registerType("wws-getTemplate", wwsGetTemplate);
-
   RED.nodes.registerType("wws-getTemplatedSpace", wwsGetTemplatedSpace);
-
   RED.nodes.registerType("wws-updateTemplatedSpace", wwsUpdateSpace);
-
   RED.nodes.registerType("wws-createSpaceFromTemplate", wwsCreateSpaceFromTemplate);
-
   RED.nodes.registerType("wws-addFocus", wwsAddFocus);
-
   RED.nodes.registerType("wws-actionFulfillment", wwsActionFulfillment);
 
  
@@ -2475,6 +2537,10 @@ module.exports = function (RED) {
     } else {
       if (type === "byId") {
         query = 'query getPersonById {person(id: "' + person + '") ' + _personQL_details() + '}';
+      } else {
+        if (type === "me") {
+          query = 'query myself {me ' + _personQL_details() + '}';
+        }
       }
     }
     return query;
@@ -2518,6 +2584,20 @@ module.exports = function (RED) {
     var query = 'query getTemplatedSpace { space(id: "' + spaceId + '") ';
     query += _spaceQL_details();
     query += '}';
+    return query;
+  }
+  function _getSearchSpaces(spaceName) {
+    var query = 'query theSpaces { searchSpaces(title: "' + spaceName + '", sortBy: "activity") ';
+    query += '{items ';
+    query += _spaceQL_details();
+    query += '}}';
+    return query;
+  }
+  function _getMySpaces(spaceName) {
+    var query = 'query mySpaces {spaces ';
+    query += '{items ';
+    query += _spaceQL_details();
+    query += '}}';
     return query;
   }
 

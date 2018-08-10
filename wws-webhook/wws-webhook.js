@@ -29,7 +29,7 @@ module.exports = function(RED) {
         //
         this.push = function(id, body) {
             if (body) {
-                var newElement = {};
+                let newElement = {};
                 newElement.messageId = id;
                 newElement.payload   =  JSON.parse(JSON.stringify(body));
                 if (this.nummberOfItems < this.limit) {
@@ -94,127 +94,43 @@ module.exports = function(RED) {
 
     function WWSWebhookNode(config) {
         RED.nodes.createNode(this,config);
-        this.active = true;
-        this.application = RED.nodes.getNode(config.application);
-        this.webhookPath = config.webhookPath;
 
+        //
+        //  Get the application config node
+        //
+        this.application = RED.nodes.getNode(config.application);
+        var node = this;
+        //
+        //  Check for token on start up
+        //
+        if (!node.application) {
+            node.status({fill: "red", shape: "dot", text: "token unavailable"});
+            node.error("wwsWebhookNode: Please configure your Watson Workspace App first!");
+            return;
+        }
+        //
+        //  Was the Webhook properly initalized ?
+        //
+        if (!node.credentials.webhookSecret) {
+            node.status({fill: "red", shape: "dot", text: "Webhook secret unavailable"});
+            node.error("WWSWebhookNode: Missing Webhook Secret!");
+            return;
+        }
+        var graphQL_url = node.application.getApiUrl() + "/graphql";
+        this.webhookPath = config.webhookPath;
+        var whoAmI = node.application.clientId;
+ 
         //
         //  Cache management
         //
-        if (isNaN(config.cacheLimit)) {
+        if (isNaN(config.cacheLimit) || (config.cacheLimit === '')) {
             this.theCache = new __wwsCache(5000);
         } else {
             this.theCache = new __wwsCache(config.cacheLimit);
         }
         this.theCache.dumpCache();
-        var node = this;
-        if (!node.application) {
-            node.error("Please configure your Watson Workspace App first!");
-            node.status({fill: "red", shape: "dot", text: "token unavailable"});
-        } else {
-            var appId = node.application.clientId;
-        }
         //
-        //  Helper to build the graphQL query string
-        //
-        function __getMessageInformation(messageId) {
-            var query = 'query getMessage { message(id: "' + messageId + '") {';
-            query += 'id content contentType annotations';
-            query += ' created createdBy {id displayName email customerId presence photoUrl}';
-            query += ' updated updatedBy {id displayName email customerId presence photoUrl}';
-            query += ' reactions {reaction count viewerHasReacted}'
-            query += '}}';
-            return query;
-        }
-        //
-        //  Helper to perform GraphQL calls
-        //
-        function __wwsGraphQL(accessToken, host, query, viewType, operationName, variables) {
-            var uri = host + "/graphql";
-            var options = {
-              method: "POST",
-              uri: uri,
-              headers: {
-                "Authorization": "Bearer " + accessToken,
-                "x-graphql-view": viewType
-              },
-              json: true,
-              body: {
-                query: query
-              }
-            };
-            if (variables) options.body.variables = variables;
-            if (operationName) options.body.operationName = operationName;
-            return rp(options);
-        }
-        //
-        //  Get Message Details
-        //
-        function __wwsGetMessage(msg, messageId, type) {
-            let host = node.application &&  node.application.getApiUrl() || "https://api.watsonwork.ibm.com";
-            let bearerToken = node.application.getAccessToken(node).access_token;
-            //
-            //  Build the query
-            //
-            var query = __getMessageInformation(messageId);
-            //
-            //  Perform the operation
-            //
-            __wwsGraphQL(bearerToken, host, query,'PUBLIC')
-            .then((res) => {
-                if (res.errors) {
-                    //
-                    //  Strange Errors
-                    //
-                    msg.payload = res.errors;
-                    console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : errors getting Message ' + messageId);
-                    console.log(JSON.stringify(res.errors));
-                    node.status({fill: "red", shape: "dot", text: "errors getting Message " + messageId});
-                    node.error("errors getting Message " + messageId, msg);
-                    return;
-                } else {
-                    //
-                    //  Successfull Result !
-                    //
-                    msg.wwsOriginalMessage = res.data.message;
-                    if (msg.wwsOriginalMessage) {
-                        console.log('wwsWebhook.__wwsGetMessage : ORIGINAL Message (' + msg.wwsOriginalMessage.id + ') for messageID ' + messageId + ' succesfully retrieved!');
-                        //
-                        //  Parsing Annotations
-                        //
-                        if (msg.wwsOriginalMessage.annotations) {
-                            if (msg.wwsOriginalMessage.annotations.length > 0) {
-                                let annotations = [];
-                                for (let i = 0; i < msg.wwsOriginalMessage.annotations.length; i++) {
-                                    annotations.push(JSON.parse(msg.wwsOriginalMessage.annotations[i]));
-                                }
-                                msg.wwsOriginalMessage.annotations = annotations;
-                            }
-                        }
-                    } else {
-                        //
-                        //  Strange Error. The retrieved message is empty
-                        //  Payload is the original message
-                        //
-                        msg.payload = JSON.parse(msg.wwsEvent.annotationPayload);
-                        console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
-                        console.log(JSON.stringify(res.data));
-                    }
-                    node.status({fill: "green", shape: "dot", text: messageId + ' retrieved!'});
-                    node.theCache.push(messageId, res.data.message);
-                    __sendFinalMessage(msg, config, type);
-                }
-            })
-            .catch((err) => {
-                console.log("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId);
-                console.log(err);
-                node.status({fill: "red", shape: "ring", text: "errors getting Message " + messageId});
-                node.error("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId, err);
-                return;
-            });
-    }
-        //
-        //  Send the Message
+        //  Helper for sendin the final message (possibly an array of) 
         //
         function __sendFinalMessage(msg, config, type) {
             console.log('wwsWebhook.__sendFinalMessage for type ' + type);
@@ -222,7 +138,7 @@ module.exports = function(RED) {
             //  Check if we are dealing with Annotations originating from Own App
             //
             if (msg.wwsOriginalMessage) {
-                if (msg.wwsOriginalMessage.userId === appId) {
+                if (msg.wwsOriginalMessage.userId === whoAmI) {
                     //
                     //  Own App annotation... Do not deal with it
                     //
@@ -274,18 +190,114 @@ module.exports = function(RED) {
             }
         }
         //
-        //  Was the Webhook properly initalized ?
+        //  Helper to Get Message Details
         //
-        if (!node.credentials.webhookSecret) {
-            node.error("WWSWebhookNode: Missing Webhook Secret!");
-        }
-        //
-        //  Check for token on start up
-        //
-        //Check for token on start up
-        if (!node.application || !node.application.hasAccessToken()) {
-            node.error("Please configure your Watson Workspace App first!");
-            node.status({fill: "red", shape: "dot", text: "token unavailable"});
+        function __wwsGetMessage(msg, messageId, type) {
+            //
+            //  Helper to build the graphQL query string
+            //
+            function __getMessageInformation(messageId) {
+                var query = 'query getMessage { message(id: "' + messageId + '") {';
+                query += 'id content contentType annotations';
+                query += ' created createdBy {id displayName email customerId presence photoUrl}';
+                query += ' updated updatedBy {id displayName email customerId presence photoUrl}';
+                query += ' reactions {reaction count viewerHasReacted}'
+                query += '}}';
+                return query;
+            }
+            //
+            //  Helper to perform GraphQL calls
+            //
+            function _graphQL_options(runtimeToken, graphQL_url, query, viewType, variables, operationName) {
+                var options = {
+                    method: "POST",
+                    uri: graphQL_url,
+                    headers: {
+                        "x-graphql-view": viewType
+                    },
+                    json: true,
+                    body: {
+                        query: query
+                    }
+                };
+                //
+                //  Fallback to support external provided tokens
+                //
+                if (runtimeToken) {
+                    options.headers.Authorization = "Bearer" + runtimeToken;
+                }
+                if (variables) options.body.variables = variables;
+                if (operationName) options.body.operationName = operationName;
+
+                console.log("_graphQL_options : executing graphQL call with these options");
+                console.log(JSON.stringify(options, ' ', 2));
+                console.log('-------------------------------------------------------')
+                return options;
+            }
+            //
+            //  Build the query
+            //
+            var query = __getMessageInformation(messageId);
+            //
+            //  Perform the operation
+            //
+            var req = _graphQL_options(null, graphQL_url, query, 'PUBLIC');
+            //
+            //  Perform the operation
+            //
+            node.status({fill:"blue", shape:"dot", text:"Getting message..."});
+            node.application.wwsRequest(req)
+            .then((res) => {
+                if (res.errors) {
+                    //
+                    //  Strange Errors
+                    //
+                    msg.payload = res.errors;
+                    console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : errors getting Message ' + messageId);
+                    console.log(JSON.stringify(res.errors));
+                    node.status({fill: "red", shape: "dot", text: "errors getting Message " + messageId});
+                    node.error("errors getting Message " + messageId, msg);
+                    return;
+                } else {
+                    //
+                    //  Successfull Result !
+                    //
+                    msg.wwsOriginalMessage = res.data.message;
+                    if (msg.wwsOriginalMessage) {
+                        console.log('wwsWebhook.__wwsGetMessage : ORIGINAL Message (' + msg.wwsOriginalMessage.id + ') for messageID ' + messageId + ' succesfully retrieved!');
+                        //
+                        //  Parsing Annotations
+                        //
+                        if (msg.wwsOriginalMessage.annotations) {
+                            if (msg.wwsOriginalMessage.annotations.length > 0) {
+                                let annotations = [];
+                                for (let i = 0; i < msg.wwsOriginalMessage.annotations.length; i++) {
+                                    annotations.push(JSON.parse(msg.wwsOriginalMessage.annotations[i]));
+                                }
+                                msg.wwsOriginalMessage.annotations = annotations;
+                            }
+                        }
+                    } else {
+                        //
+                        //  Strange Error. The retrieved message is empty
+                        //  Payload is the original message
+                        //
+                        msg.payload = JSON.parse(msg.wwsEvent.annotationPayload);
+                        console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
+                        console.log(JSON.stringify(res.data));
+                    }
+                    node.status({fill: "green", shape: "dot", text: messageId + ' retrieved!'});
+                    node.theCache.push(messageId, res.data.message);
+                    __sendFinalMessage(msg, config, type);
+                }
+            })
+            .catch((err) => {
+                console.log("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId);
+                console.log(err);
+                node.status({fill: "red", shape: "ring", text: "errors getting Message " + messageId});
+                node.error("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId, err);
+                return;
+            });
         }
         //
         //  Remove webhook when deleted
@@ -326,7 +338,7 @@ module.exports = function(RED) {
             node.isApp = (memberIds) => {
                 var found = false;
                 if (memberIds && memberIds.length>0) {
-                    found = (appId === memberIds[0]);
+                    found = (whoAmI === memberIds[0]);
                 }
                 return found;
             };
@@ -356,7 +368,7 @@ module.exports = function(RED) {
                         //
                         //  Ignoring own app messages
                         //
-                        if (req.body.userId !== appId) {
+                        if (req.body.userId !== whoAmI) {
                             console.log('wwsWebhook: PROCESSING incoming <' + req.body.type + '> event type...');
                             function __whichOriginalMessage(msg) {
                                 var theId = '';

@@ -19,8 +19,8 @@ module.exports = function(RED) {
         node.error("wwsFilePost: Missing required input in msg object: [msg.wwsFile | msg.wwsImage]");
         return;
       }
-      var space = msg.wwsSpaceId || config.space;
-      if (!space) {
+      var space = config.space || msg.wwsSpaceId;
+      if (!space || (space.trim() === '')) {
         node.status({fill: "red", shape: "dot", text: "missing input: spaceId"});
         node.error("wwsFilePost: Missing required input: [spaceId | msg.wwsSpaceId]");
         return;
