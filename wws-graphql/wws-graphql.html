@@ -86,9 +86,8 @@
         <span class="property-type">string</span>
       </dt>
       <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+        application(s) for this particular message.
       </dd>
   </dl>
 
@@ -209,9 +208,8 @@ msg.payload = `
         <span class="property-type">string</span>
       </dt>
       <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+        application(s) for this particular message.
       </dd>
   
   </dl>
@@ -253,6 +251,14 @@ msg.payload = `
       wwsSpaceId: {
         value: "",
         required: true
+      },    
+      wwsSpaceName: {
+        value: "",
+        required: true
+      },    
+      SpaceOperation: {
+        value: "byId",
+        required: true
       }    
     },
     inputs: 1,
@@ -261,11 +267,30 @@ msg.payload = `
       return this.name || "Get Space";
     },
     paletteLabel: "Get Space",
-    oneditsave: updateGetTemplatedSpace
+    oneditsave: updateGeTemplatedSpaces
   });
 
-
-  function updateGetTemplatedSpace() {
+  function updateGeTemplatedSpaces() {
+    switch (document.querySelector("#node-input-SpaceOperation").value) {
+        case "byName" :
+          document.querySelector("#spaceIdRow").style.display = "none";
+          document.querySelector("#spaceNameRow").style.display = "inline";
+          break;
+        case "byId" :
+          document.querySelector("#spaceIdRow").style.display = "inline";
+          document.querySelector("#spaceNameRow").style.display = "none";
+          break;
+        case "mySpaces" :
+          document.querySelector("#spaceIdRow").style.display = "none";
+          document.querySelector("#spaceNameRow").style.display = "none";
+          break;
+        default:
+          this.SpaceOperation = "byId";
+          document.querySelector("#node-input-SpaceOperation").value = "byId";
+          document.querySelector("#spaceIdRow").style.display = "inline";
+          document.querySelector("#spaceNameRow").style.display = "none";
+          break;
+    }
   }
 </script>
 
@@ -274,10 +299,28 @@ msg.payload = `
     <label for="node-input-application"><i class="fa fa-user"></i> App Name</label>
     <input type="text" id="node-input-application">
   </div>
+
   <div class="form-row">
-    <label for="node-input-wwsSpaceId"><i class="fa fa-eye"></i> Space Id</label>
-    <input type="text" id="node-input-wwsSpaceId" placeholder="Space Id, i.e. 5b101230e4b09834e0e434d7">
+      <label for="node-input-SpaceOperation"><i class="fa fa-arrow-circle-right"></i> Operation</label>
+      <select id="node-input-SpaceOperation" onchange="updateGeTemplatedSpaces()">
+        <option value="byId">by ID</option>
+        <option value="mySpaces">my Spaces</option>
+        <!--       <option value="byName">by Name</option> -->
+      </select>
   </div>
+
+  <div class="form-row" id="spaceIdRow">
+      <label for="node-input-wwsSpaceId"><i class="fa fa-eye"></i> Space Id</label>
+      <input type="text" id="node-input-wwsSpaceId" placeholder="Space Id, i.e. 5b101230e4b09834e0e434d7">
+  </div>
+
+  <div class="form-row" id="spaceNameRow">
+      <label for="node-input-wwsSpaceName"><i class="fa fa-eye"></i> Space Name</label>
+      <input type="text" id="node-input-wwsSpaceName" placeholder="Space Name">
+  </div>
+  <br />
+  <br />
+        
   <div class="form-row">
     <label for="node-input-name"><i class="icon-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name">
@@ -286,14 +329,13 @@ msg.payload = `
 
 <script type="text/x-red" data-help-name="wws-getTemplatedSpace">
   <p>
-    This node provides a tool to easily retrieve all the informations for a Space coming from a Template.   
+    This node provides a tool to easily retrieve all the informations for a Space specified by its ID or for all the spaces to which the Identity that is executing the node belongs to.   
   </p>
     
     
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>
-        wwsSpaceId 
+      <dt>wwsSpaceId 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -302,44 +344,39 @@ msg.payload = `
       </dd>
       
       <dt class="optional">wwsToken 
-        <span class="property-type">string</span>
-      </dt>
-      <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
-      </dd> 
-      
-      <dt class="optional">wwsToken 
           <span class="property-type">string</span>
       </dt>
       <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+        application(s) for this particular message.
       </dd>
     </dl>
 
   <h3>Details</h3>
   <dl>
-  <p>In case the operation terminates succesfully, the output will be similar to this one:
+  <p>
+    In case the operation terminates succesfully, the output will be similar to this one:
     <br />
     <img src="icons/node-red-contrib-wws/wws-get-desc1.png" />
     <img src="icons/node-red-contrib-wws/wws-get-desc2.png" />
     <img src="icons/node-red-contrib-wws/wws-get-desc3.png" />
     <img src="icons/node-red-contrib-wws/wws-get-desc4.png" />
-    <p>
-      <b>Note : </b><p>
-        The result provides additional information about each of the property and about the status. More precisely: 
-        <ul>
-          <li><code>Properties</code><br />
-            The <b>type</b>, <b>displayName</b> and <b>valueDisplayName</b> are also provided
-          </li>
-          <li><code>status</code><br />
-            The <b>statusValueName</b> is also provided
-          </li>
-        </ul>
-      Any inconsistency in the names or values of properties or in the value of the status will automatically produce a <code>node.error</code>
+    <br />
+    When more than one space is returned, instead of the <code>msg.payload.space object</code> and <code>msg.payload.spaces array</code> is returned.
+  </p>
+  <p>
+    <b>Note : </b>
+    <br />
+      The result provides additional information about each of the property and about the status. More precisely: 
+      <ul>
+        <li><code>Properties</code><br />
+          The <b>type</b>, <b>displayName</b> and <b>valueDisplayName</b> are also provided
+        </li>
+        <li><code>status</code><br />
+          The <b>statusValueName</b> is also provided
+        </li>
+      </ul>
+    Any inconsistency in the names or values of properties or in the value of the status will automatically produce a <code>node.error</code>
   </p>
   </dl>
 
@@ -477,17 +514,17 @@ msg.payload = `
               </li>
             </ul>
             The <b>Value</b> part can optionally be included in <b> " (double-quotes) </b>.
-            <p>
-              The value on the configuration panel overrides the value in <code>msg.wwsPropertyList</code>
-              <br />
-              In this case, <code>msg.wwsPropertyList</code> would NOT be a string but an array where each item is an object with the following attributes:
-              <ul>
-                <li><b>name</b> the name of the property (textual representation)</li>
-                <li><b>value</b> the value of the property (textual representation)</li>
-              </ul>
-            </p>
           </li>
         </ul>
+        <p>
+          The value on the configuration panel overrides the value in <code>msg.wwsPropertyList</code>
+          <br />
+          In this case, <code>msg.wwsPropertyList</code> would NOT be a string but an array where each item is an object with the following attributes:
+          <ul>
+            <li><b>name</b> the name of the property (textual representation)</li>
+            <li><b>value</b> the value of the property (textual representation)</li>
+          </ul>
+        </p>
       </dd>
 
       <dt>wwsNewStatus 
@@ -502,9 +539,8 @@ msg.payload = `
         <span class="property-type">string</span>
       </dt>
       <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+        application(s) for this particular message.
       </dd>
     </dl>
 
@@ -696,9 +732,8 @@ msg.payload = `
         <span class="property-type">string</span>
       </dt>
       <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+        application(s) for this particular message.
       </dd>
     </dl>
 
@@ -833,9 +868,8 @@ msg.payload = `
         <span class="property-type">string</span>
       </dt>
       <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+        application(s) for this particular message.
       </dd>
     
   </dl>
@@ -894,6 +928,15 @@ msg.payload = `
 
 
   function updateGetPeople() {
+    switch (document.querySelector("#node-input-PeopleOperation").value) {
+        case "me" :
+            document.querySelector("#peopleListRow").style.display = "none";
+            break;
+        case "byId" :
+        case "byMail" :
+            document.querySelector("#peopleListRow").style.display = "inline";
+            break;
+    }
   }
 </script>
 
@@ -905,13 +948,14 @@ msg.payload = `
 
   <div class="form-row">
       <label for="node-input-PeopleOperation"><i class="fa fa-arrow-circle-right"></i> Operation</label>
-      <select id="node-input-PeopleOperation">
+      <select id="node-input-PeopleOperation" onchange="updateGetPeople()">
        <option value="byMail">by Mail</option>
        <option value="byId">by ID</option>
+       <option value="me">myself</option>
       </select>
   </div>
 
-  <div class="form-row">
+  <div class="form-row" id="peopleListRow">
     <label for="node-input-wwsPersonList"><i class="fa fa-users"></i> Person List</label>
     <input type="text" id="node-input-wwsPersonList" placeholder="person-id, person-id...">
   </div>
@@ -922,14 +966,18 @@ msg.payload = `
 </script>
 
 <script type="text/x-red" data-help-name="wws-getPeople">
-  <p>This node provides a tool to easily retrieve all the details for a set of people.
+  <p>
+    This node provides a tool to easily retrieve all the details for a set of people.
     <br>
     The set of people can be specified as a set of <b>email addresses</b> or <b>IDs</b>
+  </p>
+  <p>
+    The Node can also execute the <code>me query</code>, thus retrieving information about the identity that is executing the operation.
   </p>
  
   <h3>Inputs</h3>
   <dl class="message-properties">
-    <dt>wwsMemberList 
+    <dt class="optional">wwsMemberList 
       <span class="property-type">comma-separated string</span>
     </dt>
     <dd>
@@ -941,9 +989,8 @@ msg.payload = `
       <span class="property-type">string</span>
     </dt>
     <dd>
-      Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-      application(s) for this particular message.</br />
-      <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+      application(s) for this particular message.
     </dd>  
   </dl>
 
@@ -1130,9 +1177,8 @@ msg.payload = `
         <span class="property-type">string</span>
       </dt>
       <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+        application(s) for this particular message.
       </dd>
     </dl>
 
@@ -1289,9 +1335,8 @@ msg.payload = `
       <span class="property-type">string</span>
     </dt>
     <dd>
-      Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-      application(s) for this particular message.</br />
-      <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+      application(s) for this particular message.
     </dd>
   </dl>
 
@@ -1508,9 +1553,8 @@ msg.payload = `
         <span class="property-type">string</span>
       </dt>
       <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+        application(s) for this particular message.
       </dd>
     </dl>
 
@@ -1908,9 +1952,8 @@ msg.payload = `
         <span class="property-type">string</span>
       </dt>
       <dd>
-        Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-        application(s) for this particular message.</br />
-        <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+        application(s) for this particular message.
       </dd>
     </dl>  
     
@@ -1993,9 +2036,8 @@ msg.payload = `
       <span class="property-type">string</span>
     </dt>
     <dd>
-      Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace 
-      application(s) for this particular message.</br />
-      <b>This is a temporary workaround until <i>Authorization as User</i> will be fully implemented.</b>
+      Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
+      application(s) for this particular message.
     </dd>
   </dl>
 

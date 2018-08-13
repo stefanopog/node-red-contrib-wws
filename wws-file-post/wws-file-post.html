@@ -37,7 +37,7 @@
         function getSpaces(configNodeId) {
             var found = false;
             $.getJSON("wws/app/"+ configNodeId +"/spaces", function(spaces) {
-                var optionList = "<option>Select space...</option>";
+                var optionList = '<option value=" ">Select space...</option>';
                 $.each(spaces, function(index, value) {
                     console.log("id=" + value.id + " title=" + value.title);
                     if (value.id == $("#node-input-space").val()) {
@@ -86,25 +86,39 @@
     <p>A node that posts a file to a space in <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.</p>
     <h3>Inputs</h3>
     <dl class="message-properties">
-        <dt class="optional">wwsFile <span class="property-type"Object</span></dt>
-        <dd>The file which should be send to the space. Please check the details section about the required input format.</dd>
-        <dt class="optional">wwsImage <span class="property-type"Object</span></dt>
-        <dd>The image which should be send to the space including the preview. Please check the details section about the required input format. Either <code>file</code> OR <code>image</code> must be set otherwise an error will be thrown.</dd>
-        <dt class="optional">wwsSpaceId <span class="property-type">string</span></dt>
-        <dd>The identifier of the Space in Watson Workspace.</dd>
-        <dt class="optional">wwsToken <span class="property-type">string</span></dt>
-        <dd>Access Token received during an Outh Flow (e.g. Authenticate on behalf of a user). This will override the existing access token for the configured workspace application(s) for this particular message.</dd>
+        <dt class="optional">wwsFile 
+            <span class="property-type>"Object</span>
+        </dt>
+        <dd>
+            The file which should be send to the space. Please check the details section about the required input format.
+        </dd>
+
+        <dt class="optional">wwsImage 
+            <span class="property-type">Object</span>
+        </dt>
+        <dd>
+            The image which should be send to the space including the preview. Please check the details section about the required input format. Either <code>file</code> OR <code>image</code> must be set otherwise an error will be thrown.
+        </dd>
+
+        <dt class="optional">wwsSpaceId 
+            <span class="property-type">string</span>
+        </dt>
+        <dd>
+            The identifier of the Space in Watson Workspace. <br >
+            The value in the Configuration Panel overrides the value in <code>msg.wwsSpaceId</code>.
+        </dd>
+
+        <dt class="optional">wwsToken 
+            <span class="property-type">string</span>
+        </dt>
+        <dd>
+            Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace application(s) for this particular message.
+        </dd>
     </dl>
     <h3>Details</h3>
-    <p>This node sends a file (or image) to Watson Workspace. Check the <a href="https://developer.watsonwork.ibm.com/docs/api-reference/files" target="_blank">Reference Documentation</a> for further information.<br/>
-        Provide the following information:
+    <p>
+        This node sends a file (or image) to Watson Workspace. Check the <a href="https://developer.watsonwork.ibm.com/docs/api-reference/files" target="_blank">Reference Documentation</a> for further information.
     </p>
-    <dl class="message-properties">
-        <dt>App Name</dt>
-        <dd>The configured name for a specific Watson Work App.</dd>
-        <dt>Space ID</dt>
-        <dd>The identifier of the Space in Watson Workspace. Can be overriden with <code>msg.spaceId</code>.</dd>
-    </dl>
     <p>
       In order to send a buffer data-type in <code>msg.wwsFile</code>, it has to follow the following format:
       <pre>

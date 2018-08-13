@@ -30,17 +30,31 @@ module.exports = function(RED) {
                 node.error("wws-message-post: Missing required input in msg object: payload");
                 return;
             }
-            if (!msg.wwsSpaceId && !node.spaceId) {
-                node.status({fill:"red", shape:"dot", text:"No Payload"});
+
+            console.log('space ID = ' + config.spaceId);
+
+            if (!msg.wwsSpaceId && (config.spaceId.trim() === '')) {
+                node.status({fill:"red", shape:"dot", text:"No Space Id"});
                 node.error("wws-message-post: Missing required input in msg object: wwsSpaceId");
                 return;
             }
-            msg.wwsSpaceId = msg.wwsSpaceId ? msg.wwsSpaceId : node.spaceId;
+            let spaceId = '';
+            if (config.spaceId.trim() !== '') {
+                spaceId = config.spaceId.trim();
+            } else {
+                if (msg.wwsSpaceId.trim() !== '') {
+                    spaceId = msg.wwsSpaceId.trim();
+                } else {
+                    node.status({fill:"red", shape:"dot", text:"No Space Id"});
+                    node.error("wws-message-post: Missing required input in msg object: wwsSpaceId");
+                    return;
+                }
+            }
 
             msg = _prepareAppMessage(this, msg);
             var req = {
             		method: 'POST',
-            		uri: this.application.getApiUrl() + "/v1/spaces/" + msg.wwsSpaceId + "/messages",
+            		uri: this.application.getApiUrl() + "/v1/spaces/" + spaceId + "/messages",
             		body: msg.reqBody
             }
 
