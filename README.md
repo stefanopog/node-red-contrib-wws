@@ -9,31 +9,21 @@ This set of nodes is intended to be used for communicating with the Watson Works
 Once you have created a Workspace App, you can create the corresponding "NodeRed Configuration node" representing this app.
 With these nodes, you have the ability to configure webhooks, to send messages or files to spaces to which the corresponding Workspace App is attached, to execute [graphQL commands](https://developer.watsonwork.ibm.com/docs/developers-guide/graphql-api), to create and update spaces based on Templates, to get information about the Focus assigned to a given message and to add custom Focus, to filter "ActionSelected" annotations and Webhook events.
 
+You can also configure a [Workspace Apps](https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build) to **Authorize as a User**.
+
 Here is the list of Nodes currently proposed by this package.
 
 ![Watson Work Palette](help/palette_view.png)
 
 Full documentation, including sample NodeRed flows using these nodes, is available in the Documentation Directory of the [corresponding Github repository](https://github.com/stefanopog/node-red-contrib-wws/tree/master/docs)
 
-# *Installation*
-
-## Automatic Installation
-This packages installs using the standard **Manage Palette** feature in the NodeRed interface.
-
-### Prerequisites
-The following packages are required to be present in node-red prior to this installation
-* `"body-parser": "^1.18.2"`
-* `"simple-oauth2": "^1.5.2"`
-* `"follow-redirects":"^1.3.0"`
-* `"request-promise-native": "^1.0.5"`
-* `"request": "^2.87.0"`
-* `"crypto": "^1.0.1"`
-
-
-## Manual Installation
-* In case of manual installation copy the code to the user directory of Node-RED e.g. `/data/node_modules/node-red-contrib-wws`.
-* Install the dependencies via npm install and move packages one level up `mv node_modules/* ..´.
-* To make Node-RED find the code, define the NODE_PATH environment variable by adding the Node-RED installation directory first, and the user directory second. Here is an example: `NODE_PATH="/usr/src/node-red/node_modules:/data/node_modules"`
+# *Changes*
+## Changes in V2.0.0
+* Authorize as User 
+* The Inspect Node
+* The _Get Spaces_ node now also supports the **Get My Spaces** function
+* The _Get Person(s)_ node now also supports the **Get Me** function
+* All nodes support an incoming **msg.wwsToken** attribute which allows you to overwrite the authentication performed by the Credentials node
 
 # *Features*
 Note: **All the Nodes** accept a **msg.wwsToken** input. This token superseedes the one coming from the Credentials Node.
@@ -138,3 +128,23 @@ Note: **All the Nodes** accept a **msg.wwsToken** input. This token superseedes 
    
 # Known Issues
 * None
+  
+# *Installation*
+
+## Automatic Installation
+This packages installs using the standard **Manage Palette** feature in the NodeRed interface.
+
+### Prerequisites
+The following packages are required to be present in node-red prior to this installation
+* `"body-parser": "^1.18.2"`
+* `"simple-oauth2": "^1.5.2"`
+* `"follow-redirects":"^1.3.0"`
+* `"request-promise-native": "^1.0.5"`
+* `"request": "^2.87.0"`
+* `"crypto": "^1.0.1"`
+
+
+## Manual Installation
+* In case of manual installation copy the code to the user directory of Node-RED e.g. `/data/node_modules/node-red-contrib-wws`.
+* Install the dependencies via npm install and move packages one level up `mv node_modules/* ..´.
+* To make Node-RED find the code, define the NODE_PATH environment variable by adding the Node-RED installation directory first, and the user directory second. Here is an example: `NODE_PATH="/usr/src/node-red/node_modules:/data/node_modules"`
