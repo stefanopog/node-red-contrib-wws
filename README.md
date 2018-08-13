@@ -41,6 +41,7 @@ The following packages are required to be present in node-red prior to this inst
   * containing App ID and App Secret, 
   * pulls Application name from Watson Work,
   * plus additional OAuth configuration elements
+  * availability to upload a profile photo for each application
   * Note : **this node is used by all the other nodes**
   * Note : **This nodes supports now BOTH Authorization as app AND Authorize as user**
 
@@ -63,7 +64,6 @@ The following packages are required to be present in node-red prior to this inst
   * send messages to a space
   * provides a configuration interface (including preview functionality)
   * selection of available spaces
-  * availability to upload a profile photo for each app
   * returns response from WWS to msg.payload
 
 ## Get message node
