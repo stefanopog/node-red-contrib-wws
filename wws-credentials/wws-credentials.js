@@ -55,12 +55,12 @@ module.exports = function(RED) {
         
         /* deprecated - use request internally*/
         this.getAccessToken = (statusNode) => {
-        	var wwsCredentials = this
+        	var wwsCredentials = this;
             let accessToken = wwsCredentials.credentials.token;
             const oauth2 = OAuth2.create(wwsCredentials.getCredentials());
             let tokenHelper = oauth2.accessToken.create(accessToken);
             if (tokenHelper && tokenHelper.expired()) {
-                _log("Access Token expired, renewing token...")
+                _log("Access Token expired, renewing token...");
                 switch (this.credentials.tokenType) {
                     case "bot":
                         let tokenConfig = {};
@@ -100,10 +100,10 @@ module.exports = function(RED) {
         };
         this.hasAccessToken = () => {
             return (this.credentials.token);
-        }
+        };
         this.getApiUrl = () => {
             return this.credentials.api;
-        }
+        };
     };
     
     RED.nodes.registerType("wws-credentials",WWSNode, {
@@ -137,7 +137,7 @@ module.exports = function(RED) {
                         message: "Required parameter uri has not been provided in req object!",
                         statusCode: 400,
                         status: "Bad request"
-                }
+                };
                 reject(error);
             }
             if (!retries) {
@@ -148,48 +148,47 @@ module.exports = function(RED) {
                 _log("wwsRequest => method has not been provided for " + req.uri + ". Setting method to 'GET'!");
                 req.method = 'GET';
             }
-
             let token = wwsCredentials.credentials.token;
             if (!token) {
                 let error = {
                         message: "No access token could be found. Please configure your app first!",
                         statusCode: 500,
                         status: "Internal Server Error"
-                }
+                };
                 reject(error);
             }
             
             //Setting access token from credentials
             var accessToken = "Bearer " + token.access_token;
-            
             if (req.headers) {
                 //
-                // Headers exist !!!!
+                //  Headers exist !!!!
                 //
                 if (req.headers.Authorization) {
                     //
-                    // An authroization already exists.
-                    // DO NOT SUPERSEED IT
-                    // So we do not do anything
+                    //  An authroization already exists. 
+                    //  DO NOT SUPERSEED IT
+                    //  So we do not do anything
                     //
                 } else {
                     //
-                    // We need to set the authorization coming from Credentials
+                    //  We need to set the authorization coming from Credentials
                     //
                     req.headers.Authorization = accessToken;
                 }
             } else {
                 //
-                // headers do not exist yet
-                // So we can create them and add the authorization
-                // coming from credentials
+                //  headers do not exist yet
+                //  So we can create them and add the authorization
+                //  coming from credentials
                 //
                 req.headers = {
                     Authorization: accessToken
                 };
             }
-            
-            //assuming that the body does contain json by default
+            //
+            //  assuming that the body does contain json by default
+            //
             if (req.body || req.formData) {
                 req.json = true;
             }
@@ -217,7 +216,7 @@ module.exports = function(RED) {
                             })
                             .catch((error) => {
                                 reject(error);
-                            });;
+                            });
                         } else {
                             wwsCredentials.error('wwsRequest => Could not refresh the token, use Editor to refresh it manually!');
                             reject(error);
@@ -227,7 +226,7 @@ module.exports = function(RED) {
                         reject(error);
                     });
                 } else {
-                    _log("wwsRequest => Number of retries reached. Stopping here...")
+                    _log("wwsRequest => Number of retries reached. Stopping here...");
                     reject(error);
                 }
                 
@@ -249,7 +248,7 @@ module.exports = function(RED) {
                 displayName: token.displayName,
                 id: token.id,
                 scope: token.scope
-            }
+            };
             res.json(body);
         } else {
             res.sendStatus(404);
@@ -307,7 +306,7 @@ module.exports = function(RED) {
                     default:
                     case "bot":
                         displayName = userInformation.displayName;
-                        break
+                        break;
                 }
                 res.json({
                     appName: displayName
@@ -319,7 +318,7 @@ module.exports = function(RED) {
                 if (err.statusCode) {
                     switch (err.statusCode) {
                         case 401:
-                            displayMessage = "Token is expired, please renew token!"
+                            displayMessage = "Token is expired, please renew token!";
                             break;
                         default:
                             break;
@@ -363,7 +362,7 @@ module.exports = function(RED) {
                 let callback = {
                     callbackUrl: req.body.protocol + '//' + req.body.hostname + (req.body.port ? ':' + req.body.port : '') + '/wws/app/' + req.params.id + '/auth/callback',
                     state: crypto.randomBytes(18).toString('base64').replace(/\//g, '-').replace(/\+/g, '_')
-                }
+                };
                 oauthConfig.callback = callback;
                 oauthConfig.credentials = credentials;
                 _storeOAuthConfig(req.params.id, oauthConfig);
@@ -371,7 +370,7 @@ module.exports = function(RED) {
                     client_id: credentials.client.id,
                     redirect_uri: callback.callbackUrl,
                     state: callback.state
-                })
+                });
                _log("/auth/url => Callback URL:" + url);
                 res.send({
                     'url': url

@@ -235,7 +235,7 @@ module.exports = function (RED) {
           //  Successfull Result !
           //
           if (res.data.me) {
-            res.data.person = res.data.me;
+            res.data.person = JSON.parse(JSON.stringify(res.data.me));
             delete res.data.me;
           }
           fullMsg.payload.push(res.data);
@@ -1103,7 +1103,7 @@ module.exports = function (RED) {
           break;
         default:
       }
-      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, ALL_FLAGS);
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, query, BETA_EXP_FLAGS);
       //
       //  Perform the operation
       //
@@ -1448,7 +1448,7 @@ module.exports = function (RED) {
           //  Build the mutation
           //
           var mutation = _updateSpaceMutation();
-          var req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, ALL_FLAGS, variables);
+          var req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS, variables);
           //
           //  Issue the Update Statement
           //
