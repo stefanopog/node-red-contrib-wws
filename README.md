@@ -33,6 +33,7 @@ Note: **All the Nodes** accept a **msg.wwsToken** input. This token superseedes 
   * It holds the App ID and App Secret, 
   * pulls Application name from Watson Work,
   * pulls additional OAuth configuration elements
+  * availability to upload a profile photo for each application
   * Note : **this node is used by all the other nodes**
   * Note : **You can upload a new picture for the BOT and/or the User using this node**
   * Note : **This nodes supports now BOTH Authorization as app AND Authorize as user**
