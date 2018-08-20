@@ -23,7 +23,7 @@ module.exports = function(RED) {
                 node.status({fill: "yellow", shape: "dot", text: "refreshing token..."});
                 node.application.refreshToken()
                 .then((success) => {
-                    node.warn("Token " + success.id + " has been refreshed!")
+                    node.warn("Token " + success.id + " has been refreshed!");
                     node.status({fill: "green", shape: "dot", text: "token refreshed"});
                 })
                 .catch((error) => {
@@ -78,5 +78,5 @@ module.exports = function(RED) {
         } else {
             node.status({fill: "red", shape: "dot", text: "token unavailable"});
         }
-    }
+    };
 };

@@ -76,7 +76,7 @@ module.exports = function(RED) {
       }
       done();
     });
-}
+  }
 
   RED.nodes.registerType("wws-focus", wwsFocusNode);
-}
+};

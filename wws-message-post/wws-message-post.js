@@ -56,7 +56,7 @@ module.exports = function(RED) {
             		method: 'POST',
             		uri: this.application.getApiUrl() + "/v1/spaces/" + spaceId + "/messages",
             		body: msg.reqBody
-            }
+            };
 
             //Fallback to support external provided tokens
             if (msg.wwsToken) {
@@ -114,5 +114,5 @@ module.exports = function(RED) {
         };
         msg.reqBody = reqBody;
         return msg;
-    };
+    }
 };

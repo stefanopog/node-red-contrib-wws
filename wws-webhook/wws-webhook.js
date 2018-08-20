@@ -23,7 +23,7 @@ module.exports = function(RED) {
             console.log('total number of elements = ' + this.nummberOfItems);
             console.log('maximum capacity         = ' + this.limit);
             console.log('************************************');
-        }
+        };
         //
         //  Add item to Cache
         //
@@ -50,7 +50,7 @@ module.exports = function(RED) {
                 //
                 console.log('wwsWebhook.cache.push : Content for messageId ' + id + ' is Empty. Skipping operation. Total items in cache = ' + this.nummberOfItems);
             }
-        }
+        };
         //
         //  get Cached item by Id
         //
@@ -69,7 +69,7 @@ module.exports = function(RED) {
                 console.log('wwsWebhook.cache.getById : messageId ' + messageId + ' was NOT FOUND in Cache. Returning NULL');
                 return null;
             }
-        }
+        };
         //
         //  Removing Element from Cache
         //
@@ -88,8 +88,8 @@ module.exports = function(RED) {
             } else {
                 console.log('wwsWebhook.cache.removeById : messageId ' + messageId + ' was NOT FOUND in Cache. Returning FALSE');
             }
-            return (found >= 0)
-        }
+            return (found >= 0);
+        };
     }
 
     function WWSWebhookNode(config) {
@@ -201,7 +201,7 @@ module.exports = function(RED) {
                 query += 'id content contentType annotations';
                 query += ' created createdBy {id displayName email customerId presence photoUrl}';
                 query += ' updated updatedBy {id displayName email customerId presence photoUrl}';
-                query += ' reactions {reaction count viewerHasReacted}'
+                query += ' reactions {reaction count viewerHasReacted}';
                 query += '}}';
                 return query;
             }
@@ -231,7 +231,7 @@ module.exports = function(RED) {
 
                 console.log("_graphQL_options : executing graphQL call with these options");
                 console.log(JSON.stringify(options, ' ', 2));
-                console.log('-------------------------------------------------------')
+                console.log('-------------------------------------------------------');
                 return options;
             }
             //

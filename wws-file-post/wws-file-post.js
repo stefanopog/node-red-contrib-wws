@@ -52,7 +52,7 @@ module.exports = function(RED) {
         formData: {
           file: file
         }
-      }
+      };
 
       //Fallback to support external provided tokens
       if (msg.wwsToken) {

@@ -37,7 +37,7 @@ module.exports = function (RED) {
       if (config.wwsBetaFeatures) viewType += ',BETA';
       if (config.wwsExperimentalFeatures) viewType += ',EXPERIMENTAL';
 
-      console.log('wwsGraphQLNode: executing GraphQL statement : ' + msg.payload)
+      console.log('wwsGraphQLNode: executing GraphQL statement : ' + msg.payload);
       console.log('wwsGraphQLNode: using the following Flags = ' + viewType);
       node.status({fill:"blue", shape:"dot", text:"executing GraphQL query..."});
       var req = _graphQL_options(msg.wwsToken, graphQL_url, msg.payload, viewType, msg.operationName, msg.variables);
