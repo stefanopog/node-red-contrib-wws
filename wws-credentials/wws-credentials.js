@@ -360,7 +360,7 @@ module.exports = function(RED) {
         switch (req.body.tokenType) {
             case "user":
                 let callback = {
-                    callbackUrl: req.body.protocol + '//' + req.body.hostname + (req.body.port ? ':' + req.body.port : '') + '/wws/app/' + req.params.id + '/auth/callback',
+                    callbackUrl: req.body.protocol + '//' + req.body.hostname + (req.body.port ? ':' + req.body.port : '') + req.body.pathname + 'wws/app/' + req.params.id + '/auth/callback',
                     state: crypto.randomBytes(18).toString('base64').replace(/\//g, '-').replace(/\+/g, '_')
                 };
                 oauthConfig.callback = callback;
