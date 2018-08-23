@@ -23,10 +23,8 @@ Full documentation, including sample NodeRed flows using these nodes, is availab
 * The Inspect Node
 * The _Get Spaces_ node now also supports the **Get My Spaces** function
 * The _Get Person(s)_ node now also supports the **Get Me** function
-* All nodes support an incoming **msg.wwsToken** attribute which allows you to overwrite the authentication performed by the Credentials node
+* All nodes support an incoming **msg.wwsToken** attribute which allows you, if present, to overwrite the authentication performed by the Credentials node
 
-# *Features*
-Note: **All the Nodes** accept a **msg.wwsToken** input. This token superseedes the one coming from the Credentials Node.
 
 ## Credentials node
   * creates a configuration node for a dedicated Watson Work Application, 
@@ -128,7 +126,7 @@ Note: **All the Nodes** accept a **msg.wwsToken** input. This token superseedes 
   ![Inspect Node](wws-token-viewer/icons/token_viewer.png)
    
 # Known Issues
-* None
+* Any node returning collections (**_items_**) does **not provide yet** a mean tp walk through the collection using the iterator. This will be fixed in a next version
   
 # *Installation*
 
