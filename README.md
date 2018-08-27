@@ -26,6 +26,7 @@ Full documentation, including sample NodeRed flows using these nodes, is availab
 * All nodes support an incoming **msg.wwsToken** attribute which allows you, if present, to overwrite the authentication performed by the Credentials node
 
 
+# *Package Details*
 ## Credentials node
   * creates a configuration node for a dedicated Watson Work Application, 
   * It holds the App ID and App Secret, 
