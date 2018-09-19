@@ -43,7 +43,7 @@ module.exports = function(RED) {
 
       let uri = this.application.getApiUrl() + "/v1/spaces/" + space + "/files";
       if (file.dimension) {
-        uri +="?dim="+file.dimension.width+"x"+file.dimension.height;
+        uri +="?dim=" + file.dimension.width + "x" + file.dimension.height;
       }
 
       var req = {
@@ -65,14 +65,15 @@ module.exports = function(RED) {
       node.status({fill:"blue", shape:"dot", text:"Sending file..."});
       node.application.wwsRequest(req)
       .then((response) => {
-          node.status({fill:"green", shape:"dot", text:"File sent"});
           msg.payload = response;
           delete msg.wwsFile;
           delete msg.wwsImage;
+          node.status({fill:"green", shape:"dot", text:"File sent"});
           node.send(msg);
-          setTimeout(() => {
-              node.status({});
-          }, 2000);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
       })
       .catch((error) => {
           node.status({fill:"red", shape:"dot", text:"Sending file failed!"});

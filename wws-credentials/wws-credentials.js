@@ -468,8 +468,7 @@ module.exports = function(RED) {
             bearerToken = oauthConfig.token.access_token;
             host = oauthConfig.api;
         }
-        var query = "query getSpaces { spaces(first: 50) { items { id title } } }";
-        
+        var query = "query getSpaces { spaces(first: 50) { items { id title } } }";        
 
         function getSpaces(host, bearerToken, query) {
             var uri = host + "/graphql";
@@ -698,6 +697,7 @@ module.exports = function(RED) {
             var refreshedToken = undefined;
             switch (wwsCredentials.credentials.tokenType) {
                 case "bot":
+                    _logJson("_refreshToken(*) => BEFORE refresh the credentials are :", wwsCredentials.credentials);
                     let tokenConfig = {};
                     oauth2.clientCredentials.getToken(tokenConfig)
                     .then((result) => {

@@ -284,7 +284,7 @@
     </div>
 
     <div class="form-row">
-            <label for="node-input-cacheLimit"><i class="fa fa-tag"></i> Cache Limit</span></label>
+            <label for="node-input-cacheLimit"><i class="fa fa-database"></i> Cache Limit</span></label>
             <input type="text" id="node-input-cacheLimit" placeholder="enter a number">
         </div>
         <hr/>
@@ -300,7 +300,13 @@
 </script>
 
 <script type="text/x-red" data-help-name="wws-webhook">
-    <p>Node to receive webhook events published by <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.</p>
+    <p>
+        Node to receive webhook events published by <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.
+    </p>
+    <p>
+        A change to the output for the <code>space-updated</code> event has been applied. Pls refer to the description for this event below. 
+    </p>
+
     <h3>Instructions</h3>
     <p>
         Read the <a href="https://developer.watsonwork.ibm.com/docs/apps/prepare-your-app-to-run" target="_blank">following instructions</a> provided by the Watson Work Developer Team.</br>
@@ -416,8 +422,8 @@
         <dd>
             See the <b>Message Caching</b> information in the <b>Behavior Section</b> above
         </dd>
-                        
-        </dl>
+             
+    </dl>
     
     <h3>Outputs</h3>
     <dl class="message-properties">
@@ -762,7 +768,7 @@
                 </dl>                    
             </p>            
         </li>
-        <li><b>NEW</b> <code>reaction-added</code>
+        <li><code>reaction-added</code>
             <p>
                 This event is issued when someone reacts on a message.
             </p>
@@ -810,7 +816,7 @@
                 </dl>                    
             </p>            
         </li>
-        <li><b>NEW</b> <code>reaction-removed</code>
+        <li><code>reaction-removed</code>
             <p>
                 This event is issued when someone removes hier own previous reaction on a message.
             </p>
@@ -858,7 +864,7 @@
                 </dl>                    
         </p>            
         </li>
-        <li><b>NEW</b> <code>space-updated</code>
+        <li><code>space-updated</code>
             <p>
                 This event is issued when new a space is updated.
             </p>
@@ -866,7 +872,7 @@
                 In addition to the output information described in the <b>Outputs</b> section, the following properties are added to the output message:
                 <dl class="message-properties">
                     <dt>wwsUpdateCause
-                        <span class="property-type">enum</span>
+                        <span class="property-type">comma separated string</span>
                     </dt>
                     <dd>
                         The following values are currently supported:
@@ -875,26 +881,47 @@
                             <li><b>description-change</b> : When the description of the space is changed</li>
                             <li><b>title-change</b> : When the title of the space is changed</li>
                             <li><b>status-change</b> : When the workflow status of the space (based on a template is changed </li>
-                            <li>b>other</b> : all other situations</li>
+                            <li><b>other</b> : all other situations</li>
                         </ul>
-                        The following <b>payload</b> output attribute will contain different information according to the value of the <b>wwsUpdateCause</b>.
+                        If more than one <b>cause</b> happens, a comma-separated list of the previous values will be provided. 
                     </dd>
 
                     <dt>payload
                         <span class="property-type">string | object | undefined </span>
                     </dt>
                     <dd>
-                        According to the value of the <b>wwsUpdateCause</b> attribute, the <b>payload</b> can contain the following information:
+                        According to the value of the <b>wwsUpdateCause</b> attribute, the <b>payload</b> can contain the following attributes:
                         <ul>
-                            <li><b>property-change</b> : an object whose <code>propertyId</code> attribute is t<b>the value</b> of the changed property.
-                            <br/>
-                            Note that you should read <b>propertyId</b> as the ID of the changed property and not as a string literal!
+                            <li>
+                                <b>spaceProperties</b> : an <b>OBJECT</b> (not an arrya!!!) where each attribute corresponds to the <b>id</b> of the property that has changed 
+                                and the value for that attribute corresponds to the <b>id</b> of the property value
                             </li>
-                            <li><b>description-change</b> : a string containing the new Space description</li>
-                            <li><b>title-change</b> : a string containing the new space Title</li>
-                            <li><b>status-change</b> : an object whose <code>statusValue</code> attribute is t<b>the ID</b> of the new status</li>
-                            <li>b>other</b> : undefined</li>
+                            <li>
+                                <b>spacePropertiesNames</b> : an <b>ARRAY</b> where each item describes the property which was modified by providing <b>id</b>, <b>type</b>,
+                                <b>displayName</b>, <b>valueId</b> and <b>valueDisplayName</b>. 
+                                <br />
+                                In this way you will be able to quickly grab the readable values of the changes !
+                            </li>
+
+                            <li>
+                                <b>statusValue</b> : <b>the ID</b> of the changed status
+                            </li>
+
+                            <li>
+                                <b>statusValueName</b> : <b>the display Name</b> of the changed status
+                                <br />
+                                In this way you will be able to quickly grab the readable values of the changes !
+                            </li>
+        
+                            <li>
+                                <b>description</b> : a string containing the new Space description
+                            </li>
+                            <li>
+                                <b>title</b> : a string containing the new space Title
+                            </li>
                         </ul>
+                        An example of the output can be seen in the following picture:
+                        <img src="icons/node-red-contrib-wws/wws-space-updated-event.png" />
                     </dd>
 
                     <dt>wwsUserId
@@ -906,7 +933,7 @@
                 </dl>                    
             </p>            
         </li>
-        <li><b>NEW</b> <code>space-deleted</code>
+        <li><code>space-deleted</code>
             <p>
                 This event is issued when new a space is deleted.
             </p>
@@ -930,7 +957,6 @@
         <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
         <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/webhooks" target="_blank">Webhooks</a> - Reference Documentation for Webhooks</li>
         <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-        <li>TODO: <a>GitHub</a> - the nodes github repository</li>
     </ul>
 
 </script>

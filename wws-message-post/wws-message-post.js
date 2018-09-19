@@ -4,35 +4,89 @@ module.exports = function(RED) {
 
     function WWSAppMessageNode(config) {
         RED.nodes.createNode(this,config);
+        //
+        //  Service routines
+        //
+        function _prepareAppMessage(node, msg, thePayload) {
+            //
+            //  Check for defaults
+            //
+            let annotation = {
+                "type": "generic",
+                "version": 1.0
+            };
+            if (msg.wwsAvatar || node.avatar) {
+                annotation.actor = {"name": node.avatar ? node.avatar : msg.wwsAvatar};
+            }
+            if (msg.wwsColor || node.color) {
+                annotation.color = node.color ? node.color : msg.wwsColor;
+            } else {
+                annotation.color = "#11ABA5";
+            }
+            if (msg.wwsTitle || node.color) {
+                annotation.title = node.title ? node.title : msg.wwsTitle;
+            }
+            annotation.text = thePayload;
+            let reqBody = {
+                "type": "appMessage",
+                "version": 1.0,
+                "annotations":  [annotation]
+            };
+            msg.reqBody = reqBody;
+            return msg;
+        }
+    
         let stringOrDefault = (value, defaultValue) => {
             return typeof value == 'string' && value.length > 0 ? value : defaultValue;
         };
-        this.color = stringOrDefault(config.color, "#11ABA5");
-        this.avatar = stringOrDefault(config.avatar, undefined);
-        this.spaceId = stringOrDefault(config.spaceId, undefined);
-        this.picture = stringOrDefault(config.picture, undefined);
-        
-        //Get the application config node
+
+        //
+        //  start decoration checking
+        //
+        //this.color = stringOrDefault(config.color, "#11ABA5");
+        //this.avatar = stringOrDefault(config.avatar, undefined);
+        //this.spaceId = stringOrDefault(config.spaceId, undefined);
+        //this.picture = stringOrDefault(config.picture, undefined);
+        //
+        //  Get the application config node
+        //
         this.application = RED.nodes.getNode(config.application);
         var node = this;
-        
-        //Check for token on start up
+        //
+        //  Check for token on start up
+        //
         if (!node.application) {
             node.status({fill: "red", shape: "dot", text: "token unavailable"});
             node.error("wws-message-post: Please configure your Watson Workspace App first!");
             return;
         }
-
+        //
+        //  Start processing
+        //
         this.on('input', function(msg) {
-
-            if (!msg.payload) {
+            //
+            //  check if there is something to send
+            //
+            if (!msg.payload && ((!config.payload) || (config.payload.trim() === ''))) {
                 node.status({fill:"red", shape:"dot", text:"No Payload"});
                 node.error("wws-message-post: Missing required input in msg object: payload");
                 return;
             }
-
-            console.log('space ID = ' + config.spaceId);
-
+            let thePayload = '';
+            if ((config.payload) && (config.payload.trim() === '')) {
+                thePayload = config.payload.trim();
+            } else {
+                if (msg.payload.trim() !== '') {
+                    thePayload = msg.payload.trim();
+                } else {
+                    node.status({fill:"red", shape:"dot", text:"No Payload"});
+                    node.error("wws-message-post: Missing required input in msg object: payload");
+                    return;
+                }
+            }
+            //
+            //  check if there is a destination for the msg to be sent
+            //
             if (!msg.wwsSpaceId && (config.spaceId.trim() === '')) {
                 node.status({fill:"red", shape:"dot", text:"No Space Id"});
                 node.error("wws-message-post: Missing required input in msg object: wwsSpaceId");
@@ -50,30 +104,40 @@ module.exports = function(RED) {
                     return;
                 }
             }
-
-            msg = _prepareAppMessage(this, msg);
+            //
+            //  Check decoration
+            //
+            msg = _prepareAppMessage(this, msg, thePayload);
+            //
+            //  Prepare the request
+            //
             var req = {
             		method: 'POST',
             		uri: this.application.getApiUrl() + "/v1/spaces/" + spaceId + "/messages",
             		body: msg.reqBody
             };
-
-            //Fallback to support external provided tokens
+            //
+            //  Fallback to support external provided tokens
+            //
             if (msg.wwsToken) {
                 req.headers = {
                     Authorization: "Bearer" + msg.wwsToken
                 };
             }
+            //
+            //  Execute the request
+            //
             node.status({fill:"blue", shape:"dot", text:"Sending message..."});
             node.application.wwsRequest(req)
             .then((response) => {
-                node.status({fill:"green", shape:"dot", text:"Message sent"});
                 msg.payload = response;
                 delete msg.reqBody;
+                node.status({fill:"green", shape:"dot", text:"Message sent"});
                 node.send(msg);
-                setTimeout(() => {
-                    node.status({});
-                }, 2000);
+                //
+                //  Reset visual status on success
+                //
+                setTimeout(() => {node.status({});}, 2000);
             })
             .catch((error) => {
                 node.status({fill:"red", shape:"dot", text:"Sending message failed!"});
@@ -90,29 +154,4 @@ module.exports = function(RED) {
         });
     }
     RED.nodes.registerType("wws-message-post",WWSAppMessageNode);
-
-    function _prepareAppMessage(node, msg) {
-        //Check for defaults
-        var annotation = {
-            "type": "generic",
-            "version": 1.0
-        };
-        if (msg.avatar || node.avatar) {
-            annotation.actor = {"name": msg.avatar ? msg.avatar:node.avatar};
-        }
-        if (msg.color || node.color) {
-            annotation.color = msg.color?msg.color:node.color;
-        }
-        if (msg.title) {
-            annotation.title = msg.title;
-        }
-        annotation.text = msg.payload;
-        var reqBody = {
-            "type": "appMessage",
-            "version": 1.0,
-            "annotations":  [annotation]
-        };
-        msg.reqBody = reqBody;
-        return msg;
-    }
 };

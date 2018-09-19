@@ -18,12 +18,25 @@ module.exports = function(RED) {
     //
     //  Start Real Processing
     //
-    this.on("input", function(msg) {
-      var theText = msg.payload || config.theText;
-      if (!theText) {
+    this.on("input", (msg) => {
+      //
+      //  get payload
+      //
+      var theText = '';
+      if ((config.theText === '') && 
+          ((msg.payload === undefined) || (msg.payload === ''))) {
+        //
+        //  There is an issue
+        //
+        console.log("wwsFocusNode: Missing PAYLOAD");
         node.status({fill: "red", shape: "dot", text: "No Payload"});
         node.error("wwsFocusNode: Missing required input: PAYLOAD");
         return;
+      }
+      if (config.theText !== '') {
+        theText = config.theText;
+      } else {
+        theText = msg.payload;
       }
       var req = {
         method: "POST",

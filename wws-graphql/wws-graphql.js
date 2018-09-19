@@ -46,7 +46,6 @@ module.exports = function (RED) {
         msg.payload = res.data;
         node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
         console.log('wwsGraphQLNode: Success from graphQL query');
-        console.log(JSON.stringify(res, " ", 2));
         node.send(msg);
         //
         //  Reset visual status on success
@@ -176,8 +175,8 @@ module.exports = function (RED) {
     var async = require("async");
     var asyncTasks = [];
         
-    function _dummyCallback(err, item) {
-      console.log('wwsGetPersons : DUMMY CALLBACK ' + item);
+    var _dummyCallback = function(err, item) {
+      console.log('wwsGetPersons._dummyCallback : ' + item);
     }
 
     function _beforeSend(theMsg) {
@@ -211,7 +210,7 @@ module.exports = function (RED) {
           setTimeout(() => {node.status({});}, 2000);
         }
     }
-    function _getPersonDetails(token, graphQL_url, person, type, fullMsg, callback) {
+    function _getPersonDetails(token, graphQL_url, person, type, fullMsg, theCallback) {
       //
       //  Prepare the operation
       //
@@ -240,9 +239,8 @@ module.exports = function (RED) {
           }
           fullMsg.payload.push(res.data);
           console.log('wwsGetPersons._getPersonDetails : Person ' + person + ' succesfully retrieved !');
-          console.log(JSON.stringify(res.data));
           node.status({fill: "green", shape: "dot", text: 'Person ' + person + ' retrieved !'});
-          callback(null, person);
+          theCallback(null, person);
         }
       }).catch((err) => {
         console.log("wwsGetPersons._getPersonDetails : Errors while retrieveing " + person, err);
@@ -383,7 +381,7 @@ module.exports = function (RED) {
         //  I am fine with this
         //
           console.log("wwsAddRemoveMembers: No Members to be added/removed. Exiting");
-          node.status({fill:"yellow", shape:"dot", text:"No members to be added/removed"});
+          node.status({fill:"yellow", shape:"square", text:"No members to be added/removed"});
           node.send(msg);
           return;
       } else {
@@ -428,7 +426,6 @@ module.exports = function (RED) {
           //
           msg.payload = res.data;
           console.log('wwsAddRemoveMembers: Members operation ' + config.ARoperation + ' succesfully completed !');
-          console.log(JSON.stringify(res.data));
           node.status({fill: "green", shape: "dot", text: 'Members operation ' + config.ARoperation + ' succesfully completed !'});
           node.send(msg);
           //
@@ -567,7 +564,7 @@ module.exports = function (RED) {
           outArray.push(null);
         }
         outArray.push(msg);
-        node.status({fill:"yellow", shape:"dot", text:"Action " + actionId + " not found -> Going OTHERWISE"});
+        node.status({fill:"yellow", shape:"square", text:"Action " + actionId + " not found -> Going OTHERWISE"});
         node.send(outArray);
         return;
       }
@@ -656,7 +653,6 @@ module.exports = function (RED) {
           //  Ok, we got the array of annotations...
           //
           console.log('wwsFilterActions: Success from graphQL query : Annotations retrieved');
-          //console.log(JSON.stringify(res.data, ' ', 2));
           node.status({fill: "green", shape: "dot", text: "Annotations retrieved..."});
           //
           //  Now we have the annotations. Check to find the one that is "message-focus" and corresponds to the lens=ActionId
@@ -832,26 +828,28 @@ module.exports = function (RED) {
                 break;
             }
             //
-            //  We break the outer loop if found
+            //  We break the outer loop when found
             //
-            if (theIndex >=0) break;
+            if (theIndex >= 0) break;
           } else {
             //
             //  This is normal behavior, where each annotationType corresponds to only one output
             //
             if (items[k].trim() === annotationType) {
               theIndex = k;
+              //
+              //  We break the outer loop when found
+              //
               break;
             } 
           }
         }
         if (theIndex < 0) {
           //
-          //  Very strange situation. AnnotationType is not found ...
+          //  The Annotation is not part of the ones that the node is able to manage
           //
           console.log("wwsFilterAnnotations: AnnotationType " + annotationType + ' is NOT Processed');
-          node.status({fill:"red", shape:"dot", text:"AnnotationType NOT processed"});
-          node.error('wwsFilterAnnotations:  AnnotationType ' + annotationType + ' is NOT Processed', msg);
+          node.status({fill:"yellow", shape:"square", text:"AnnotationType  " + annotationType + " NOT processed"});
           return;
         } else {
           //
@@ -951,7 +949,7 @@ module.exports = function (RED) {
       .then((res) => {
         if (res.errors) {
           msg.payload = res.errors;
-          console.log('1wwsGetTemplate: errors from query');
+          console.log('wwsGetTemplate: errors from query');
           console.log(JSON.stringify(res));
           node.status({fill: "red", shape: "dot", text: "Errors from query"});
           node.error("wwsGetTemplate: Errors from query", msg);
@@ -962,7 +960,6 @@ module.exports = function (RED) {
           //
           msg.payload = res.data;
           console.log('wwsGetTemplate: Success from graphQL query');
-          console.log(JSON.stringify(res.data));
           node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
           node.send(msg);
           //
@@ -1123,7 +1120,6 @@ module.exports = function (RED) {
           //
           console.log('wwsGetTemplatedSpace: Success from graphQL query');
           msg.payload = res.data;
-          console.log(JSON.stringify(msg.payload, ' ', 2));
           node.status({fill: "green", shape: "dot", text: "space " + theSpace + " retrieved"});
           //
           //  Now we need to modify the properties in the output to be more descriptive
@@ -1329,7 +1325,7 @@ module.exports = function (RED) {
         //  There is nothing to do
         //
         console.log("wwsUpdateSpace: Nothing to UPDATE");
-        node.status({fill:"yellow", shape:"dot", text:"Nothing to update"});
+        node.status({fill:"yellow", shape:"square", text:"Nothing to update"});
         node.warn('wwsUpdateSpace: nothing to Update...')
         node.send(msg);
         return;
@@ -1442,7 +1438,7 @@ module.exports = function (RED) {
           variables += '}}';
           console.log('wwsUpdateSpace: Updating Space ' + spaceId + ' with these data :');
           console.log(variables);
-          console.log('------------------');
+          console.log('-------------------------------------------');
           //
           //  Now we can proceed building the mutation to modify the space
           //  Build the mutation
@@ -1464,7 +1460,6 @@ module.exports = function (RED) {
             } else {
               msg.payload = res.data.updateSpace;
               console.log('wwsUpdateSpace: Space ' + spaceId + ' UPDATED !!');
-              console.log(JSON.stringify(res.data));
               node.status({fill: "green", shape: "dot", text: "Space Updated !"});
               //
               //  Now we need to modify the properties in the output to be more descriptive
@@ -1759,7 +1754,6 @@ module.exports = function (RED) {
             } else {
               msg.payload = res.data.createSpace;
               console.log('wwsCreateSpaceFromTemplate: Space ' + spaceName + ' CREATED !!');
-              console.log(JSON.stringify(res.data));
               node.status({fill: "green", shape: "dot", text: "Space Created !"});
               //
               //  Now we need to modify the properties in the output to be more descriptive
@@ -1962,7 +1956,7 @@ module.exports = function (RED) {
           //
           msg.payload = res.errors;
           console.log('wwsAddFocus: errors from messageId query');
-          console.log(JSON.stringify(res.errors));
+          console.log(JSON.stringify(res.errors, ' ', 2));
           node.status({fill: "red", shape: "dot", text: "Errors from messageId query"});
           node.error('wwsAddFocus: Errors from messageId query', msg);
         } else {
@@ -1970,7 +1964,6 @@ module.exports = function (RED) {
           //  Ok, we got the information for the message...
           //
           console.log('wwsAddFocus: Success from graphQL query : message ' + messageId + ' retrieved');
-          console.log(JSON.stringify(res.data, ' ', 2));
           node.status({fill: "green", shape: "dot", text: "Message " + messageId + " retrieved..."});
           //
           //  Now we have the message. Check if the message contains the STRING to be annotated.
@@ -1992,7 +1985,7 @@ module.exports = function (RED) {
               if (res.errors) {
                 msg.payload = res.errors;
                 console.log('wwsAddFocus: errors from addFocus mutation');
-                console.log(JSON.stringify(res.errors));
+                console.log(JSON.stringify(res.errors, ' ', 2));
                 node.status({fill: "red", shape: "dot", text: "Errors from addFocus mutation"});
                 node.error("wwsAddFocus: Errors from addFocus mutation", msg);
                 return;
@@ -2004,7 +1997,6 @@ module.exports = function (RED) {
                 msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
                 msg.wwsFocusAdded = true;
                 console.log('wwsAddFocus: Success from graphQL query');
-                console.log(JSON.stringify(res.data));
                 node.status({fill: "green", shape: "dot", text: "Focus added"});
                 node.send(msg);
                 //
@@ -2013,7 +2005,8 @@ module.exports = function (RED) {
                 setTimeout(() => {node.status({});}, 2000);
               }
             }).catch((err) => {
-              console.log("wwsAddFocus: Error while posting addFocus mutation", err);
+              console.log("wwsAddFocus: Error while posting addFocus mutation");
+              console.log(JSON.stringify(err, ' ', 2));
               node.status({fill: "red", shape: "ring", text: "Posting addFocus mutation failed."});
               node.error("wwsAddFocus: Error while posting addFocus mutation", err);
               return;
@@ -2076,6 +2069,7 @@ module.exports = function (RED) {
     this.on("input", (msg) => {
       var AFElements = '';
       var AFMutation = '';
+      var AFType     = '';
       //
       //  Check for the AFElements input
       //
@@ -2107,10 +2101,38 @@ module.exports = function (RED) {
       AFMutation = msg.wwsAFMutation.trim();
 
       //
+      //  Check the type of Operation (Attachments or Annotations)
+      //
+      if (config.AF_Operation === "--set from msg.wwasAFOperation") {
+        //
+        //  Value comes from input !
+        //
+        if (msg.wwsAFType && 
+            ((msg.wwsAFType === "Attachments") || (msg.wwsAFType === "Annotations"))) {
+              //
+              //  Good value
+              //
+              AFType = msg.wwsAFType;
+        } else {
+          //
+          //  There is an issue
+          //
+          console.log("wwsActionFulfillment: Missing AFType Information");
+          node.status({fill:"red", shape:"dot", text:"Missing AF Type"});
+          node.error('wwsActionFulfillment: Missing AF Type', msg);
+          return;
+        } 
+      } else {
+        //
+        //  Value is in the Configuration Panle
+        //
+        AFType = config.AF_Operation;
+      }
+      //
       //  Build the replacement string for the placeholder in the AFMutation string
       //
       var details = '';
-      if (config.AF_Operation === 'Attachments') {
+      if (AFType === 'Attachments') {
         //
         //  We have now to interpret the AFElements array for attachments
         //
@@ -2122,23 +2144,32 @@ module.exports = function (RED) {
           details += 'subtitle: "' + (AFElements[i].subtitle) + '",';
           details += 'text: "' + (AFElements[i].text) + '",';
           if (AFElements[i].text) {
-            details += 'date: "' + AFElements[i].date + '",';
+            details += 'date: "' + AFElements[i].date + '"';
           } else {  
-            details += 'date: "' + Math.floor(new Date()) + '",';
+            details += 'date: "' + Math.floor(new Date()) + '"';
           }
-          details += 'buttons: [';
-          for (let j=0; j < AFElements[i].buttons.length; j++) {
-            if (j !== 0) details += ',';
-            details += '{text: "' + (AFElements[i].buttons[j].text) + '",';
-            details += 'payload: "' + (AFElements[i].buttons[j].payload) + '",';
-            details += 'style: ';
-            if (AFElements[i].buttons[j].isPrimary) {
-              details += 'PRIMARY}'
-            } else {
-              details += 'SECONDARY}'
+          if (AFElements[i].buttons && Array.isArray(AFElements[i].buttons)) {
+            //
+            //  There are buttons
+            //
+            details += ', buttons: [';
+            for (let j=0; j < AFElements[i].buttons.length; j++) {
+              if (j !== 0) details += ',';
+              details += '{text: "' + (AFElements[i].buttons[j].text) + '",';
+              details += 'payload: "' + (AFElements[i].buttons[j].payload) + '",';
+              details += 'style: ';
+              if (AFElements[i].buttons[j].isPrimary) {
+                details += 'PRIMARY}'
+              } else {
+                details += 'SECONDARY}'
+              }
             }
+            details += ']';
+          } else {
+            //
+            //  No Buttons... Skipping
+            //
           }
-          details += ']';
           details += '}}}';
         }
         details += ']';
@@ -2151,22 +2182,31 @@ module.exports = function (RED) {
           if (i !== 0) details += ',';
           details += '{genericAnnotation : {';
           details += 'title: "' + (AFElements[i].title) + '",';
-          details += 'text: "' + (AFElements[i].text) + '",';
-          details += 'buttons: [';
-          for (let j=0; j < AFElements[i].buttons.length; j++) {
-            if (j !== 0) details += ',';
-            details += '{postbackButton :';
-            details += '{title: "' + (AFElements[i].buttons[j].text) + '",';
-            details += 'id: "' + (AFElements[i].buttons[j].payload) + '",';
-            details += 'style: ';
-            if (AFElements[i].buttons[j].isPrimary) {
-              details += 'PRIMARY}'
-            } else {
-              details += 'SECONDARY}'
+          details += 'text: "' + (AFElements[i].text) + '"';
+          if (AFElements[i].buttons && Array.isArray(AFElements[i].buttons)) {
+            //
+            //  There are buttons
+            //
+            details += ', buttons: [';
+            for (let j=0; j < AFElements[i].buttons.length; j++) {
+              if (j !== 0) details += ',';
+              details += '{postbackButton :';
+              details += '{title: "' + (AFElements[i].buttons[j].text) + '",';
+              details += 'id: "' + (AFElements[i].buttons[j].payload) + '",';
+              details += 'style: ';
+              if (AFElements[i].buttons[j].isPrimary) {
+                details += 'PRIMARY}'
+              } else {
+                details += 'SECONDARY}'
+              }
+              details += '}';
             }
-            details += '}';
+            details += ']';
+          } else {
+            //
+            //  No Buttons... Skipping
+            //
           }
-          details += ']';
           details += '}}';
         }
         details += ']';
@@ -2178,6 +2218,7 @@ module.exports = function (RED) {
       AFMutation = AFMutation.replace('$$$$$$$$', details);
       console.log('wwsActionFulfillment: ready to execute ActionFulfillment mutation (see here) : ');
       console.log(AFMutation);
+      console.log('--------------------------');
       var req = _graphQL_options(msg.wwsToken, graphQL_url, AFMutation, BETA_EXP_FLAGS);
       //
       //  Perform the operation
@@ -2198,7 +2239,6 @@ module.exports = function (RED) {
           //
           msg.payload = res.data;
           console.log('wwsActionFulfillment: ActionFulfillment mutation succesfully created');
-          console.log(JSON.stringify(res.data));
           node.status({fill: "green", shape: "dot", text: "AF Created"});
           node.send(msg);
           //
@@ -2557,7 +2597,6 @@ module.exports = function (RED) {
       }
     }
     mutation += ', memberOperation: ' + operation + '}){memberIdsChanged space {id title membersUpdated members {items ' + _personQL_details() + '}}}}';
-    console.log(mutation);
     return mutation;
   }
 

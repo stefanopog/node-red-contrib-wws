@@ -18,11 +18,18 @@ Here is the list of Nodes currently proposed by this package.
 Full documentation, including sample NodeRed flows using these nodes, is available in the Documentation Directory of the [corresponding Github repository](https://github.com/stefanopog/node-red-contrib-wws/tree/master/docs)
 
 # *Changes*
+## Changes in V2.0.4
+* The **Send Message** node has been modified to get new input attributes. It is also, now, possible to enter the payload from the Configuration Panel of the node
+* The **Filter Annotations** node has been fixed to avoid raising errors when not necessary
+* The **Webhook** node has been modified in what relates to the _space-updated_ event. The output information (_payload_) has been modified
+* The **Action Fulfillment** node now supports an additional input to programmatically define if the node accespts _Annotations_ or _Attachments_. A missing _buttons_ array inside _AFElements_ is also supported. 
+* All the nodes have been revisited to avoid declaring mandatory attributes when those attributes may be provided by the input **msg object** 
+
 ## Changes in V2.0.0
 * Authorize as User 
-* The Inspect Node
-* The _Get Spaces_ node now also supports the **Get My Spaces** function
-* The _Get Person(s)_ node now also supports the **Get Me** function
+* The **Inspect** Node has been introduced
+* The **Get Spaces** node now also supports the **Get My Spaces** function
+* The **Get Person(s)** node now also supports the **Get Me** function
 * All nodes support an incoming **msg.wwsToken** attribute which allows you, if present, to overwrite the authentication performed by the Credentials node
 
 

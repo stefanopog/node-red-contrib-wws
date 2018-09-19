@@ -65,22 +65,40 @@
     A node that sends a GraphQL request to <a href="https://developer.watsonwork.ibm.com" target="_blank">IBM Watson Work Services</a>.
   </p>
 
+
+  <h3>Behaviour</h3>
+  <p>
+    This node sends a <a href="https://graphql.org/learn/" target="_blank">qraphQl query</a> to Watson Work Services. <br />
+    Check the <a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphqL Tool</a> for further information.<br/>
+  </p>
+  <p>
+    You can use the <code>BETA</code> and <code>EXPERIMENTAL</code> checkboxes to for your graphQL query or mutation to use BETA features or EXPERIMENTAK features.
+    <br />
+    By default, queries and mutations are executed using the <b>PUBLIC</b> flag only.
+  </p>
+
   <h3>Inputs</h3>
   <dl class="message-properties">
       <dt>payload
           <span class="property-type">string | graphQL</span>
       </dt>
-      <dd>The query to be executed against Watson Work Servics.</dd>
+      <dd>
+        The query to be executed against Watson Work Servics.
+      </dd>
 
       <dt class="optional">operationName 
         <span class="property-type">string</span>
       </dt>
-      <dd>Defines the name of the operation.</dd>
+      <dd>
+        Defines the name of the operation.
+      </dd>
 
       <dt class="optional">variables 
         <span class="property-type">object</span>
       </dt>
-      <dd>Key-value map of variables to be used in a GraphQL query.</dd>
+      <dd>
+        Key-value map of variables to be used in a GraphQL query.
+      </dd>
       
       <dt class="optional">wwsToken 
         <span class="property-type">string</span>
@@ -90,18 +108,8 @@
         application(s) for this particular message.
       </dd>
   </dl>
-
+  
   <h3>Details</h3>
-  <p>
-    This node sends a <a href="https://graphql.org/learn/" target="_blank">qraphQl query</a> to Watson Work Services. This allows to extract additional information in the context of the application from Watson Work Services. Check the <a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphqL Tool</a> for further information.<br/>
-      Provide the following information:
-  </p>
-  <dl class="message-properties">
-      <dt>App Name</dt>
-          <dd>The configured name for a specific Watson Work App.</dd>
-      <dt>View Type</dt>
-          <dd>use <code>PUBLIC,BETA</code> to use pre productive features like action fulfillments which are not currently available to the public.</dd>    
-  </dl>
   <p>
     In order to send a multi line query as payload to this node you might would like to make use of the new 
     <a href="https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/template_strings" target="_blank">Template-Strings</a> using 
@@ -131,7 +139,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -153,7 +160,7 @@ msg.payload = `
       },
       wwsTemplateId: {
         value: "",
-        required: true
+        required: false
       }    
     },
     inputs: 1,
@@ -195,8 +202,7 @@ msg.payload = `
 
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>
-        wwsTemplateId 
+      <dt class="optional">wwsTemplateId 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -228,7 +234,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -250,11 +255,11 @@ msg.payload = `
       },
       wwsSpaceId: {
         value: "",
-        required: true
+        required: false
       },    
       wwsSpaceName: {
         value: "",
-        required: true
+        required: false
       },    
       SpaceOperation: {
         value: "byId",
@@ -329,13 +334,14 @@ msg.payload = `
 
 <script type="text/x-red" data-help-name="wws-getTemplatedSpace">
   <p>
-    This node provides a tool to easily retrieve all the informations for a Space specified by its ID or for all the spaces to which the Identity that is executing the node belongs to.   
+    This node provides a tool to easily retrieve all the informations for a Space specified by its ID or 
+    <b>for all the spaces to which the Identity that is executing the node belongs to</b>.   
   </p>
     
     
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsSpaceId 
+      <dt class="optional">wwsSpaceId 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -386,7 +392,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -408,19 +413,19 @@ msg.payload = `
       },
       wwsSpaceId: {
         value: "",
-        required: true
+        required: false
       },    
       wwsMemberList: {
         value: "",
-        required: true
+        required: false
       },   
       wwsPropertyList: {
         value: "",
-        required: true
+        required: false
       },    
       wwsNewStatus: {
         value: "",
-        required: true
+        required: false
       }    
     },
     inputs: 1,
@@ -470,14 +475,16 @@ msg.payload = `
     It allows to easily change the <code>status</code> and any of the <code>properties</code> of the space as well as to <b>add members</b>. 
   </p>
   <p>
-      The main characteristics of this node is that the names and the values of the <b>properties</b> and of the <b>status</b> are entered using their textual representation.
-      <br />
-      When using <b>graphQL</b> the names of the properties, the values of properties of type LIST and the values of the status need to be provides using <b>their internal ID format</b>; this node allows the user to enter everything as <b>text</b>; its internal code translate the text into IDs and generates errors when an association is not found.
+    The main characteristics of this node is that the names and the values of the <b>properties</b> and of the <b>status</b> are entered using their textual representation.
+    <br />
+    When using <b>graphQL</b> the names of the properties, the values of properties of type LIST and the values of the status need to be provides using 
+    <b>their internal ID format</b>; this node allows the user to enter everything as <b>text</b>; its internal code translate the text into IDs and 
+    generates errors when an association is not found.
   </p>
 
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsSpaceId 
+      <dt class="optional">wwsSpaceId 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -485,19 +492,19 @@ msg.payload = `
         The value on the configuration panel overrides the value in <code>msg.wwsSpaceId</code>
       </dd>
 
-      <dt>wwsMemberList 
+      <dt class="optional">wwsMemberList 
         <span class="property-type">comma-separated string</span>
       </dt>
       <dd>
         The list of members to be added to the space. <b>The members need to be specified by their ID</b><br>
-          The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
+        The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
       </dd>
 
-      <dt>wwsPropertyList 
-        <span class="property-type">comma-separated string</span>
+      <dt class="optional">wwsPropertyList 
+        <span class="property-type">comma-separated string | array</span>
       </dt>
       <dd>
-        Defines a comma separated list of <b>Name = Value</b> pairs where each item represents the name of the property to be modified and the modified value.
+        Defines a comma separated list of <b>Name = Value</b> pairs where each pair represents the <b>name of the property</b> to be modified and the <b>modified value</b>.
         <ul>
           <li><b>Name</b> is the <b>displayName</b> for the property. The node dynamically translates it to its <b>ID</b> representation.
           </li>
@@ -527,7 +534,7 @@ msg.payload = `
         </p>
       </dd>
 
-      <dt>wwsNewStatus 
+      <dt class="optional">wwsNewStatus 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -574,7 +581,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -597,19 +603,19 @@ msg.payload = `
       },
       wwsTemplateId: {
         value: "",
-        required: true
+        required: false
       },   
       wwsSpaceName: {
         value: "",
-        required: true
+        required: false
       },   
       wwsMemberList: {
         value: "",
-        required: true
+        required: false
       },   
       wwsPropertyList: {
         value: "",
-        required: true
+        required: false
       }
     },
     inputs: 1,
@@ -659,18 +665,18 @@ msg.payload = `
     the <b>initial members</b>.
   </p>
   <p>
-      The main charactceristics of this node is that the names and the values of the <b>properties</b> are entered using their textual representation.
+      The main characteristic of this node is that the names and the values of the <b>properties</b> are entered using their textual representation.
       <br />
       When using <b>graphQL</b> the names of the properties and the values of properties of type LIST need to be provides using <b>their internal ID format</b>; 
       this node allows the user to enter everything as <b>text</b>; its internal code translate the text into IDs and generates errors when an association is not found.
   </p>
   <p>
-    This node <b>ONLY WORKS WITH an AUTHORIZE-AS-USER</b>.  
+    This node <b>ONLY WORKS WITH an AUTHORIZE-AS-USER identity</b>.  
   </p> 
 
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsTemplateId 
+      <dt class="optional">wwsTemplateId 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -678,7 +684,7 @@ msg.payload = `
         The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code>
       </dd>
 
-      <dt>wwsSpaceName 
+      <dt class="optional">wwsSpaceName 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -686,7 +692,7 @@ msg.payload = `
         The value on the configuration panel overrides the value in <code>msg.wwsSpaceName</code>
       </dd>
 
-      <dt>wwsMemberList 
+      <dt class="optional">wwsMemberList 
         <span class="property-type">comma-separated string</span>
       </dt>
       <dd>
@@ -694,11 +700,11 @@ msg.payload = `
         The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
       </dd>
   
-      <dt>wwsPropertyList 
-        <span class="property-type">comma-separated string</span>
+      <dt class="optional">wwsPropertyList 
+        <span class="property-type">comma-separated string | array</span>
       </dt>
       <dd>
-        Defines a comma separated list of <b>Name = Value</b> pairs where each item represents the name of the property to be modified and the modified value.
+        Defines a comma separated list of <b>Name = Value</b> pairs where each pair represents the <b>name of the property</b> to be modified and the <b>modified value</b>.
         <ul>
           <li><b>Name</b> is the <b>displayName</b> for the property. The node dynamically translates it to its <b>ID</b> representation.
           </li>
@@ -767,7 +773,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -793,11 +798,11 @@ msg.payload = `
       },
       wwsSpaceId: {
         value: "",
-        required: true
+        required: false
       },   
       wwsMemberList: {
         value: "",
-        required: true
+        required: false
       } 
     },
     inputs: 1,
@@ -848,19 +853,19 @@ msg.payload = `
  
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsSpaceId 
+      <dt class="optional">wwsSpaceId 
         <span class="property-type">string</span>
       </dt>
       <dd>
         The ID of the Space.<br>
-        The value on the configuration panel overrides the value in <code>msg.wwsTemplateId</code>
+        The value on the configuration panel overrides the value in <code>msg.wwsSpaceId</code>
       </dd>
 
-      <dt>wwsMemberList 
+      <dt class="optional">wwsMemberList 
         <span class="property-type">comma-separated string</span>
       </dt>
       <dd>
-        The list of members to be added to / removed from the space. The members need to be specified by their ID<br>
+        The list of members to be added to / removed from the space. The members need to be specified by their IDs<br>
         The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
       </dd>
       
@@ -888,7 +893,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -914,7 +918,7 @@ msg.payload = `
       },
       wwsPersonList: {
         value: "",
-        required: true
+        required: false
       } 
     },
     inputs: 1,
@@ -969,10 +973,11 @@ msg.payload = `
   <p>
     This node provides a tool to easily retrieve all the details for a set of people.
     <br>
-    The set of people can be specified as a set of <b>email addresses</b> or <b>IDs</b>
+    The set of people can be specified as a set of <b>email addresses</b> or as a set of <b>IDs</b> according to the <code>Operation</code> dropdown.
   </p>
   <p>
-    The Node can also execute the <code>me query</code>, thus retrieving information about the identity that is executing the operation.
+    The Node can also execute the <code>me query</code>, thus retrieving information about the identity (<b>Application</b> or <b>Application on behalf of a User</b>) 
+    that is executing the operation.
   </p>
  
   <h3>Inputs</h3>
@@ -1009,7 +1014,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -1031,19 +1035,19 @@ msg.payload = `
       },
       wwsMessageId: {
         value : "",
-        required: true
+        required: false
       },
       wwsString: {
         value : "",
-        required: true
+        required: false
       },
       wwsLens: {
         value: "",
-        required: true
+        required: false
       },
       wwsActionId: {
         value: "",
-        required: true
+        required: false
       },
       wwsCategory: {
         value: "",
@@ -1122,7 +1126,7 @@ msg.payload = `
   <h3>Inputs</h3>
   <dl class="message-properties">
     
-      <dt>wwsMessageId 
+      <dt class="optional">wwsMessageId 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -1130,24 +1134,24 @@ msg.payload = `
         The value on the configuration panel overrides the value in <code>msg.wwsMessageId</code>
       </dd>
   
-      <dt>wwsString 
+      <dt class="optional">wwsString 
         <span class="property-type">string</span>
       </dt>
       <dd>
-        The string to be underlined within the sentence and associated with the new Focus.<br />
-        If this string is not part of the message, the <b>focus will NOT be added</b>
+        The string to be underlined within the sentence contained in <code>wwsMessageId</code> and associated with the new Focus.<br />
+        If this string is not in the setence, the <b>focus will NOT be added</b>
         The value on the configuration panel overrides the value in <code>msg.wwsString</code>
       </dd>
           
-      <dt>wwsActionId 
+      <dt class="optional">wwsActionId 
         <span class="property-type">string</span>
       </dt>
       <dd>
-        The name of the Action to be associated to the <b>message-focus</b> annotation.<br>
+        The name of the Action to be associated to the <b>message-focus</b> annotation that will be generated.<br>
         The value on the configuration panel overrides the value in <code>msg.wwsActionId</code>
       </dd>
 
-      <dt>wwsLens 
+      <dt class="optional">wwsLens 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -1168,8 +1172,8 @@ msg.payload = `
       </dt>
       <dd>
         the <b>optional</b> payload to be associated with the new focus. <br/>
-        It <b>must be a string</b>. Since you could pass the string representation of a JSON object, this node will <b>escape</b> the value of this attribute 
-        before using it.<br />
+        It <b>must be a string</b>, but you can pass the <b>string representation of a JSON object</b> in case you want to provide more rich and structured information. <br />
+        For this reason, the node transparently <b>escapes</b> the value of this attribute before using it.<br />
         The value on the configuration panel overrides the value in <code>msg.wwsPayload</code>
       </dd>
       
@@ -1196,7 +1200,8 @@ msg.payload = `
       <span class="property-type">boolean</span>
     </dt>
     <dd>
-      If the content of the message to which the new Focus needs to be added <b>does not contain</b> the <code>wwsString</code>, the message is not annotated and the valueof this property will be <b>false</b>. <br />
+      If the content of the message to which the new Focus needs to be added <b>does not contain</b> the <code>wwsString</code>, the message is not annotated and the value 
+      of this property will be <b>false</b>. <br />
       If a <b>focus is added</b> then the value of this property will be <b>true</b>.
       </dd>
   </dl>
@@ -1211,7 +1216,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -1233,7 +1237,7 @@ msg.payload = `
       },
       AF_Operation: {
         value : "Attachments",
-        required: "true"
+        required: true
       }    
     },
     inputs: 1,
@@ -1261,6 +1265,7 @@ msg.payload = `
       <select id="node-input-AF_Operation">
         <option value="Attachments">Attachments</option>
         <option value="Annotations">Annotations</option>
+        <option value="fromMsg">--set from msg.wwasAFOperation</option>
       </select>
   </div>
 
@@ -1277,13 +1282,29 @@ msg.payload = `
 
   <h3>Inputs</h3>
   <dl class="message-properties">    
-    <dt>wwsAFElements
+
+    <dt class="optional">wwsAFType
+        <span class="property-type">string</span>
+    </dt>
+    <dd>
+      This input allows you to define the behaviour of the node using an input attribute instead than the value in the Configuration Panel.
+      <br />
+      This input is <b>only mandatory</b> when the <b>Type value</b> from the Configuration Panel is set to <code>--set from msg.wwasAFOperation</code>. in this case, 
+      it can have one of the two values <b>Attachments</b> or <b>Annotations</b>.
+      <br />
+      Any other value will generate an error. 
+      <br />
+      This input is <b>ignored</b> when the <b>Type value</b> from the Configuration Panel is <b>NOT</b> set to <code>--set from msg.wwasAFOperation</code>.
+    </dd>
+
+    <dt class="optional">wwsAFElements
       <span class="property-type">array</span>
     </dt>
     <dd>
-      This input allows you to define the <b>Annotations</b> or <b>Attachments</b> to be added to the Action fulfillment dialog. The array will be interpreted as <i>Annotations</i> or <i>Attachments</i> according to the <code>Type</code> selector in the configuration panel.
+      This input allows you to define the <b>Annotations</b> or <b>Attachments</b> to be added to the Action fulfillment dialog. <br />
+      The array will be interpreted as <i>Annotations</i> or <i>Attachments</i> according to the <code>Type</code> selector in the configuration panel.
       <br />
-      In order to simplify the creation of the array, the following structure is going to be supported:
+      In order to simplify the creation of the array, the following dara structure is supported:
       <ul>
         <li>
           each main item in the array represents either a <b>genericAnnotation</b> or an <b>informationCardInput</b>. <br />
@@ -1305,10 +1326,10 @@ msg.payload = `
               This is an array of elements. Each element includes the following properties:
               <ul>
                 <li><b>text</b><br />
-                  It will be transformed to the <b>text</b> property for the Attachment <b>card button</b> and to the <b>text</b> property for the Annotation <b>postbackButton</b>.
+                  It will be transformed to the <b>text</b> property for the Attachment <b>card button</b> and to the <b>title</b> property for the Annotation <b>postbackButton</b>.
                 </li>
                 <li><b>payload</b><br />
-                  It will be transformed to the <b>text</b> property for the Attachment <b>card button</b> and to the <b>id</b> property for the Annotation <b>postbackButton</b>.
+                  It will be transformed to the <b>payload</b> property for the Attachment <b>card button</b> and to the <b>id</b> property for the Annotation <b>postbackButton</b>.
                 </li>
                 <li><b>isPrimary</b><br />
                   if <b>true</b> a Primary button will be created, a Secondary button otherwise.
@@ -1320,15 +1341,15 @@ msg.payload = `
       </ul>
     </dd>
 
-    <dt>wwsAFMutation
+    <dt class="optional">wwsAFMutation
       <span class="property-type">string</span>
     </dt>
     <dd>
       See the documentation for the <b>Filter Action</b> node in this package. <br />
       The <code>wwsAFMutation</code> input is generated by the <b>Filter Action</b> node. It provides the Skeleton for the Action Fulfillment mutation which includes 
       the header part (the one containing the <i>ConversationID</i>, the <i>TargetDialogId</i> and the <i>TargetUserId</i>). <br/>
-      The Skeleton contains a placeholder (identified by the string <code>$$$$$$$$</code>). The <code>wwsAFElements</code> input array will replace the placeholder thus 
-      providing a convenient and easy way to create the mutation.
+      The Skeleton contains a placeholder (identified by the string <code>$$$$$$$$</code>). The <code>wwsAFElements</code> input array, once parsed and transformed to GraohQL, 
+      will replace the <code>$$$$$$$$</code> placeholder thus providing a convenient and easy way to create the mutation.
     </dd>
 
     <dt class="optional">wwsToken 
@@ -1361,7 +1382,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -1384,11 +1404,11 @@ msg.payload = `
       },
       wwsActionsList: {
         value : "",
-        required: true
+        required: false
       },
       wwsActionId: {
         value : "",
-        required: true
+        required: false
       },
       wwsReferralMsgId: {
         value: "",
@@ -1497,7 +1517,7 @@ msg.payload = `
 
   <h3>Inputs</h3>
   <dl class="message-properties">
-      <dt>wwsActionId 
+      <dt class="optional">wwsActionId 
         <span class="property-type">string</span>
       </dt>
       <dd>
@@ -1505,7 +1525,7 @@ msg.payload = `
         The value on the configuration panel overrides the value in <code>msg.wwsActionId</code>
       </dd>
 
-      <dt>wwsActionsList 
+      <dt class="optional">wwsActionsList 
         <span class="property-type">comma-separated string</span>
       </dt>
       <dd>
@@ -1515,11 +1535,13 @@ msg.payload = `
         <br>
         Wildcards are often useful for actions issued by buttons or links in <a href="https://developer.watsonwork.ibm.com/docs/tutorials/action-fulfillment" target="_blank">Action Fulfillment</a>.
         <br>
-        <b>Slash Commands</b> strings are also recognized and they must be prefixed by the <code> / (slash)</code> character.<br>
+        <b>Slash Commands</b> strings are also recognized and they must be prefixed by the <code> / (slash)</code> character.
+        <br>
+        The value on the configuration panel overrides the value in <code>msg.wwsActionsList</code>
         <p>
           <b>Note:</b><br>
           Each item may be qualified by the information related to the <b>lens</b> possibly asssociated to the <code>wwsActionId</code>.<br />
-          In this case the syntax for <code>wwsActionList</code> will be the following: <br />
+          In this case the syntax for <code>wwsActionsList</code> will be the following: <br />
           <code>actionName (lens)</code><br />
           where the name of the <b>lens</b> appears within the parenthesis and precedes the <code>comma</code> introducing the next item.<br />
           In these situations, the node will automatically fetch the <b>message-focus annotation</b> corresponding to the <b>lens</b> and the output will contain, 
@@ -1540,7 +1562,7 @@ msg.payload = `
       </dt>
       <dd>
         The ID of the message to which the ActionId refers to. This information comes from the webhook <b>and is only required when</b> there is a <b>lens</b> associated
-        to the <code>wwsActionId</code> that needs to be processed (remember that the <b>lens</b> is included in the <code>wwsActionList</code> input).<br>
+        to the <code>wwsActionId</code> that needs to be processed (remember that the <b>lens</b> is included in the <code>wwsActionsList</code> input).<br>
         The value on the configuration panel overrides the value in <code>msg.wwsReferralMsgId</code>
         <p>
             <b>Note:</b><br/>
@@ -1572,11 +1594,11 @@ msg.payload = `
           <br/>
           This is normally the case of <b>Slash commands</b> or actions coming from <b>Action Fulfillment</b> cards.
           <br/>
-          This means that the <b>payload</b> will not also be changed on respect to the one received in input.
+          This means that the <b>payload will not be changed</b> on respect to the one received in input.
         </li>
         <li>
           If the <code>wwsActionId</code> corresponds to an Action with an associated <b>lens</b>, then the original <b>message-focus annotation</b> corresponding to the 
-          <b>lens</b> is retrieved from getting the details of the <code>wwsReferralMsgId</code> input parameter. <br/>
+          <b>lens</b> is retrieved by getting the annotation details from the <code>wwsReferralMsgId</code> input parameter. <br/>
           Then this annotation is posted as <code>msg.payload</code> for the output corresponding to the <b>wwsActionId</b>.
         </li>
         <li>
@@ -1618,7 +1640,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -1631,75 +1652,75 @@ msg.payload = `
         defaults: {
           name: {
               value: ""
-            },
-            application: {
-              value: "",
-              required: true,
-              type: "wws-credentials"
-            },
-            filterOutputs2: {
-                value: false,
-                required: false
-            },
-            o_generic : {
-                value: false,
-                required: false
-            },
-            o_actionSelected : {
-                value: false,
-                required: false
-            },
-            o_conversationMoment : {
-                value: false,
-                required: false
-            },
-            o_messageFocus : {
-                value: false,
-                required: false
-            },
-            o_messageNlpEntities : {
-                value: false,
-                required: false
-            },
-            o_messageNlpKeywords : {
-                value: false,
-                required: false
-            },
-            o_messageNlpDocSentiment : {
-                value: false,
-                required: false
-            },
-            o_messageNlpRelations : {
-                value: false,
-                required: false
-            },
-            o_messageNlpConcepts : {
-                value: false,
-                required: false
-            },
-            o_messageNlpTaxonomy : {
-                value: false,
-                required: false
-            },
-            o_messageNlpDates : {
-                value: false,
-                required: false
-            },
-            o_messageNlpAll : {
-                value: false,
-                required: false
-            },
-            hidden_string : {
-                value : "",
-                required : false
-            },
-            outputs: {
-                //
-                //  this is the same "outputs" variable that is used to define the number of outputs of the node instance
-                //  It is promoted here in order to make sure it can be programmatically modified
-                //
-                value : 1
-            }
+          },
+          application: {
+            value: "",
+            required: true,
+            type: "wws-credentials"
+          },
+          filterOutputs2: {
+              value: false,
+              required: false
+          },
+          o_generic : {
+              value: false,
+              required: false
+          },
+          o_actionSelected : {
+              value: false,
+              required: false
+          },
+          o_conversationMoment : {
+              value: false,
+              required: false
+          },
+          o_messageFocus : {
+              value: false,
+              required: false
+          },
+          o_messageNlpEntities : {
+              value: false,
+              required: false
+          },
+          o_messageNlpKeywords : {
+              value: false,
+              required: false
+          },
+          o_messageNlpDocSentiment : {
+              value: false,
+              required: false
+          },
+          o_messageNlpRelations : {
+              value: false,
+              required: false
+          },
+          o_messageNlpConcepts : {
+              value: false,
+              required: false
+          },
+          o_messageNlpTaxonomy : {
+              value: false,
+              required: false
+          },
+          o_messageNlpDates : {
+              value: false,
+              required: false
+          },
+          o_messageNlpAll : {
+              value: false,
+              required: false
+          },
+          hidden_string : {
+              value : "",
+              required : false
+          },
+          outputs: {
+              //
+              //  this is the same "outputs" variable that is used to define the number of outputs of the node instance
+              //  It is promoted here in order to make sure it can be programmatically modified
+              //
+              value : 1
+          }
         },
         inputs: 1,
         outputs: 1,
@@ -1907,20 +1928,21 @@ msg.payload = `
       <li>the <b>Filter Outputs</b> checkbox.<br />
         <ul>
           <li>
-              If the checkbox is not checked, this node behaves as a pass through node: all incoming Messages are delivered through the single output provided by the node
+              If the checkbox is not checked, this node behaves as a pass through node: all incoming Messages are delivered unchanged through the single output provided by the node
           </li>
           <li>
             The magic happens when the checkbox <b>is checked</b>. <br />
             In this case the Configuration proposes the following panel: <br/>
             <img src="icons/node-red-contrib-wws/wws-filter-annotations0.png" />
             <br />
-            The panel allows you to select which <b>annotation types</b> you actually want to filter. The annotations are split in two families: <b>Standard Annotations</b> and <b>NLP Annotations</b>.
+            The panel allows you to select which <b>annotation types</b> you actually want to filter. The annotation types are split in two families: <b>Standard Annotations</b> and <b>NLP Annotations</b>.
           </li>
           <li>
             When you select the checkboxes associated to each AnnotationType, like (for instance) what is shown in the picture below <br />
             <img src="icons/node-red-contrib-wws/wws-filter-annotations1.png" />
             <br />
-            the node will automatically generate as many outputs as the Annotations that have been chosen. Each Annotation will be routed through the corresponding output as shown here :<br/>
+            the node will automatically generate as many outputs as the Annotation types that have been chosen. Each Annotation type will be routed through the corresponding 
+            output as shown here :<br/>
             <img src="icons/node-red-contrib-wws/wws-filter-annotations2.png" />
             <br />
           </li>
@@ -1928,10 +1950,12 @@ msg.payload = `
             A special meaning is given to the <b>All selected NLP together</b> checkbox. <br />
             <img src="icons/node-red-contrib-wws/wws-filter-annotations3.png" />
             <br />
-            When this checkbox is checked, all the selected <b>NLP annotations</b> will be actually delivered to a single output, name <b>message-nlp-all</b> as shown in the picture below: <br />
+            When this checkbox is checked, all individually selected <b>NLP annotations</b> will be actually delivered to a single output, named <b>message-nlp-all</b> as shown 
+            in the picture below: <br />
             <img src="icons/node-red-contrib-wws/wws-filter-annotations4.png" />
             <br />
-            This may be useful in situations in which you want to actually deliver a special processing to NLP annotations (or a subset of them) but you do not need to distinguish among them.
+            This may be useful in situations in which you want to actually deliver a special processing for NLP annotations (or for a subset of them) but you do not need to 
+            distinguish among them.
           </li>
         </ul>
       </li>
@@ -1940,20 +1964,19 @@ msg.payload = `
 
   <h3>Inputs</h3>
     <dl class="message-properties">
-      <dt>wwsAnnotationType
+      <dt class="optional">wwsAnnotationType
         <span class="property-type">string</span>
       </dt>
       <dd>
-        The name of the Annotation coming from the Webhook node.<br>
-        Wehn using the <b>Webhook node</b> from this package, this property is directly passed from the Webhook itself, together with all the other informations for the event.<br />
+        The type of the Annotation coming from the Webhook node.<br>
+        When using the <b>Webhook node</b> from this package, this property is directly passed from the Webhook itself, together with all the other informations for the event.<br />
       </dd>
       
       <dt class="optional">wwsToken 
         <span class="property-type">string</span>
       </dt>
       <dd>
-        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
-        application(s) for this particular message.
+        Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace application(s) for this particular message.
       </dd>
     </dl>  
     
@@ -1972,7 +1995,6 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>
 
@@ -1989,10 +2011,12 @@ msg.payload = `
       },
       application: {
         value: "",
+        required: true,
         type: "wws-credentials"
       },
       wwsMessageId: {
-        value: ''
+        value: '',
+        required: false
       }
     },
     inputs: 1,
@@ -2025,11 +2049,12 @@ msg.payload = `
   <p>A node that retrieves all the information about a given Message.</p>
   <h3>Inputs</h3>
   <dl class="message-properties">
-    <dt>wwsMessageId 
+    <dt class="optional">wwsMessageId 
       <span class="property-type">string</span>
     </dt>
     <dd>
-      The Id of the message to be retrieved.
+      The Id of the message to be retrieved. <br />
+      The value on the configuration panel overrides the value in <code>msg.wwsMessageId</code>
     </dd>
     
     <dt class="optional">wwsToken 
@@ -2062,6 +2087,5 @@ msg.payload = `
       <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/graph-ql-with-json" target="_blank">GraphQL with JSON</a> - Reference Documentation for sending a GraphQL query.</li>
       <li><a href="https://developer.watsonwork.ibm.com/tools/graphql" target="_blank">GraphQL Tool</a> - Tool to test your GraphQL query. Attention: the query will be executed within the user context.</li>
       <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-      <li>TODO: <a>GitHub</a> - the nodes github repository</li>
   </ul>
 </script>

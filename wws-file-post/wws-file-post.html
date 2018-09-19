@@ -3,9 +3,17 @@
       category: 'Watson Work',
       color:"#11ABA5",
       defaults: {
-        application: { type: "wws-credentials", required: true },
-        space: { value: "" },
-        name: { value: "" }
+        application: { 
+            type: "wws-credentials", 
+            required: true
+        },
+        space: { 
+            value: "",
+            required: false
+        },
+        name: { 
+            value: "" 
+        }
       },
       inputs: 1,
       outputs: 1,
@@ -83,28 +91,35 @@
   </script>
   
   <script type="text/x-red" data-help-name="wws-file-post">
-    <p>A node that posts a file to a space in <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.</p>
+    <p>
+        A node that posts a file to a space in <a href="https://workspace.ibm.com">IBM Watson Workspace</a>.
+    </p>
+
     <h3>Inputs</h3>
     <dl class="message-properties">
         <dt class="optional">wwsFile 
-            <span class="property-type>"Object</span>
+            <span class="property-type">JSON Object</span>
         </dt>
         <dd>
-            The file which should be send to the space. Please check the details section about the required input format.
+            The file which should be sent to the space. Please check the <b>Details section below</b> for the required input format.
+            <br />
+            Either <code>wwsFile</code> OR <code>wwsImage</code> must be set otherwise an error will be thrown.
         </dd>
 
         <dt class="optional">wwsImage 
-            <span class="property-type">Object</span>
+            <span class="property-type">JSON Object</span>
         </dt>
         <dd>
-            The image which should be send to the space including the preview. Please check the details section about the required input format. Either <code>file</code> OR <code>image</code> must be set otherwise an error will be thrown.
+            The image which should be sent to the space including the preview. Please check the <b>Details section below</b> for the required input format. 
+            <br />
+            Either <code>wwsFile</code> OR <code>wwsImage</code> must be set otherwise an error will be thrown.
         </dd>
 
         <dt class="optional">wwsSpaceId 
             <span class="property-type">string</span>
         </dt>
         <dd>
-            The identifier of the Space in Watson Workspace. <br >
+            The identifier of the Space where the file or the image will be posted <br >
             The value in the Configuration Panel overrides the value in <code>msg.wwsSpaceId</code>.
         </dd>
 
@@ -115,6 +130,7 @@
             Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace application(s) for this particular message.
         </dd>
     </dl>
+
     <h3>Details</h3>
     <p>
         This node sends a file (or image) to Watson Workspace. Check the <a href="https://developer.watsonwork.ibm.com/docs/api-reference/files" target="_blank">Reference Documentation</a> for further information.
@@ -130,7 +146,8 @@
     }
   }
       </pre>
-      So, the <code>&lt;BUFFER&gt;</code>, <code>&lt;filename&gt;</code> and <code>&lt;content-type&gt;</code> are the required data.
+
+      The <code>&lt;BUFFER&gt;</code>, <code>&lt;filename&gt;</code> and <code>&lt;content-type&gt;</code> are the required data.
     </p>
     <p>
       In order to send a buffer data-type in <code>msg.wwsImage</code>, it has to follow the following format:
@@ -147,16 +164,21 @@
     }
   }
       </pre>
-      So, the <code>&lt;BUFFER&gt;</code>, <code>&lt;filename&gt;</code> and <code>&lt;content-type&gt;</code> are the required data.<br/> <br/>
+
+      The <code>&lt;BUFFER&gt;</code>, <code>&lt;filename&gt;</code> and <code>&lt;content-type&gt;</code> are the required data.<br/> <br/>
       The dimension data is optional and can be added to present the image as preview and full screen within Watson Workspace.<br/>
-      If no dimension information is provided the image will be treated as normal file without any preview.
+      If no dimension information is provided the image will be treated as a normal file without any preview.
     </p>
+    <p>
+        To avoid that heavy data information is carried around, on succesfull execution <b>this node removes the input <code>msg.wwsFile</code> and/or the input <code>msg.wwsImage</code>
+        attributes</b> from the output message. 
+    </p>
+    
     <h3>References</h3>
     <ul>
         <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
         <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/files" target="_blank">Files</a> - Reference Documentation for sending files (and images).</li>
         <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-        <li>TODO: <a>GitHub</a> - the nodes github repository</li>
     </ul>
   </script>
   

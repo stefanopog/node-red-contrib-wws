@@ -42,15 +42,18 @@
   </script>
   
   <script type="text/x-red" data-help-name="wws-focus">
-    <p>A node that retrieves a list of foccuses based on a sentence that is given in input. See <a href="https://developer.watsonwork.ibm.com/docs/api-reference/focus">IBM Watson Workspace Focus API</a>.</p>
+    <p>A node that retrieves a list of foccuses based on a sentence that is given in input. <br />
+      See <a href="https://developer.watsonwork.ibm.com/docs/api-reference/focus">IBM Watson Workspace Focus API</a>.
+    </p>
+
     <h3>Inputs</h3>
     <dl class="message-properties">
-        <dt class="optional">
-          payload <span class="property-type">String</span>
+        <dt class="optional">payload 
+          <span class="property-type">String</span>
         </dt>
         <dd>
           The sentence that needs to be processed. <br/> 
-          Its value superseeds the <code>Text</code> value from the Configuration Panel
+          The value on the configuration panel overrides the value in <code>msg.payload</code>
         </dd>
       
         <dt class="optional">wwsToken 
@@ -102,9 +105,7 @@
     <h3>References</h3>
     <ul>
         <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/" target="_blank">Watson Work API</a> - Reference Documentation</li>
-        <li><a href="https://developer.watsonwork.ibm.com/docs/api-reference/files" target="_blank">Files</a> - Reference Documentation for sending files (and images).</li>
         <li><a href="https://developer.watsonwork.ibm.com/docs/get-started/what-can-you-build" target="_blank">Getting Started</a> - Guide to be used as starting point</li>
-        <li>TODO: <a>GitHub</a> - the nodes github repository</li>
     </ul>
   </script>
   
