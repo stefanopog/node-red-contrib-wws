@@ -18,7 +18,7 @@ Here is the list of Nodes currently proposed by this package.
 Full documentation, including sample NodeRed flows using these nodes, is available in the Documentation Directory of the [corresponding Github repository](https://github.com/stefanopog/node-red-contrib-wws/tree/master/docs)
 
 # *Changes*
-## Changes in V2.0.5
+## Changes in V2.0.6
 * The **Send Message** node has been modified to get new input attributes. It is also, now, possible to enter the payload from the Configuration Panel of the node
 * The **Filter Annotations** node has been fixed to avoid raising errors when not necessary
 * The **Webhook** node has been modified in what relates to the _space-updated_ event. The output information (_payload_) has been modified

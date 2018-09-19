@@ -2103,7 +2103,7 @@ module.exports = function (RED) {
       //
       //  Check the type of Operation (Attachments or Annotations)
       //
-      if (config.AF_Operation === "--set from msg.wwasAFOperation") {
+      if (config.AF_Operation === "fromMsg") {
         //
         //  Value comes from input !
         //
@@ -2139,14 +2139,14 @@ module.exports = function (RED) {
         details += 'attachments : [';
         for (let i = 0; i < AFElements.length; i++) {
           if (i !== 0) details += ',';
-          details += '{type: CARD, cardInput: {type: INFORMATION, informationCardInput: {';
-          details += 'title: "' + (AFElements[i].title) + '",';
-          details += 'subtitle: "' + (AFElements[i].subtitle) + '",';
-          details += 'text: "' + (AFElements[i].text) + '",';
-          if (AFElements[i].text) {
-            details += 'date: "' + AFElements[i].date + '"';
+          details += ' {type: CARD, cardInput: {type: INFORMATION, informationCardInput: {';
+          details += ' title: "' + (AFElements[i].title) + '",';
+          details += ' subtitle: "' + (AFElements[i].subtitle) + '",';
+          details += ' text: "' + (AFElements[i].text) + '",';
+          if (AFElements[i].date) {
+            details += ' date: "' + AFElements[i].date + '"';
           } else {  
-            details += 'date: "' + Math.floor(new Date()) + '"';
+            details += ' date: "' + Math.floor(new Date()) + '"';
           }
           if (AFElements[i].buttons && Array.isArray(AFElements[i].buttons)) {
             //
@@ -2155,9 +2155,9 @@ module.exports = function (RED) {
             details += ', buttons: [';
             for (let j=0; j < AFElements[i].buttons.length; j++) {
               if (j !== 0) details += ',';
-              details += '{text: "' + (AFElements[i].buttons[j].text) + '",';
-              details += 'payload: "' + (AFElements[i].buttons[j].payload) + '",';
-              details += 'style: ';
+              details += ' {text: "' + (AFElements[i].buttons[j].text) + '",';
+              details += ' payload: "' + (AFElements[i].buttons[j].payload) + '",';
+              details += ' style: ';
               if (AFElements[i].buttons[j].isPrimary) {
                 details += 'PRIMARY}'
               } else {
@@ -2180,9 +2180,9 @@ module.exports = function (RED) {
         details += 'annotations : [';
         for (let i = 0; i < AFElements.length; i++) {
           if (i !== 0) details += ',';
-          details += '{genericAnnotation : {';
-          details += 'title: "' + (AFElements[i].title) + '",';
-          details += 'text: "' + (AFElements[i].text) + '"';
+          details += ' {genericAnnotation : {';
+          details += ' title: "' + (AFElements[i].title) + '",';
+          details += ' text: "' + (AFElements[i].text) + '"';
           if (AFElements[i].buttons && Array.isArray(AFElements[i].buttons)) {
             //
             //  There are buttons
@@ -2191,9 +2191,9 @@ module.exports = function (RED) {
             for (let j=0; j < AFElements[i].buttons.length; j++) {
               if (j !== 0) details += ',';
               details += '{postbackButton :';
-              details += '{title: "' + (AFElements[i].buttons[j].text) + '",';
-              details += 'id: "' + (AFElements[i].buttons[j].payload) + '",';
-              details += 'style: ';
+              details += ' {title: "' + (AFElements[i].buttons[j].text) + '",';
+              details += ' id: "' + (AFElements[i].buttons[j].payload) + '",';
+              details += ' style: ';
               if (AFElements[i].buttons[j].isPrimary) {
                 details += 'PRIMARY}'
               } else {
