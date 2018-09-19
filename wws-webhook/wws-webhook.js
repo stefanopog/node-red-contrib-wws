@@ -1037,7 +1037,7 @@ module.exports = function(RED) {
             if (webhookPath[0] !== '/') {
                 webhookPath = '/' + webhookPath;
             }
-            RED.httpNode.post(webhookPath, stefano, jsonParser, node.processRequest, node.processError);
+            RED.httpNode.post(webhookPath, jsonParser, node.processRequest, node.processError);
             node.log("wws-webhook: Created new route for: " + webhookPath);
         } else {
             node.error("wws-webhook: Could not create a route for " + node.webhookPath);

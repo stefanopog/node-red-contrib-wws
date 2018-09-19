@@ -73,7 +73,7 @@ module.exports = function(RED) {
                 return;
             }
             let thePayload = '';
-            if ((config.payload) && (config.payload.trim() === '')) {
+            if ((config.payload) && (config.payload.trim() !== '')) {
                 thePayload = config.payload.trim();
             } else {
                 if (msg.payload.trim() !== '') {
