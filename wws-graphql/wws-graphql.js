@@ -43,18 +43,31 @@ module.exports = function (RED) {
       var req = _graphQL_options(msg.wwsToken, graphQL_url, msg.payload, viewType, msg.operationName, msg.variables);
       node.application.wwsRequest(req)
       .then((res) => {
+        if (res.errors) {
+          //
+          //  Query Successfull but with Errors
+          //
+          msg.wwsQLErrors = res.errors;
+          console.log('wwsGraphQLNode: errors found in graphQL statement. Continuing...');
+          console.log(JSON.stringify(res.errors));
+          node.status({fill: "yellow", shape: "dot", text: "errors found in graphQL statement"});
+        } else {
+          //
+          //  Successfull Result !
+          //
+          console.log('wwsGraphQLNode: graphQL statement successfully executed');
+          node.status({fill: "green", shape: "dot", text: 'graphQL statement successfully executed'});
+        }
         msg.payload = res.data;
-        node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
-        console.log('wwsGraphQLNode: Success from graphQL query');
         node.send(msg);
         //
         //  Reset visual status on success
         //
         setTimeout(() => {node.status({});}, 2000);
-      }).catch((res) => {
-        console.log("wwsGraphQLNode: Error while posting GraphQL query to WWS." + JSON.stringify(res.error, " ", 2));
-        node.status({fill: "red", shape: "ring", text: "Sending GraphQL failed..."});
-        node.error("wwsGraphQLNode: Error while posting GraphQL query to WWS");
+      }).catch((err) => {
+        console.log("wwsGraphQLNode: Error while posting GraphQL query to WWS." + JSON.stringify(err, " ", 2));
+        node.status({fill: "red", shape: "ring", text: "graphQL failed..."});
+        node.error("wwsGraphQLNode: Error while posting GraphQL query to WWS", err);
         return;
       });
     });
@@ -122,35 +135,36 @@ module.exports = function (RED) {
       node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
-          msg.payload = res.errors;
-          console.log('wwsGetMessage: errors getting Message ' + messageId);
+          //
+          //  Query Successfull but with Errors
+          //
+          msg.wwsQLErrors = res.errors;
+          console.log('wwsGetMessage: errors found in getting Message ' + messageId + '. Continuing...');
           console.log(JSON.stringify(res.errors));
-          node.status({fill: "red", shape: "dot", text: "errors getting Message " + messageId});
-          node.error("wwsGetMessage: errors getting Message " + messageId, msg);
-          return;
+          node.status({fill: "yellow", shape: "dot", text: "Some errors getting Message " + messageId});
         } else {
           //
           //  Successfull Result !
           //
-          if (res.data.message) {
-            msg.payload = res.data.message;
-            msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
-            console.log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' succesfully completed!');
-          } else {
-            //
-            //  Message is VOID
-            //
-            msg.payload = res.data;
-            console.log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
-            console.log(JSON.stringify(res.data));
-          }
+          console.log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' succesfully completed!');
           node.status({fill: "green", shape: "dot", text: 'message ' + messageId + ' succesfully retrieved!'});
-          node.send(msg);
-          //
-          //  Reset visual status on success
-          //
-          setTimeout(() => {node.status({});}, 2000);
         }
+        if (res.data && res.data.message) {
+          msg.payload = res.data.message;
+          msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
+        } else {
+          //
+          //  Message is VOID
+          //
+          msg.payload = res.data;
+          console.log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
+          console.log(JSON.stringify(res.data));
+        }
+        node.send(msg);
+        //
+        //  Reset visual status on success
+        //
+        setTimeout(() => {node.status({});}, 2000);
       }).catch((err) => {
         console.log("wwsGetMessage: errors getting Message " + messageId, err);
         node.status({fill: "red", shape: "ring", text: "errors getting Message " + messageId});
@@ -223,25 +237,26 @@ module.exports = function (RED) {
       node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
-          fullMsg.payload = res.errors;
-          console.log('wwsGetPersons._getPersonDetails : errors getting ' + person);
+          //
+          //  Query Successfull but with Errors
+          //
+          fullMsg.wwsQLErrors = res.errors;
+          console.log('wwsGetPersons._getPersonDetails : errors found in getting ' + person + '. Continuing...');
           console.log(JSON.stringify(res.errors));
-          node.status({fill: "red", shape: "dot", text: 'errors getting ' + person});
-          node.error('wwsGetPersons: errors getting ' + person, fullMsg);
-          return;
+          node.status({fill: "yellow", shape: "dot", text: 'Some errors in getting ' + person});
         } else {
           //
           //  Successfull Result !
           //
-          if (res.data.me) {
-            res.data.person = JSON.parse(JSON.stringify(res.data.me));
-            delete res.data.me;
-          }
-          fullMsg.payload.push(res.data);
           console.log('wwsGetPersons._getPersonDetails : Person ' + person + ' succesfully retrieved !');
           node.status({fill: "green", shape: "dot", text: 'Person ' + person + ' retrieved !'});
-          theCallback(null, person);
         }
+        if (res.data && res.data.me) {
+          res.data.person = JSON.parse(JSON.stringify(res.data.me));
+          delete res.data.me;
+        }
+        if (res.data) fullMsg.payload.push(res.data);
+        theCallback(null, person);
       }).catch((err) => {
         console.log("wwsGetPersons._getPersonDetails : Errors while retrieveing " + person, err);
         node.status({fill: "red", shape: "ring", text: "Errors while retrieveing " + person});
@@ -414,25 +429,26 @@ module.exports = function (RED) {
       node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
-          msg.payload = res.errors;
-          console.log('wwsAddRemoveMembers: errors adding/removing Members');
+          //
+          //  Query Successfull but with Errors
+          //
+          msg.wwsQLErrors = res.errors;
+          console.log('wwsAddRemoveMembers: some errors found in adding/removing Members');
           console.log(JSON.stringify(res.errors));
-          node.status({fill: "red", shape: "dot", text: "errors adding/removing Members"});
-          node.error("wwsAddRemoveMembers: errors adding/removing Members", msg);
-          return;
+          node.status({fill: "yellow", shape: "dot", text: "Some errors adding/removing Members"});
         } else {
           //
           //  Successfull Result !
           //
-          msg.payload = res.data;
           console.log('wwsAddRemoveMembers: Members operation ' + config.ARoperation + ' succesfully completed !');
           node.status({fill: "green", shape: "dot", text: 'Members operation ' + config.ARoperation + ' succesfully completed !'});
-          node.send(msg);
-          //
-          //  Reset visual status on success
-          //
-          setTimeout(() => {node.status({});}, 2000);
         }
+        msg.payload = res.data;
+        node.send(msg);
+        //
+        //  Reset visual status on success
+        //
+        setTimeout(() => {node.status({});}, 2000);
       }).catch((err) => {
         console.log("wwsAddRemoveMembers: Errors while adding/removing Members", err);
         node.status({fill: "red", shape: "ring", text: "Errors while adding/removing Members..."});
@@ -641,75 +657,74 @@ module.exports = function (RED) {
       .then((res) => {
         if (res.errors) {
           //
-          //  Should NOT BE...
+          //  Query Successfull but with Errors
           //
-          msg.payload = res.errors;
-          console.log('wwsFilterActions: errors from query');
+          msg.wwsQLErrors = res.errors;
+          console.log('wwsFilterActions.getAnnotations: some errors found in query');
           console.log(JSON.stringify(res.errors));
-          node.status({fill: "red", shape: "dot", text: "Errors from query"});
-          node.error('wwsFilterActions: Errors from query', msg);
+          node.status({fill: "yellow", shape: "dot", text: "Some Errors in getAnnotations query"});
         } else {
           //
           //  Ok, we got the array of annotations...
           //
           console.log('wwsFilterActions: Success from graphQL query : Annotations retrieved');
           node.status({fill: "green", shape: "dot", text: "Annotations retrieved..."});
-          //
-          //  Now we have the annotations. Check to find the one that is "message-focus" and corresponds to the lens=ActionId
-          //
-          var found = false;
-          if (res.data.message) {
-            for (let i=0; i < res.data.message.annotations.length; i++) {
-              let intent = JSON.parse(res.data.message.annotations[i]);
-              if ((intent.type === "message-focus") && (intent.lens === lens)) {
-                msg.payload = intent;
-                if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
-                if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
-                found = true;
-                break;
-              }
+        }
+        //
+        //  Now we have the annotations. Check to find the one that is "message-focus" and corresponds to the lens=ActionId
+        //
+        var found = false;
+        if (res.data && res.data.message && res.data.message.annotations) {
+          for (let i=0; i < res.data.message.annotations.length; i++) {
+            let intent = JSON.parse(res.data.message.annotations[i]);
+            if ((intent.type === "message-focus") && (intent.lens === lens)) {
+              msg.payload = intent;
+              if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
+              if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
+              found = true;
+              break;
             }
           }
-          if (found) {
-            console.log('wwsFilterActions: Lens ' + lens + ' found. Returning Message-Focus....');
-            //
-            //  Build the output Array (as the node has multiple outputs)
-            //  all the outputs will be initialized to NULL
-            //
-            var outArray = [];
-            for (let i=0; i <= actionList.length; i++) {
-              outArray.push(null);
-            }
-            //
-            //  the array item corresponding to the selectedRule is filled with the result
-            //
-            outArray[selectedRule] = msg;
-            //  
-            //  Sends the output array
-            //
-            node.status({fill: "green", shape: "dot", text: "Lens " + lens + " returned"});
-            node.send(outArray);
-            //
-            //  Reset visual status on success
-            //
-            setTimeout(() => {node.status({});}, 2000);
-          } else {
-            //
-            //  Strange situation (no annotations or the LENS was not found....)
-            //
-            console.log("wwsFilterActions: Error while dealing with action " + actionId + ' for lens ' + lens);
-            node.status({fill: "red", shape: "ring", text: "Error while dealing with action " + actionId + ' for lens ' + lens});
-            node.error('wwsFilterActions: Lens ' + lens + ' not found for action ' + actionId, msg);
-            return;
+        }
+        if (found) {
+          console.log('wwsFilterActions: Lens ' + lens + ' found. Returning Message-Focus....');
+          //
+          //  Build the output Array (as the node has multiple outputs)
+          //  all the outputs will be initialized to NULL
+          //
+          var outArray = [];
+          for (let i=0; i <= actionList.length; i++) {
+            outArray.push(null);
           }
-        }})
-        .catch((err) => {
-          msg.payload = err;
-          console.log("wwsFilterActions: Error while posting GraphQL query to WWS.", err);
-          node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
-          node.error('wwsFilterActions: Error while posting GraphQL query to WWS.', msg);
+          //
+          //  the array item corresponding to the selectedRule is filled with the result
+          //
+          outArray[selectedRule] = msg;
+          //  
+          //  Sends the output array
+          //
+          node.status({fill: "green", shape: "dot", text: "Lens " + lens + " returned"});
+          node.send(outArray);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
+        } else {
+          //
+          //  Strange situation (no annotations or the LENS was not found....)
+          //
+          console.log("wwsFilterActions: Error while dealing with action " + actionId + ' for lens ' + lens);
+          node.status({fill: "red", shape: "ring", text: "Error while dealing with action " + actionId + ' for lens ' + lens});
+          node.error('wwsFilterActions: Lens ' + lens + ' not found for action ' + actionId, msg);
           return;
-        });
+        }
+      }).catch((err) => {
+        msg.payload = err;
+        console.log("wwsFilterActions: Error while posting GraphQL query to WWS.", err);
+        node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
+        node.error('wwsFilterActions: Error while posting GraphQL query to WWS.', msg);
+        return;
+      });
     });
     this.on('close', function(removed, done) {
       if (removed) {
@@ -948,25 +963,26 @@ module.exports = function (RED) {
       node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
-          msg.payload = res.errors;
-          console.log('wwsGetTemplate: errors from query');
-          console.log(JSON.stringify(res));
-          node.status({fill: "red", shape: "dot", text: "Errors from query"});
-          node.error("wwsGetTemplate: Errors from query", msg);
-          return;
+          //
+          //  Query Successfull but with Errors
+          //
+          msg.wwsQLErrors = res.errors;
+          console.log('wwsGetTemplate: some errors found in query');
+          console.log(JSON.stringify(res.errors));
+          node.status({fill: "yellow", shape: "dot", text: "Some Errors in query"});
         } else {
           //
           //  Successfull Result !
           //
-          msg.payload = res.data;
           console.log('wwsGetTemplate: Success from graphQL query');
           node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
-          node.send(msg);
-          //
-          //  Reset visual status on success
-          //
-          setTimeout(() => {node.status({});}, 2000);
         }
+        msg.payload = res.data;
+        node.send(msg);
+        //
+        //  Reset visual status on success
+        //
+        setTimeout(() => {node.status({});}, 2000);
       }).catch((err) => {
         console.log("wwsGetTemplate: Error while posting GraphQL query to WWS.", err);
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
@@ -1007,46 +1023,6 @@ module.exports = function (RED) {
     //  Now wait for the input to this node
     //
     this.on("input", (msg) => {
-      //
-      //  Helper to make property values and Statuses readable
-      //
-      function __makePropertiesAndStatusReadable(theSpace) {
-        if (theSpace.propertyValueIds && theSpace.templateInfo.properties) {
-          theSpace.propertyValueIds = _propertiesIdsToNames(theSpace.propertyValueIds, theSpace.templateInfo.properties.items);
-        } else {
-          console.log('wwsGetTemplatedSpace : No properties for space ' + theSpace.title + ' !!!');
-          node.warn('wwsGetTemplatedSpace: No Properties for space ' + theSpace.title);
-        }
-        //
-        //  And now we need to add the name of the status
-        //
-        if (theSpace.statusValueId) {
-          let statuses = theSpace.templateInfo.spaceStatus.acceptableValues;
-          let found = false;
-          for (let i = 0; i < statuses.length; i++) {
-            if (theSpace.statusValueId === statuses[i].id) {
-              found = true;
-              theSpace.statusValueName = statuses[i].displayName;
-              break;
-            }
-          }
-          if (!found) {
-            //
-            //  We cannot get the name of a status that does not exist
-            //
-            console.log('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!');
-            node.status({fill: "red", shape: "dot", text: 'Status ' + theSpace.statusValueId + ' is unknown!'});
-            node.error('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!', msg);
-            return false;
-          } else {
-            return true;
-          }
-        } else {
-          console.log('wwsGetTemplatedSpace : No Status Information for space ' + theSpace.title + ' !!!');
-          node.warn('wwsGetTemplatedSpace: No Status Information for space ' + theSpace.title);
-          return true;
-        }
-      }
       var query = '';
       var theSpace = '';
       switch (config.SpaceOperation) {
@@ -1108,58 +1084,59 @@ module.exports = function (RED) {
       node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
-          msg.payload = res.errors;
-          console.log('wwsGetTemplatedSpace: errors from query');
+          //
+          //  Query Successfull but with Errors
+          //
+          msg.wwsQLErrors = res.errors;
+          console.log('wwsGetTemplatedSpace: some errors found in Query. Continuing....');
           console.log(JSON.stringify(res.errors));
-          node.status({fill: "red", shape: "dot", text: "Errors from query"});
-          node.error("wwsGetTemplatedSpace: Errors from query", msg);
-          return;
+          node.status({fill: "yelloo", shape: "dot", text: "Some Errors in query"});
         } else {
           //
           //  Successfull Result !
           //
           console.log('wwsGetTemplatedSpace: Success from graphQL query');
-          msg.payload = res.data;
           node.status({fill: "green", shape: "dot", text: "space " + theSpace + " retrieved"});
-          //
-          //  Now we need to modify the properties in the output to be more descriptive
-          //
-          switch (config.SpaceOperation) {
-            case 'byId':
-              if (__makePropertiesAndStatusReadable(msg.payload.space)) {
-                console.log('wwsGetTemplatedSpace: operation completed');
-                node.status({fill: "green", shape: "dot", text: 'operation completed'});
-                node.send(msg);
-                //
-                //  Reset visual status on success
-                //
-                setTimeout(() => {node.status({});}, 2000);
-              };
-              break;
-            case 'byName':
-            case 'mySpaces':
-              let allOk = true;
-              msg.payload.spaces = msg.payload.spaces.items;
-              for (let i = 0; i < msg.payload.spaces.length; i++) {
-                if (! __makePropertiesAndStatusReadable(msg.payload.spaces[i])) {
-                  allOk = false;
-                  break;
-                }
-              }
-              if (allOk) {
-                console.log('wwsGetTemplatedSpace: operation completed');
-                node.status({fill: "green", shape: "dot", text: 'operation completed'});
-                node.send(msg);
-                //
-                //  Reset visual status on success
-                //
-                setTimeout(() => {node.status({});}, 2000);
-              };
-              break;
-            default:
-          }
         }
-      }).catch((err) => {
+        msg.payload = res.data;
+        //
+        //  Now we need to modify the properties in the output to be more descriptive
+        //
+        switch (config.SpaceOperation) {
+          case 'byId':
+            if (__makePropertiesAndStatusReadable(msg.payload.space, node)) {
+              console.log('wwsGetTemplatedSpace: operation completed');
+              node.status({fill: "green", shape: "dot", text: 'operation completed'});
+              node.send(msg);
+              //
+              //  Reset visual status on success
+              //
+              setTimeout(() => {node.status({});}, 2000);
+            };
+            break;
+          case 'byName':
+          case 'mySpaces':
+            let allOk = true;
+            msg.payload.spaces = msg.payload.spaces.items;
+            for (let i = 0; i < msg.payload.spaces.length; i++) {
+              if (! __makePropertiesAndStatusReadable(msg.payload.spaces[i], node)) {
+                allOk = false;
+                break;
+              }
+            }
+            if (allOk) {
+              console.log('wwsGetTemplatedSpace: operation completed');
+              node.status({fill: "green", shape: "dot", text: 'operation completed'});
+              node.send(msg);
+              //
+              //  Reset visual status on success
+              //
+              setTimeout(() => {node.status({});}, 2000);
+            };
+            break;
+          default:
+        }
+    }).catch((err) => {
         console.log("wwsGetTemplatedSpace: Error while posting GraphQL query to WWS.", err);
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
         node.error("wwsGetTemplatedSpace: Sending query failed...", err);
@@ -1346,19 +1323,23 @@ module.exports = function (RED) {
       node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
-          msg.payload = res.errors;
-          console.log('wwsUpdateSpace: errors getting the Template');
+          //
+          //  Query Successfull but with Errors
+          //
+          msg.wwsQLErrors = res.errors;
+          console.log('wwsUpdateSpace: Some errors found in getting the Template');
           console.log(JSON.stringify(res.errors));
-          node.status({fill: "red", shape: "dot", text: "Errors getting the Template"});
-          node.error("wwsUpdateSpace: Errors getting the Template", msg);
-          return;
+          node.status({fill: "yellow", shape: "dot", text: "some Errors getting the Template"});
         } else {
           //
           //  Ok, we should have the information about the teamplate.
           //  We need to parse them
           //
+          console.log('wwsUpdateSpace: Success getting Space infos');
           node.status({fill: "green", shape: "dot", text: "Space succesfully retrieved"});
-          var templateInfo = res.data.space.templateInfo;
+        }
+        if (res.data && res.data.space && res.data.space.templateInfo) {
+          let templateInfo = res.data.space.templateInfo;
           if (newStatus) {
             //
             //  there is a translation to be made on Status
@@ -1401,7 +1382,7 @@ module.exports = function (RED) {
           //
           //  Build the Variables
           //
-          var variables = '{"input":';
+          let variables = '{"input":';
           variables += '{"id":"' + spaceId + '"';
           //
           //  Add Members if any
@@ -1452,52 +1433,65 @@ module.exports = function (RED) {
           node.application.wwsRequest(req)
           .then((res) => {
             if (res.errors) {
-              msg.payload = res.errors;
-              console.log('wwsUpdateSpace: errors updating space ' + spaceId);
+              //
+              //  Mutation Successfull but with Errors
+              //
+              msg.wwsQLErrors = res.errors;
+              console.log('wwsUpdateSpace: Some errors found in updating space ' + spaceId);
               console.log(JSON.stringify(res.errors));
-              node.status({fill: "red", shape: "dot", text: 'errors updating space ' + spaceId});
-              node.error('wwsUpdateSpace: errors updating space ' + spaceId, msg);
+              node.status({fill: "yellow", shape: "dot", text: 'Some Errors updating space ' + spaceId});
             } else {
-              msg.payload = res.data.updateSpace;
+              //
+              //  Successfull results
+              //
               console.log('wwsUpdateSpace: Space ' + spaceId + ' UPDATED !!');
               node.status({fill: "green", shape: "dot", text: "Space Updated !"});
-              //
-              //  Now we need to modify the properties in the output to be more descriptive
-              //
-              msg.payload.space.propertyValueIds = _propertiesIdsToNames(msg.payload.space.propertyValueIds, templateInfo.properties.items);
-              //
-              //  And now we need to add the name of the status
-              //
-              let statuses = templateInfo.spaceStatus.acceptableValues;
-              let found = false;
-              for (let i=0; i < statuses.length; i++) {
-                if (msg.payload.space.statusValueId === statuses[i].id) {
-                  found = true;
-                  msg.payload.space.statusValueName = statuses[i].displayName;
-                  break;
-                }
-              }
-              if (!found) {
-                //
-                //  We cannot Set a status that does not exist
-                //
-                console.log('wwsUpdateSpace: Status ' + msg.payload.space.statusValueId + ' is unknown!');
-                node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.space.statusValueId + ' is unknown!'});
-                node.error('wwsUpdateSpace: Status ' + msg.payload.space.statusValueId + ' is unknown!', msg);
-                return;
-              }
-              node.send(msg);
-              //
-              //  Reset visual status on success
-              //
-              setTimeout(() => {node.status({});}, 2000);
             }
+            msg.payload = res.data.updateSpace;
+            //
+            //  Now we need to modify the properties in the output to be more descriptive
+            //
+            msg.payload.space.propertyValueIds = _propertiesIdsToNames(msg.payload.space.propertyValueIds, templateInfo.properties.items);
+            //
+            //  And now we need to add the name of the status
+            //
+            let statuses = templateInfo.spaceStatus.acceptableValues;
+            let found = false;
+            for (let i=0; i < statuses.length; i++) {
+              if (msg.payload.space.statusValueId === statuses[i].id) {
+                found = true;
+                msg.payload.space.statusValueName = statuses[i].displayName;
+                break;
+              }
+            }
+            if (!found) {
+              //
+              //  We cannot Set a status that does not exist
+              //
+              console.log('wwsUpdateSpace: Status ' + msg.payload.space.statusValueId + ' is unknown!');
+              node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.space.statusValueId + ' is unknown!'});
+              node.error('wwsUpdateSpace: Status ' + msg.payload.space.statusValueId + ' is unknown!', msg);
+              return;
+            }
+            node.send(msg);
+            //
+            //  Reset visual status on success
+            //
+            setTimeout(() => {node.status({});}, 2000);
           }).catch((err) => {
             console.log("wwsUpdateSpace: Error updating space.", err);
             node.status({fill: "red", shape: "ring", text: "Error updating space..."});
             node.error("wwsUpdateSpace: Error updating space.", err);
             return;
           });
+        } else {
+          //
+          //  Issues with getting the TEMPLATE !!!
+          //
+          console.log("wwsUpdateSpace: Error while getting templatedSpace TWO.");
+          node.status({fill: "red", shape: "ring", text: "Error while getting templatedSpace TWO..."});
+          node.error("wwsUpdateSpace: Error while getting templatedSpace TWO.", res.data);
+          return;
         }
       }).catch((err) => {
         console.log("wwsUpdateSpace: Error while getting templatedSpace.", err);
@@ -1686,116 +1680,136 @@ module.exports = function (RED) {
       node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
-          msg.payload = res.errors;
-          console.log("wwsCreateSpaceFromTemplate: Errors retrieving TemplateId " + templateId);
+          //
+          //  Query Successfull but with Errors
+          //
+          msg.wwsQLErrors = res.errors;
+          console.log("wwsCreateSpaceFromTemplate: Some Errors in retrieving TemplateId " + templateId);
           console.log(JSON.stringify(res.errors));
-          node.status({fill: "red", shape: "dot", text: "Errors retrieving TemplateId " + templateId});
-          node.error("wwsCreateSpaceFromTemplate: Errors Retrieving TemplateId " + templateId, msg);
-          return;
+          node.status({fill: "yellow", shape: "dot", text: "Some Errors retrieving TemplateId " + templateId});
         } else {
           //
           //  Successfull Result ! HABEMUS TEMPLATE
           //
-          let templateProperties = res.data.spaceTemplate.properties.items;
-          let statuses = res.data.spaceTemplate.spaceStatus.acceptableValues;
+          console.log('wwsCreateSpaceFromTemplate: Success retrieving Template ' + templateId);
+          node.status({fill: "green", shape: "dot", text: "template " + templateId + " retrieved"});
+        }
+        let templateProperties; 
+        let statuses;
+        try {
+          templateProperties = res.data.spaceTemplate.properties.items;
+          statuses = res.data.spaceTemplate.spaceStatus.acceptableValues;
+        } catch (e) {
           //
-          //  Now we have to validate the properties
+          //  This means that the essential informations we need from the Template are not there
           //
-          if (properties) {
-            let outProperties = _propertiesNamesToIds(properties, templateProperties);
-            if (Array.isArray(outProperties)) {
-              //
-              //  We have the correspondance between Textual representation and IDs
-              //  We can build the variables"
-              //
-              variables += ', "propertyValues":[';
-              for (let i=0; i < outProperties.length; i++) {
-                if (i != 0 ) variables += ",";
-                variables += '{"propertyId":"' + outProperties[i].id + '", "propertyValueId":"' + outProperties[i].valueId + '"}';
-              }
-              variables += ']';
-            } else {
-              //
-              //  There is an error somewhere. A property or its value is not allowed
-              //
-              msg.payload = null;
-              console.log('wwsCreateSpaceFromTemplate: Property ' + properties[outProperties].name + ' or its value ' + properties[outProperties].value + ' is not allowed');
-              node.status({fill: "red", shape: "dot", text: 'Property ' + properties[outProperties].name + ' or its value ' + properties[outProperties].value + ' is not allowed'});
-              node.error('wwsCreateSpaceFromTemplate: Property ' + properties[outProperties].name + ' or its value ' + properties[outProperties].value + ' is not allowed', msg);
-              return;
+          console.log("wwsCreateSpaceFromTemplate: Error getting information from Template.", e);
+          node.status({fill: "red", shape: "ring", text: "Error getting information from Template."});
+          node.error("wwsCreateSpaceFromTemplate: Error getting information from Template.", e);
+          return;
+        }
+        //
+        //  Now we have to validate the properties
+        //
+        if (properties) {
+          let outProperties = _propertiesNamesToIds(properties, templateProperties);
+          if (Array.isArray(outProperties)) {
+            //
+            //  We have the correspondance between Textual representation and IDs
+            //  We can build the variables"
+            //
+            variables += ', "propertyValues":[';
+            for (let i=0; i < outProperties.length; i++) {
+              if (i != 0 ) variables += ",";
+              variables += '{"propertyId":"' + outProperties[i].id + '", "propertyValueId":"' + outProperties[i].valueId + '"}';
             }
+            variables += ']';
           } else {
             //
-            //  No Properties
+            //  There is an error somewhere. A property or its value is not allowed
             //
-          }
-          variables += '}}';
-          console.log('wwsCreateSpaceFromTemplate: Creating Space ' + spaceName + ' from template ' + templateId + ' with these data :');
-          console.log(variables);
-          console.log('------------------');
-          //
-          //  The Mutation is independent if there are Properties or not (this will change the way in which the "variables" will be defined)
-          //  So we can define the mutation upfront
-          //
-          let mutation = _createSpaceMutation();
-          let req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS, variables);
-          //
-          //  Issue the create Statement
-          //
-          node.status({fill:"blue", shape:"dot", text:"Creating Space..."});
-          node.application.wwsRequest(req)
-          .then((res) => {
-            if (res.errors) {
-              msg.payload = res.errors;
-              console.log('wwsCreateSpaceFromTemplate: errors creating space ' + spaceName + ' from template ' + templateId);
-              console.log(JSON.stringify(res, ' ', 2));
-              node.status({fill: "red", shape: "dot", text: 'errors creating space ' + spaceName + ' from template ' + templateId});
-              node.error('wwsCreateSpaceFromTemplate: errors creating space ' + spaceName + ' from template ' + templateId, msg);
-            } else {
-              msg.payload = res.data.createSpace;
-              console.log('wwsCreateSpaceFromTemplate: Space ' + spaceName + ' CREATED !!');
-              node.status({fill: "green", shape: "dot", text: "Space Created !"});
-              //
-              //  Now we need to modify the properties in the output to be more descriptive
-              //
-              msg.payload.space.propertyValueIds = _propertiesIdsToNames(msg.payload.space.propertyValueIds, templateProperties);
-              //
-              //  And now we need to add the name of the status
-              //
-              let found = false;
-              for (let i=0; i < statuses.length; i++) {
-                if (msg.payload.space.statusValueId === statuses[i].id) {
-                  found = true;
-                  msg.payload.space.statusValueName = statuses[i].displayName;
-                  break;
-                }
-              }
-              if (!found) {
-                //
-                //  We cannot Set a status that does not exist
-                //
-                console.log('wwsCreateSpaceFromTemplate: Status ' + msg.payload.space.statusValueId + ' is unknown!');
-                node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.space.statusValueId + ' is unknown!'});
-                node.error('wwsCreateSpaceFromTemplate: Status ' + msg.payload.space.statusValueId + ' is unknown!', msg);
-                return;
-              } 
-              node.send(msg);
-              //
-              //  Reset visual status on success
-              //
-              setTimeout(() => {node.status({});}, 2000);
-            }
-          }).catch((err) => {
-            console.log("wwsCreateSpaceFromTemplate: Error creating space " + spaceName + ' from template ' + templateId, err);
-            node.status({fill: "red", shape: "ring", text: "Error creating space " + spaceName + ' from template ' + templateId});
-            node.error("wwsCreateSpaceFromTemplate: Error creating space " + spaceName + ' from template ' + templateId, err);
+            msg.payload = null;
+            console.log('wwsCreateSpaceFromTemplate: Property ' + properties[outProperties].name + ' or its value ' + properties[outProperties].value + ' is not allowed');
+            node.status({fill: "red", shape: "dot", text: 'Property ' + properties[outProperties].name + ' or its value ' + properties[outProperties].value + ' is not allowed'});
+            node.error('wwsCreateSpaceFromTemplate: Property ' + properties[outProperties].name + ' or its value ' + properties[outProperties].value + ' is not allowed', msg);
             return;
-          });
+          }
+        } else {
+          //
+          //  No Properties
+          //
         }
+        variables += '}}';
+        console.log('wwsCreateSpaceFromTemplate: Creating Space ' + spaceName + ' from template ' + templateId + ' with these data :');
+        console.log(variables);
+        console.log('------------------');
+        //
+        //  The Mutation is independent if there are Properties or not (this will change the way in which the "variables" will be defined)
+        //  So we can define the mutation upfront
+        //
+        let mutation = _createSpaceMutation();
+        let req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS, variables);
+        //
+        //  Issue the create Statement
+        //
+        node.status({fill:"blue", shape:"dot", text:"Creating Space..."});
+        node.application.wwsRequest(req)
+        .then((res) => {
+          if (res.errors) {
+            //
+            //  Query Successfull but with Errors
+            //
+            msg.wwsQLErrors = res.errors;
+            console.log('wwsCreateSpaceFromTemplate: Some errors in creating space ' + spaceName + ' from template ' + templateId);
+            console.log(JSON.stringify(res.errors, ' ', 2));
+            node.status({fill: "yellow", shape: "dot", text: 'Some Errors in creating space ' + spaceName + ' from template ' + templateId});
+          } else {
+            //
+            //  Successfull Result !
+            //
+            console.log('wwsCreateSpaceFromTemplate: Space ' + spaceName + ' CREATED !!');
+            node.status({fill: "green", shape: "dot", text: "Space Created !"});
+          }
+          msg.payload = res.data.createSpace;
+          //
+          //  Now we need to modify the properties in the output to be more descriptive
+          //
+          msg.payload.space.propertyValueIds = _propertiesIdsToNames(msg.payload.space.propertyValueIds, templateProperties);
+          //
+          //  And now we need to add the name of the status
+          //
+          let found = false;
+          for (let i=0; i < statuses.length; i++) {
+            if (msg.payload.space.statusValueId === statuses[i].id) {
+              found = true;
+              msg.payload.space.statusValueName = statuses[i].displayName;
+              break;
+            }
+          }
+          if (!found) {
+            //
+            //  We cannot Set a status that does not exist
+            //
+            console.log('wwsCreateSpaceFromTemplate: Status ' + msg.payload.space.statusValueId + ' is unknown!');
+            node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.space.statusValueId + ' is unknown!'});
+            node.error('wwsCreateSpaceFromTemplate: Status ' + msg.payload.space.statusValueId + ' is unknown!', msg);
+            return;
+          } 
+          node.send(msg);
+          //
+          //  Reset visual status on success
+          //
+          setTimeout(() => {node.status({});}, 2000);
+        }).catch((err) => {
+          console.log("wwsCreateSpaceFromTemplate: Error creating space " + spaceName + ' from template ' + templateId, err);
+          node.status({fill: "red", shape: "ring", text: "Error creating space " + spaceName + ' from template ' + templateId});
+          node.error("wwsCreateSpaceFromTemplate: Error creating space " + spaceName + ' from template ' + templateId, err);
+          return;
+        });
       }).catch((err) => {
-        console.log("wwsCreateSpaceFromTemplate: Error while posting GraphQL query to WWS.", err);
-        node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
-        node.error("wwsCreateSpaceFromTemplate: Error while posting GraphQL query to WWS.", err);
+        console.log("wwsCreateSpaceFromTemplate: Error getting Template Infos.", err);
+        node.status({fill: "red", shape: "ring", text: "Error getting Template Infos."});
+        node.error("wwsCreateSpaceFromTemplate: Error getting Template Infos.", err);
         return;
       });
     });
@@ -1952,79 +1966,79 @@ module.exports = function (RED) {
       .then((res) => {
         if (res.errors) {
           //
-          //  Should NOT BE...
+          //  Query Successfull but with Errors
           //
-          msg.payload = res.errors;
-          console.log('wwsAddFocus: errors from messageId query');
+          msg.wwsQLErrors = res.errors;
+          console.log('wwsAddFocus: Some Errors from messageId query');
           console.log(JSON.stringify(res.errors, ' ', 2));
-          node.status({fill: "red", shape: "dot", text: "Errors from messageId query"});
-          node.error('wwsAddFocus: Errors from messageId query', msg);
+          node.status({fill: "yellow", shape: "dot", text: "Some Errors from messageId query"});
         } else {
           //
           //  Ok, we got the information for the message...
           //
           console.log('wwsAddFocus: Success from graphQL query : message ' + messageId + ' retrieved');
           node.status({fill: "green", shape: "dot", text: "Message " + messageId + " retrieved..."});
+        }
+        //
+        //  Now we have the message. Check if the message contains the STRING to be annotated.
+        //
+        if (res.data.message.content.indexOf(theString) >= 0) {
+          console.log('wwsAddFocus: String ' + theString + ' found in sentence. Going to add new Focus to ' + messageId + ' ....');
           //
-          //  Now we have the message. Check if the message contains the STRING to be annotated.
+          //  the STRING is part of the message
+          //  We can succesfully add the new focus !!
           //
-          if (res.data.message.content.indexOf(theString) >= 0) {
-            console.log('wwsAddFocus: String ' + theString + ' found in sentence. Going to add new Focus to ' + messageId + ' ....');
-            //
-            //  the STRING is part of the message
-            //  We can succesfully add the new focus !!
-            //
-            let mutation = _addFocusMutation(messageId, res.data.message.content, theString, actionId, lens, category, thePayload);
-            let req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS);
-            //
-            //  Perform the operation
-            //
-            node.status({fill:"blue", shape:"dot", text:"Adding Focus..."});
-            node.application.wwsRequest(req)
-            .then((res) => {
-              if (res.errors) {
-                msg.payload = res.errors;
-                console.log('wwsAddFocus: errors from addFocus mutation');
-                console.log(JSON.stringify(res.errors, ' ', 2));
-                node.status({fill: "red", shape: "dot", text: "Errors from addFocus mutation"});
-                node.error("wwsAddFocus: Errors from addFocus mutation", msg);
-                return;
-              } else {
-                //
-                //  Successfull Result !
-                //
-                msg.payload = res.data.addMessageFocus.message;
-                msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
-                msg.wwsFocusAdded = true;
-                console.log('wwsAddFocus: Success from graphQL query');
-                node.status({fill: "green", shape: "dot", text: "Focus added"});
-                node.send(msg);
-                //
-                //  Reset visual status on success
-                //
-                setTimeout(() => {node.status({});}, 2000);
-              }
-            }).catch((err) => {
-              console.log("wwsAddFocus: Error while posting addFocus mutation");
-              console.log(JSON.stringify(err, ' ', 2));
-              node.status({fill: "red", shape: "ring", text: "Posting addFocus mutation failed."});
-              node.error("wwsAddFocus: Error while posting addFocus mutation", err);
-              return;
-            });
-          } else {
-            //
-            //  The string is NOT part of the message.
-            //  We do not do anything
-            //
-            console.log('wwsAddFocus: string ' + theString + ' is not part of the text for messageId ' + messageId + '. Text follows:');
-            console.log(JSON.stringify(res.data.message.content, ' ', 2));
-            node.status({fill: "yellow", shape: "square", text: "String " + theString + " not in message..."});
-            msg.payload = res.data.message;
+          let mutation = _addFocusMutation(messageId, res.data.message.content, theString, actionId, lens, category, thePayload);
+          let req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS);
+          //
+          //  Perform the operation
+          //
+          node.status({fill:"blue", shape:"dot", text:"Adding Focus..."});
+          node.application.wwsRequest(req)
+          .then((res) => {
+            if (res.errors) {
+              //
+              //  Query Successfull but with Errors
+              //
+              msg.wwsQLErrors = res.errors;
+              console.log('wwsAddFocus: Some errors in addFocus mutation');
+              console.log(JSON.stringify(res.errors, ' ', 2));
+              node.status({fill: "yellow", shape: "dot", text: "Some Errors in addFocus mutation"});
+            } else {
+              //
+              //  Successfull Result !
+              //
+              console.log('wwsAddFocus: Success from graphQL query');
+              node.status({fill: "green", shape: "dot", text: "Focus added"});
+            }
+            msg.payload = res.data.addMessageFocus.message;
             msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
-            msg.wwsFocusAdded = false;
-            node.warn('wwsAddFocus: Focus not addes as ' + theString + ' is not part of the text for messageid ' + messageId + ' ...')
+            msg.wwsFocusAdded = true;
             node.send(msg);
-          }
+            //
+            //  Reset visual status on success
+            //
+            setTimeout(() => {node.status({});}, 2000);
+          }).catch((err) => {
+            console.log("wwsAddFocus: Error while posting addFocus mutation");
+            console.log(JSON.stringify(err, ' ', 2));
+            node.status({fill: "red", shape: "ring", text: "Posting addFocus mutation failed."});
+            node.error("wwsAddFocus: Error while posting addFocus mutation", err);
+            return;
+          });
+        } else {
+          //
+          //  The string is NOT part of the message.
+          //  We do not do anything
+          //
+          console.log('wwsAddFocus: string ' + theString + ' is not part of the text for messageId ' + messageId + '. Text follows:');
+          console.log(JSON.stringify(res.data.message.content, ' ', 2));
+          node.status({fill: "yellow", shape: "square", text: "String " + theString + " not in message..."});
+          msg.payload = res.data.message;
+          msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
+          msg.wwsFocusAdded = false;
+          node.warn('wwsAddFocus: Focus not addes as ' + theString + ' is not part of the text for messageid ' + messageId + ' ...')
+          node.send(msg);
         }
       })
       .catch((err) => {
@@ -2227,25 +2241,26 @@ module.exports = function (RED) {
       node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
-          msg.payload = res.errors;
-          console.log('wwsActionFulfillment: errors from mutation');
+          //
+          //  Query Successfull but with Errors
+          //
+          msg.wwsQLErrors = res.errors;
+          console.log('wwsActionFulfillment: Some errors from AF mutation');
           console.log(JSON.stringify(res.errors));
-          node.status({fill: "red", shape: "dot", text: "Errors from mutation"});
-          node.error("wwsActionFulfillment: Errors from mutation", msg);
-          return;
+          node.status({fill: "yellow", shape: "dot", text: "Some Errors from AF mutation"});
         } else {
           //
           //  Successfull Result !
           //
-          msg.payload = res.data;
           console.log('wwsActionFulfillment: ActionFulfillment mutation succesfully created');
           node.status({fill: "green", shape: "dot", text: "AF Created"});
-          node.send(msg);
-          //
-          //  Reset visual status on success
-          //
-          setTimeout(() => {node.status({});}, 2000);
         }
+        msg.payload = res.data;
+        node.send(msg);
+        //
+        //  Reset visual status on success
+        //
+        setTimeout(() => {node.status({});}, 2000);
       }).catch((err) => {
         console.log("wwsActionFulfillment: Error while posting AF mutation", err);
         node.status({fill: "red", shape: "ring", text: "Posting AF mutation failed."});
@@ -2385,9 +2400,52 @@ module.exports = function (RED) {
   //  
   
   //
-  //  Helper functions to match Template Property Ids with their displayName
-  //  =======================================================================
+  //  Helper functions to match Template Property Ids and Status with their displayName
+  //  =================================================================================
   //
+  function __makePropertiesAndStatusReadable(theSpace, node) {
+    if (theSpace && theSpace.propertyValueIds) {
+      if (theSpace.templateInfo.properties) {
+        theSpace.propertyValueNames = _propertiesIdsToNames(theSpace.propertyValueIds, theSpace.templateInfo.properties.items);
+      } else {
+        console.log('wwsGetTemplatedSpace : No Properties Information in TEMPLATE for space ' + theSpace.title + ' !!!');
+        node.warn('wwsGetTemplatedSpace: No Properties Information in TEMPLATE for space ' + theSpace.title);
+      }
+    } else {
+      console.log('wwsGetTemplatedSpace : No properties for space ' + theSpace.title + ' !!!');
+    }
+    //
+    //  And now we need to add the name of the status
+    //
+    if (theSpace && theSpace.statusValueId) {
+      if (theSpace.templateInfo && theSpace.templateInfo.spaceStatus) {
+        let statuses = theSpace.templateInfo.spaceStatus.acceptableValues;
+        let found = false;
+        for (let i = 0; i < statuses.length; i++) {
+          if (theSpace.statusValueId === statuses[i].id) {
+            found = true;
+            theSpace.statusValueName = statuses[i].displayName;
+            break;
+          }
+        }
+        if (!found) {
+          //
+          //  We cannot get the name of a status that does not exist
+          //
+          console.log('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!');
+          node.status({fill: "red", shape: "dot", text: 'Status ' + theSpace.statusValueId + ' is unknown!'});
+          node.error('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!', msg);
+          return false;
+        }
+      } else {
+        console.log('wwsGetTemplatedSpace : No Status Information in TEMPLATE for space ' + theSpace.title + ' !!!');
+        node.warn('wwsGetTemplatedSpace: No Status Information in TEMPLATE for space ' + theSpace.title);
+      }
+    } else {
+      console.log('wwsGetTemplatedSpace : No Status Information for space ' + theSpace.title + ' !!!');
+    }
+    return true;
+  }
   function _propertiesNamesToIds(properties, templates) {
     var outProperties = [];
     for (let i=0; i < properties.length; i++) {
@@ -2525,7 +2583,7 @@ module.exports = function (RED) {
   }
   function _spaceQL_details() {
     var space = '{';
-    space += 'id title description visibility';
+    space += 'id title description visibility membersUpdated';
     //
     //  Template Infos for the space 
     //
@@ -2537,7 +2595,7 @@ module.exports = function (RED) {
     space += ' created createdBy ' + _personQL_details();
     space += ' updated updatedBy ' + _personQL_details();
     space += ' conversation {id messages(first: 1) {items ' + _messageQL_details() + '}}';
-    space += ' activeMeeting { meetingNumber password}';
+    //space += ' activeMeeting { meetingNumber password}';
     space += '}';
     return space;
   }
@@ -2596,7 +2654,7 @@ module.exports = function (RED) {
         mutation += ',';
       }
     }
-    mutation += ', memberOperation: ' + operation + '}){memberIdsChanged space {id title membersUpdated members {items ' + _personQL_details() + '}}}}';
+    mutation += ', memberOperation: ' + operation + '}){memberIdsChanged space ' + _spaceQL_details() + '}}';
     return mutation;
   }
 

@@ -893,18 +893,14 @@
                         According to the value of the <b>wwsUpdateCause</b> attribute, the <b>payload</b> can contain the following attributes:
                         <ul>
                             <li>
-                                <b>spaceProperties</b> : an <b>OBJECT</b> (not an arrya!!!) where each attribute corresponds to the <b>id</b> of the property that has changed 
-                                and the value for that attribute corresponds to the <b>id</b> of the property value
-                            </li>
-                            <li>
-                                <b>spacePropertiesNames</b> : an <b>ARRAY</b> where each item describes the property which was modified by providing <b>id</b>, <b>type</b>,
+                                <b>propertyValueIds</b> : an <b>ARRAY</b> where each item describes the property which was modified by providing <b>id</b>, <b>type</b>,
                                 <b>displayName</b>, <b>valueId</b> and <b>valueDisplayName</b>. 
                                 <br />
                                 In this way you will be able to quickly grab the readable values of the changes !
                             </li>
 
                             <li>
-                                <b>statusValue</b> : <b>the ID</b> of the changed status
+                                <b>statusValueId</b> : <b>the ID</b> of the changed status
                             </li>
 
                             <li>

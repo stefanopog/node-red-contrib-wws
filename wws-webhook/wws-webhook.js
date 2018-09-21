@@ -93,8 +93,7 @@ module.exports = function(RED) {
         };
     }
 
-    function WWSWebhookNode(config) {
-    
+    function WWSWebhookNode(config) {    
         //
         //  Helper to perform GraphQL calls
         //
@@ -162,7 +161,7 @@ module.exports = function(RED) {
             space += ' created createdBy ' + _personQL_details();
             space += ' updated updatedBy ' + _personQL_details();
             space += ' conversation {id messages(first: 1) {items ' + _messageQL_details() + '}}';
-            space += ' activeMeeting { meetingNumber password}';
+            //space += ' activeMeeting { meetingNumber password}';
             space += '}';
             return space;
         }
@@ -197,44 +196,47 @@ module.exports = function(RED) {
                     //
                     //  Strange Errors
                     //
-                    msg.payload = res.errors;
-                    console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : errors getting Message ' + messageId);
+                    msg.wwsQLErrors = res.errors;
+                    console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : Some errors getting Message ' + messageId);
                     console.log(JSON.stringify(res.errors));
-                    node.status({fill: "red", shape: "dot", text: "errors getting Message " + messageId});
-                    node.error("errors getting Message " + messageId, msg);
-                    return;
+                    node.status({fill: "yellow", shape: "dot", text: "Some errors getting Message " + messageId});
                 } else {
                     //
                     //  Successfull Result !
                     //
-                    msg.wwsOriginalMessage = res.data.message;
-                    if (msg.wwsOriginalMessage) {
-                        console.log('wwsWebhook.__wwsGetMessage : ORIGINAL Message (' + msg.wwsOriginalMessage.id + ') for messageID ' + messageId + ' succesfully retrieved!');
-                        //
-                        //  Parsing Annotations
-                        //
-                        if (msg.wwsOriginalMessage.annotations) {
-                            if (msg.wwsOriginalMessage.annotations.length > 0) {
-                                let annotations = [];
-                                for (let i = 0; i < msg.wwsOriginalMessage.annotations.length; i++) {
-                                    annotations.push(JSON.parse(msg.wwsOriginalMessage.annotations[i]));
-                                }
-                                msg.wwsOriginalMessage.annotations = annotations;
-                            }
-                        }
-                    } else {
-                        //
-                        //  Strange Error. The retrieved message is empty
-                        //  Payload is the original message
-                        //
-                        msg.payload = JSON.parse(msg.wwsEvent.annotationPayload);
-                        console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
-                        console.log(JSON.stringify(res.data));
-                    }
                     node.status({fill: "green", shape: "dot", text: messageId + ' retrieved!'});
-                    node.theCache.push(messageId, res.data.message);
-                    __sendFinalMessage(msg, config, type);
                 }
+                if (res.data && res.data.message) {
+                    msg.wwsOriginalMessage = res.data.message;
+                } else {
+                    msg.wwsOriginalMessage = null;
+                }
+                if (msg.wwsOriginalMessage) {
+                    console.log('wwsWebhook.__wwsGetMessage : ORIGINAL Message (' + msg.wwsOriginalMessage.id + ') for messageID ' + messageId + ' succesfully retrieved!');
+                    //
+                    //  Parsing Annotations
+                    //
+                    if (msg.wwsOriginalMessage.annotations) {
+                        if (msg.wwsOriginalMessage.annotations.length > 0) {
+                            let annotations = [];
+                            for (let i = 0; i < msg.wwsOriginalMessage.annotations.length; i++) {
+                                annotations.push(JSON.parse(msg.wwsOriginalMessage.annotations[i]));
+                            }
+                            msg.wwsOriginalMessage.annotations = annotations;
+                        }
+                    }
+                } else {
+                    //
+                    //  Strange Error. The retrieved message is empty
+                    //  Payload is the original message
+                    //
+                    console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
+                    console.log(JSON.stringify(res.data));
+                    node.status({fill: "yellow", shape: "dot", text: "wwsWebhook.__wwsGetMessage.__wwsGraphQL : wwsOriginalMessage is EMPTY"});
+                    msg.payload = JSON.parse(msg.wwsEvent.annotationPayload);
+               }
+                node.theCache.push(messageId, res.data.message);
+                __sendFinalMessage(msg, config, type);
             })
             .catch((err) => {
                 console.log("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId);
@@ -245,7 +247,7 @@ module.exports = function(RED) {
             });
         }
         //
-        //
+        //  Helper to get the TEMPLATE Info
         //
         function __wwsGetSpace(msg, spaceId, msgToBeRetrieved, config, type) {
             //
@@ -269,59 +271,86 @@ module.exports = function(RED) {
             node.application.wwsRequest(req)
             .then((res) => {
                 if (res.errors) {
-                    msg.payload = res.errors;
-                    console.log('webhook.wwsGetSpace: errors getting the Template');
+                    //
+                    //  Query Successfull but with Errors
+                    //
+                    msg.wwsQLErrors = res.errors;
+                    console.log('webhook.wwsGetSpace: Some errors getting the Space');
                     console.log(JSON.stringify(res.errors));
-                    node.status({fill: "red", shape: "dot", text: "Errors getting the Template"});
-                    node.error("webhook.wwsGetSpace: Errors getting the Template", msg);
-                    return;
+                    node.status({fill: "yellow", shape: "dot", text: "Some Errors getting the Space"});
                 } else {
                     //
                     //  Ok, we should have the information about the teamplate.
                     //  We need to parse them
                     //
+                    console.log('webhook.wwsGetSpace: Space successfully retrieved');
                     node.status({fill: "green", shape: "dot", text: "Space succesfully retrieved"});
+                }
+                if (res.data.space && res.data.space.templateInfo) {
                     let templateInfo = res.data.space.templateInfo;
                     //
                     //  Did the Status change?
                     //
-                    if ((msg.payload) && (msg.payload.statusValue)) {
+                    if ((msg.payload) && (msg.payload.statusValueId)) {
                         //
                         //  there was a change in the value of the STATUS. We need to get the DisplayName for it
                         //
-                        let statuses = templateInfo.spaceStatus.acceptableValues;
-                        let found = false;
-                        for (let i=0; i < statuses.length; i++) {
-                            if (msg.payload.statusValue === statuses[i].id) {
-                                found = true;
-                                msg.payload.statusValueName = statuses[i].displayName;
-                                break;
+                        if (templateInfo.spaceStatus) {
+                            let statuses = templateInfo.spaceStatus.acceptableValues;
+                            let found = false;
+                            for (let i=0; i < statuses.length; i++) {
+                                if (msg.payload.statusValueId === statuses[i].id) {
+                                    found = true;
+                                    msg.payload.statusValueName = statuses[i].displayName;
+                                    break;
+                                }
                             }
-                        }
-                        if (!found) {
+                            if (!found) {
+                                //
+                                //  We cannot Set a status that does not exist
+                                //
+                                console.log('webhook.wwsGetSpace: Status ' + msg.payload.statusValue + ' is unknown!');
+                                node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.statusValue + ' is unknown!'});
+                                node.error('webhook.wwsGetSpace: Status ' + msg.payload.statusValue + ' is unknown!', msg);
+                                return;
+                            }
+                        } else {
                             //
-                            //  We cannot Set a status that does not exist
+                            //  Cannot retrieve the Status DISPLAY NAME
                             //
-                            console.log('webhook.wwsGetSpace: Status ' + msg.payload.statusValue + ' is unknown!');
-                            node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.statusValue + ' is unknown!'});
-                            node.error('webhook.wwsGetSpace: Status ' + msg.payload.statusValue + ' is unknown!', msg);
-                            return;
+                            console.log('webhook.wwsGetSpace: cannot provide a name to the STATUS...');
+                            node.status({fill: "yellow", shape: "dot", text: 'cannot provide a name to the STATUS...'});
                         }
                     }
                     //
                     //  Did Properties change ?
                     //
-                    if ((msg.payload) && (msg.payload.spaceProperties)) {
+                    if ((msg.payload) && (msg.payload.propertyValueIds)) {
                         //
                         //  there was a change in the value of one or more Properties. We need to get the DisplayName and Value for each of thme
                         //
-                        msg.payload.spacePropertiesNames = _propertiesIdsToNames(msg.payload.spaceProperties, templateInfo.properties.items);
+                        console.dir(templateInfo);
+                        if (templateInfo.properties && templateInfo.properties.items && Array.isArray(templateInfo.properties.items)) {
+                            msg.payload.propertyValueIds = _propertiesIdsToNames(msg.payload.propertyValueIds, templateInfo.properties.items);
+                        } else {
+                            //
+                            //  Cannot retrieve the PROPERTIES DISPLAY NAME
+                            //
+                            console.log('webhook.wwsGetSpace: cannot provide a name to the PROPERTIES...');
+                            node.status({fill: "yellow", shape: "dot", text: 'cannot provide a name to the PROPERTIES...'});
+                        }
                     }
+                } else {
                     //
-                    //  At this point we can return
+                    //  Problems getting the TEMPLATE INFO from the space
                     //
-                    __returnAnswer(msg, msgToBeRetrieved, config, type);
+                    console.log('webhook.wwsGetSpace: cannot retrieve information about the TEMPLATE!');
+                    node.status({fill: "yellow", shape: "dot", text: 'cannot retrieve information about the TEMPLATE!'});
                 }
+                //
+                //  At this point we can return
+                //
+                __returnAnswer(msg, msgToBeRetrieved, config, type);
             }).catch((err) => {
                 console.log("webhook.wwsGetSpace: Error while getting templatedSpace.", err);
                 node.status({fill: "red", shape: "ring", text: "Error while getting templatedSpace..."});
@@ -469,14 +498,61 @@ module.exports = function(RED) {
                     //  returning the index of the offending property
                     //
                     console.dir('webhook._propertiesIdsToNames : Match NOT Found ' + theProp.key);
-                    return key;
                 } else {
                     outProperties.push(newProp);
                 }
             }
             return outProperties;
         }
-    
+        function __makePropertiesAndStatusReadable(theSpace, target, node) {
+            if (theSpace && theSpace.propertyValueIds) {
+              if (theSpace.templateInfo.properties) {
+                let tmp = _propertiesIdsToNames(theSpace.propertyValueIds, theSpace.templateInfo.properties.items);
+                if (tmp.length > 0) {
+                    target.propertyValueNames = tmp;
+                } else {
+                    console.log('wwsGetTemplatedSpace : ISSUES with properties for space ' + theSpace.title + ' !!!');
+                }
+              } else {
+                console.log('wwsGetTemplatedSpace : No Properties Information in TEMPLATE for space ' + theSpace.title + ' !!!');
+                node.warn('wwsGetTemplatedSpace: No Properties Information in TEMPLATE for space ' + theSpace.title);
+              }
+            } else {
+              console.log('wwsGetTemplatedSpace : No properties for space ' + theSpace.title + ' !!!');
+            }
+            //
+            //  And now we need to add the name of the status
+            //
+            if (theSpace && theSpace.statusValueId) {
+              if (theSpace.templateInfo && theSpace.templateInfo.spaceStatus) {
+                let statuses = theSpace.templateInfo.spaceStatus.acceptableValues;
+                let found = false;
+                for (let i = 0; i < statuses.length; i++) {
+                  if (theSpace.statusValueId === statuses[i].id) {
+                    found = true;
+                    target.statusValueName = statuses[i].displayName;
+                    break;
+                  }
+                }
+                if (!found) {
+                  //
+                  //  We cannot get the name of a status that does not exist
+                  //
+                  console.log('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!');
+                  node.status({fill: "red", shape: "dot", text: 'Status ' + theSpace.statusValueId + ' is unknown!'});
+                  node.error('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!', msg);
+                  return false;
+                }
+              } else {
+                console.log('wwsGetTemplatedSpace : No Status Information in TEMPLATE for space ' + theSpace.title + ' !!!');
+                node.warn('wwsGetTemplatedSpace: No Status Information in TEMPLATE for space ' + theSpace.title);
+              }
+            } else {
+              console.log('wwsGetTemplatedSpace : No Status Information for space ' + theSpace.title + ' !!!');
+            }
+            return true;
+          }
+            
         //
         //  Start Processing
         //
@@ -855,7 +931,7 @@ module.exports = function(RED) {
                                         if (req.body.spaceProperties) {
                                             console.log('wwsWebhook : space-updated ... Properties Change ');
                                             if (! msg.payload) msg.payload = {};
-                                            msg.payload.spaceProperties = req.body.spaceProperties;
+                                            msg.payload.propertyValueIds = req.body.spaceProperties;
                                             msg.wwsUpdateCause = "property-change";
                                             getSpace = true;
                                             infoCollected = true;
@@ -863,7 +939,7 @@ module.exports = function(RED) {
                                         if (req.body.statusValue) {
                                             console.log('wwsWebhook : space-updated ... Status Change ');
                                             if (! msg.payload) msg.payload = {};
-                                            msg.payload.statusValue = req.body.statusValue;
+                                            msg.payload.statusValueId = req.body.statusValue;
                                             if (infoCollected) {
                                                 msg.wwsUpdateCause += ', status-change';
                                             } else {
@@ -1036,7 +1112,7 @@ module.exports = function(RED) {
             //
             if (webhookPath[0] !== '/') {
                 webhookPath = '/' + webhookPath;
-            }
+            }            
             RED.httpNode.post(webhookPath, jsonParser, node.processRequest, node.processError);
             node.log("wws-webhook: Created new route for: " + webhookPath);
         } else {

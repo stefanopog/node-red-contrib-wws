@@ -108,6 +108,24 @@
         application(s) for this particular message.
       </dd>
   </dl>
+
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      The output of the executed Query/mutation
+    </dd>
+
+    <dt class="optional">wwsQLErrors
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      In case the query/mutation is successfull but the graphQL engine cannot return all the information, this object contains the information coming directly
+      from graphQL
+    </dd>
+  </dl>
   
   <h3>Details</h3>
   <p>
@@ -216,9 +234,28 @@ msg.payload = `
       <dd>
         Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
         application(s) for this particular message.
-      </dd>
-  
+      </dd>  
   </dl>
+
+
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      The Template information (within the <b>spaceTemplate attribute</b>)
+    </dd>
+
+    <dt class="optional">wwsQLErrors
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      In case the query/mutation is successfull but the graphQL engine cannot return all the information, this object contains the information coming directly
+      from graphQL
+    </dd>
+  </dl>
+  
   <h3>Details</h3>
   <dl>
   <p>In case the operation terminates succesfully, the output will be similar to this one:
@@ -358,6 +395,24 @@ msg.payload = `
       </dd>
     </dl>
 
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+      <dt>payload
+        <span class="property-type">object</span>
+      </dt>
+      <dd>
+        The information about the Space (in the <b>msg.payload.space attribute</b>, including the template information. 
+      </dd>
+  
+      <dt class="optional">wwsQLErrors
+        <span class="property-type">object</span>
+      </dt>
+      <dd>
+        In case the query/mutation is successfull but the graphQL engine cannot return all the information, this object contains the information coming directly
+        from graphQL
+      </dd>
+    </dl>
+  
   <h3>Details</h3>
   <dl>
   <p>
@@ -375,10 +430,10 @@ msg.payload = `
     <br />
       The result provides additional information about each of the property and about the status. More precisely: 
       <ul>
-        <li><code>Properties</code><br />
+        <li><code>propertyValueIds</code><br />
           The <b>type</b>, <b>displayName</b> and <b>valueDisplayName</b> are also provided
         </li>
-        <li><code>status</code><br />
+        <li><code>statusValueName</code><br />
           The <b>statusValueName</b> is also provided
         </li>
       </ul>
@@ -551,6 +606,25 @@ msg.payload = `
       </dd>
     </dl>
 
+
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+      <dt>payload
+        <span class="property-type">object</span>
+      </dt>
+      <dd>
+        The information about the space after it has been updated (in the <b>msg.payload.spae attribute</b>)
+      </dd>
+  
+      <dt class="optional">wwsQLErrors
+        <span class="property-type">object</span>
+      </dt>
+      <dd>
+        In case the query/mutation is successfull but the graphQL engine cannot return all the information, this object contains the information coming directly
+        from graphQL
+      </dd>
+    </dl>
+  
   <h3>Details</h3>
   <dl>
   <p>In case the operation terminates succesfully, the output will be similar to this one:
@@ -564,10 +638,10 @@ msg.payload = `
       <b>Note : </b><p>
         The result provides additional information about each of the property and about the status. More precisely: 
         <ul>
-          <li><code>Properties</code><br />
+          <li><code>propertyValueIds</code><br />
             The <b>type</b>, <b>displayName</b> and <b>valueDisplayName</b> are also provided
           </li>
-          <li><code>status</code><br />
+          <li><code>statusValueName</code><br />
             The <b>statusValueName</b> is also provided
           </li>
         </ul>
@@ -743,6 +817,24 @@ msg.payload = `
       </dd>
     </dl>
 
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+      <dt>payload
+        <span class="property-type">object</span>
+      </dt>
+      <dd>
+        The information about the created space (in the <b>msg.payload.space attribute</b>)
+      </dd>
+  
+      <dt class="optional">wwsQLErrors
+        <span class="property-type">object</span>
+      </dt>
+      <dd>
+        In case the query/mutation is successfull but the graphQL engine cannot return all the information, this object contains the information coming directly
+        from graphQL
+      </dd>
+    </dl>
+  
   <h3>Details</h3>
   <dl>
   <p>In case the operation terminates succesfully, the output will be similar to this one:
@@ -756,10 +848,10 @@ msg.payload = `
       <b>Note : </b><p>
         The result provides additional information about each of the property and about the status. More precisely: 
         <ul>
-          <li><code>Properties</code><br />
+          <li><code>propertyValueIds</code><br />
             The <b>type</b>, <b>displayName</b> and <b>valueDisplayName</b> are also provided
           </li>
-          <li><code>status</code><br />
+          <li><code>statusValueName</code><br />
             The <b>statusValueName</b> is also provided
           </li>
         </ul>
@@ -875,9 +967,28 @@ msg.payload = `
       <dd>
         Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
         application(s) for this particular message.
-      </dd>
-    
+      </dd>    
   </dl>
+
+
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      The output of the executed operation
+    </dd>
+
+    <dt class="optional">wwsQLErrors
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      In case the query/mutation is successfull but the graphQL engine cannot return all the information, this object contains the information coming directly
+      from graphQL
+    </dd>
+  </dl>
+
   <h3>Details</h3>
   <dl>
   <p>
@@ -997,6 +1108,24 @@ msg.payload = `
       Any valid IBM Watson Workspace Access Token. This will override the existing access token for the configured workspace 
       application(s) for this particular message.
     </dd>  
+  </dl>
+
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      An array containing, for each item, the full information about the person.
+    </dd>
+
+    <dt class="optional">wwsQLErrors
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      In case the query/mutation is successfull but the graphQL engine cannot return all the information, this object contains the information coming directly
+      from graphQL
+    </dd>
   </dl>
 
   <h3>Details</h3>
