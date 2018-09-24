@@ -18,6 +18,9 @@ Here is the list of Nodes currently proposed by this package.
 Full documentation, including sample NodeRed flows using these nodes, is available in the Documentation Directory of the [corresponding Github repository](https://github.com/stefanopog/node-red-contrib-wws/tree/master/docs)
 
 # *Changes*
+## Changes in V2.0.8
+* the **Add Focus** node has been fixed. It now supports also adding focus to messages created by Applications (i.e. add focus to Generic Annotations)
+
 ## Changes in V2.0.7
 * All nodes which execute **graphQL** statements now provide an optional **wwsQLErrors** object that catches errors from graphQL which do not affect the overall result but that may underline that parts of the results are missing
 

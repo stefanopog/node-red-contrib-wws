@@ -1982,18 +1982,72 @@ module.exports = function (RED) {
         //
         //  Now we have the message. Check if the message contains the STRING to be annotated.
         //
-        if (res.data.message.content.indexOf(theString) >= 0) {
-          console.log('wwsAddFocus: String ' + theString + ' found in sentence. Going to add new Focus to ' + messageId + ' ....');
+        let mutation = '';
+        let annotations = _parseAnnotations(res.data.message.annotations);
+        if (res.data.message.content) {
           //
-          //  the STRING is part of the message
-          //  We can succesfully add the new focus !!
+          //  the message.content is present
           //
-          let mutation = _addFocusMutation(messageId, res.data.message.content, theString, actionId, lens, category, thePayload);
+          if (res.data.message.content.indexOf(theString) >= 0) {
+            //
+            //  the String is in the CONTENT of the original Message
+            //
+            console.log('wwsAddFocus: String ' + theString + ' found in Message. Going to add new Focus to ' + messageId + ' ....');
+            node.status({fill:"blue", shape:"dot", text:"Adding Focus to messsage..."});
+            mutation = _addFocusMutation(messageId, res.data.message.content, theString, actionId, lens, category, thePayload);
+          } else {
+            //
+            //  There is CONTENT but the STRING is not part of the content. 
+            //  We do not have much to do if not informing the user and ignoring the ADD FOCUS
+            //
+            console.log('wwsAddFocus: String ' + theString + ' NOT found in Message. NO FOCUS will be added ....');
+            node.status({fill:"yellow", shape:"square", text: "No focus added to Message"});
+            node.warn('wwsAddFocus: Focus not addes as ' + theString + ' is not part of the text for messageid ' + messageId + ' ...')
+          }
+        } else {
+          //
+          //  The message.content is NOT present.
+          //  Maybe we need to find it in the GENERIC ANNOTATION....
+          //
+          if (annotations) {
+            for (let i=0; i < annotations.length; i++) {
+              if (annotations[i].type === 'generic') {
+                if (annotations[i].text && (annotations[i].text.indexOf(theString) >= 0)) {
+                  //
+                  //  the string is succesfully found in the GENERIC annotation
+                  //
+                  console.log('wwsAddFocus: String ' + theString + ' found in Annotation. Going to add new Focus to ' + messageId + ' ....');
+                  node.status({fill:"blue", shape:"dot", text:"Adding Focus to Annotation..."});
+                  mutation = _addFocusMutation(messageId, annotations[i].text, theString, actionId, lens, category, thePayload);
+                } else {
+                  //
+                  //  There is a GENERIC ANNOTATION but the STRING is not part of the TEXT. 
+                  //  We do not have much to do if not informing the user and ignoring the ADD FOCUS
+                  //
+                  console.log('wwsAddFocus: String ' + theString + ' NOT found in Annotation. NO FOCUS will be added ....');
+                  node.status({fill:"yellow", shape:"square", text: "No focus added to Annotation"});
+                  node.warn('wwsAddFocus: Focus not addes as ' + theString + ' is not part of the text for any ' + messageId + ' Annotations...')
+                }
+                break;
+              }
+            }
+          } else {
+            //
+            //  No annotations. So the STRING cannot be searched
+            //
+            console.log('wwsAddFocus: String ' + theString + ' NOT found in UNEXISTING Annotations. NO FOCUS will be added ....');
+            node.status({fill:"yellow", shape:"square", text: "No focus added to Unexisting Annotations"});
+            node.warn('wwsAddFocus: Focus not addes as ' + theString + ' is not part of the text for any ' + messageId + ' UNEXISTENT Annotations...')
+          }
+        }
+        //
+        //  If the mutation string will be empty, this means that we did not find the STRING either in the message.content or in its generic annotation
+        //
+        if (mutation !== '') {
+          //
+          //  Perform the AddFocus Mutation 
+          //
           let req = _graphQL_options(msg.wwsToken, graphQL_url, mutation, BETA_EXP_FLAGS);
-          //
-          //  Perform the operation
-          //
-          node.status({fill:"blue", shape:"dot", text:"Adding Focus..."});
           node.application.wwsRequest(req)
           .then((res) => {
             if (res.errors) {
@@ -2028,16 +2082,11 @@ module.exports = function (RED) {
           });
         } else {
           //
-          //  The string is NOT part of the message.
-          //  We do not do anything
+          //  Do not perform the AddFocus mutation
           //
-          console.log('wwsAddFocus: string ' + theString + ' is not part of the text for messageId ' + messageId + '. Text follows:');
-          console.log(JSON.stringify(res.data.message.content, ' ', 2));
-          node.status({fill: "yellow", shape: "square", text: "String " + theString + " not in message..."});
           msg.payload = res.data.message;
           msg.payload.annotations = _parseAnnotations(msg.payload.annotations);
           msg.wwsFocusAdded = false;
-          node.warn('wwsAddFocus: Focus not addes as ' + theString + ' is not part of the text for messageid ' + messageId + ' ...')
           node.send(msg);
         }
       })
