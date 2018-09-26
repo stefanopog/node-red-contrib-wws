@@ -7,6 +7,12 @@ module.exports = function(RED) {
     const getRawBody = require('raw-body');
     const crypto = require('crypto');
     const rp = require("request-promise-native");
+    var __isDebug = process.env.debug || false;
+
+
+    console.log("*****************************************");
+    console.log("* Debug mode is " + (__isDebug ? "enabled" : "disabled") + ' for module WWS-CREDENTIAL');
+    console.log("*****************************************");
 
 
     function WWSNode(config) {
@@ -17,11 +23,6 @@ module.exports = function(RED) {
         this.clientId = config.clientId;
         this.clientSecret = config.clientSecret;
         this.picture = config.picture;
-
-        console.log("*****************************************");
-        console.log("* Debug mode is " + (process.env.debug ? "enabled":"disabled"));
-        console.log("*****************************************");
-
         _log("###############################################");
         _log("Credentials for [" + this.id + "] " + (this.accountName ? this.accountName : ""));
         _logJson("=>", this.credentials);
@@ -616,15 +617,13 @@ module.exports = function(RED) {
 
     //Common logging function with JSON Objects
     function _logJson(logMsg, jsonObject) {
-        var isDebug = process.env.debug || false;
-        if (isDebug) {
+        if (__isDebug) {
             console.log("wws-credentials => " + (logMsg ? logMsg : "") + JSON.stringify(jsonObject, " ", 2));
         };
     }
     //Common logging function
     function _log(logMsg) {
-        var isDebug = process.env.debug || false;
-        if (isDebug) {
+        if (__isDebug) {
             console.log("wws-credentials => " + logMsg);
         };
     }

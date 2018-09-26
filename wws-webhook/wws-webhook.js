@@ -6,6 +6,28 @@ module.exports = function(RED) {
      const bodyParser = require("body-parser");
      const jsonParser = bodyParser.json();
 
+
+     var __isDebug = process.env.debug || false;
+
+
+     console.log("*****************************************");
+     console.log("* Debug mode is " + (__isDebug ? "enabled" : "disabled") + ' for module WWS-WEBHOOK');
+     console.log("*****************************************");
+   
+   
+     //Common logging function with JSON Objects
+     function ___logJson(logMsg, jsonObject) {
+       if (__isDebug) {
+           console.log((logMsg ? logMsg : "") + JSON.stringify(jsonObject, " ", 2));
+       };
+     }
+     //Common logging function
+     function __log(logMsg) {
+       if (__isDebug) {
+           console.log(logMsg);
+       };
+     }
+   
     //
     //  Cache Management
     //
@@ -36,20 +58,20 @@ module.exports = function(RED) {
                 if (this.nummberOfItems < this.limit) {
                     this.theCache.push(newElement);
                     this.nummberOfItems = this.nummberOfItems + 1;
-                    console.log('wwsWebhook.cache.push : new item added for messageId ' + newElement.messageId + '. Total items in cache = ' + this.nummberOfItems);
+                    __log('wwsWebhook.cache.push : new item added for messageId ' + newElement.messageId + '. Total items in cache = ' + this.nummberOfItems);
                 } else {
                     //
                     //  Need to remove eldest touched to make space for the new one
                     //
                     let removedItem = this.theCache.shift();
                     this.theCache.push(newElement);
-                    console.log('wwsWebhook.cache.push : new item for messageId ' + newElement.messageId + ' replaced item for messageId ' + removedItem.messageId);
+                    __log('wwsWebhook.cache.push : new item for messageId ' + newElement.messageId + ' replaced item for messageId ' + removedItem.messageId);
                 }
             } else {
                 //
                 //  Message body is NULL, do not do anything
                 //
-                console.log('wwsWebhook.cache.push : Content for messageId ' + id + ' is Empty. Skipping operation. Total items in cache = ' + this.nummberOfItems);
+                __log('wwsWebhook.cache.push : Content for messageId ' + id + ' is Empty. Skipping operation. Total items in cache = ' + this.nummberOfItems);
             }
         };
         //
@@ -64,10 +86,10 @@ module.exports = function(RED) {
                 }
             }
             if (found >= 0) {
-                console.log('wwsWebhook.cache.getById : messageId ' + messageId + ' was found in Cache and returned');
+                __log('wwsWebhook.cache.getById : messageId ' + messageId + ' was found in Cache and returned');
                 return this.theCache[found];
             } else {
-                console.log('wwsWebhook.cache.getById : messageId ' + messageId + ' was NOT FOUND in Cache. Returning NULL');
+                __log('wwsWebhook.cache.getById : messageId ' + messageId + ' was NOT FOUND in Cache. Returning NULL');
                 return null;
             }
         };
@@ -83,11 +105,11 @@ module.exports = function(RED) {
                 }
             }
             if (found >= 0) {
-                console.log('wwsWebhook.cache.removeById : messageId ' + messageId + ' was found in Cache and removed');
+                __log('wwsWebhook.cache.removeById : messageId ' + messageId + ' was found in Cache and removed');
                 this.theCache.splice(found, 1);
                 this.nummberOfItems = this.nummberOfItems - 1;
             } else {
-                console.log('wwsWebhook.cache.removeById : messageId ' + messageId + ' was NOT FOUND in Cache. Returning FALSE');
+                __log('wwsWebhook.cache.removeById : messageId ' + messageId + ' was NOT FOUND in Cache. Returning FALSE');
             }
             return (found >= 0);
         };
@@ -118,9 +140,9 @@ module.exports = function(RED) {
             if (variables) options.body.variables = variables;
             if (operationName) options.body.operationName = operationName;
 
-            console.log("wwsWebhook._graphQL_options : executing graphQL call with these options");
-            console.log(JSON.stringify(options, ' ', 2));
-            console.log('-------------------------------------------------------');
+            __log("wwsWebhook._graphQL_options : executing graphQL call with these options");
+            __log(JSON.stringify(options, ' ', 2));
+            __log('-------------------------------------------------------');
             return options;
         }
         function _personQL_details() {
@@ -198,7 +220,7 @@ module.exports = function(RED) {
                     //
                     msg.wwsQLErrors = res.errors;
                     console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : Some errors getting Message ' + messageId);
-                    console.log(JSON.stringify(res.errors));
+                    console.log(JSON.stringify(res.errors, ' ', 2));
                     node.status({fill: "yellow", shape: "dot", text: "Some errors getting Message " + messageId});
                 } else {
                     //
@@ -212,7 +234,7 @@ module.exports = function(RED) {
                     msg.wwsOriginalMessage = null;
                 }
                 if (msg.wwsOriginalMessage) {
-                    console.log('wwsWebhook.__wwsGetMessage : ORIGINAL Message (' + msg.wwsOriginalMessage.id + ') for messageID ' + messageId + ' succesfully retrieved!');
+                    __log('wwsWebhook.__wwsGetMessage : ORIGINAL Message (' + msg.wwsOriginalMessage.id + ') for messageID ' + messageId + ' succesfully retrieved!');
                     //
                     //  Parsing Annotations
                     //
@@ -231,7 +253,7 @@ module.exports = function(RED) {
                     //  Payload is the original message
                     //
                     console.log('wwsWebhook.__wwsGetMessage.__wwsGraphQL : Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
-                    console.log(JSON.stringify(res.data));
+                    console.log(JSON.stringify(res.data, ' ', 2));
                     node.status({fill: "yellow", shape: "dot", text: "wwsWebhook.__wwsGetMessage.__wwsGraphQL : wwsOriginalMessage is EMPTY"});
                     msg.payload = JSON.parse(msg.wwsEvent.annotationPayload);
                }
@@ -240,10 +262,9 @@ module.exports = function(RED) {
             })
             .catch((err) => {
                 console.log("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId);
-                console.log(err);
+                console.log(JSON.stringify(err, ' ', 2));
                 node.status({fill: "red", shape: "ring", text: "errors getting Message " + messageId});
                 node.error("wwsWebhook.__wwsGetMessage : errors getting Message " + messageId, err);
-                return;
             });
         }
         //
@@ -276,14 +297,14 @@ module.exports = function(RED) {
                     //
                     msg.wwsQLErrors = res.errors;
                     console.log('webhook.wwsGetSpace: Some errors getting the Space');
-                    console.log(JSON.stringify(res.errors));
+                    console.log(JSON.stringify(res.errors, ' ', 2));
                     node.status({fill: "yellow", shape: "dot", text: "Some Errors getting the Space"});
                 } else {
                     //
                     //  Ok, we should have the information about the teamplate.
                     //  We need to parse them
                     //
-                    console.log('webhook.wwsGetSpace: Space successfully retrieved');
+                    __log('webhook.wwsGetSpace: Space successfully retrieved');
                     node.status({fill: "green", shape: "dot", text: "Space succesfully retrieved"});
                 }
                 if (res.data.space && res.data.space.templateInfo) {
@@ -352,7 +373,8 @@ module.exports = function(RED) {
                 //
                 __returnAnswer(msg, msgToBeRetrieved, config, type);
             }).catch((err) => {
-                console.log("webhook.wwsGetSpace: Error while getting templatedSpace.", err);
+                console.log("webhook.wwsGetSpace: Error while getting templatedSpace.");
+                console.log(JSON.stringify(err, ' ', 2));
                 node.status({fill: "red", shape: "ring", text: "Error while getting templatedSpace..."});
                 node.error("webhook.wwsGetSpace: Error while getting templatedSpace.", err);
                 return;
@@ -362,7 +384,7 @@ module.exports = function(RED) {
         //  Helper for sending the final message (possibly an array of) 
         //
         function __sendFinalMessage(msg, config, type) {
-            console.log('wwsWebhook.__sendFinalMessage for type ' + type);
+            __log('wwsWebhook.__sendFinalMessage for type ' + type);
             //
             //  Check if we are dealing with Annotations originating from Own App
             //
@@ -372,10 +394,10 @@ module.exports = function(RED) {
                     //  Own App annotation... Do not deal with it
                     //
                     if (config.noOwnAnnotations) {
-                        console.log('wwsWebhook.__sendFinalMessage : dealing with Own AppMessage Annotation');
+                        __log('wwsWebhook.__sendFinalMessage : dealing with Own AppMessage Annotation');
                         return;
                     } else {
-                        console.log('wwsWebhook.__sendFinalMessage : ACCEPTING Own AppMessage Annptation');
+                        __log('wwsWebhook.__sendFinalMessage : ACCEPTING Own AppMessage Annptation');
                     }
                 }
             }
@@ -426,7 +448,7 @@ module.exports = function(RED) {
             //  Check if the original message needs to be retrieved
             //
             if (msgToBeRetrieved) {
-                console.log('wwsWebhook : retrieving original message ' + msgToBeRetrieved);
+                __log('wwsWebhook : retrieving original message ' + msgToBeRetrieved);
                 __wwsGetMessage(msg, msgToBeRetrieved, type);
             } else {
                 __sendFinalMessage(msg, config, type);
@@ -504,54 +526,6 @@ module.exports = function(RED) {
             }
             return outProperties;
         }
-        function __makePropertiesAndStatusReadable(theSpace, target, node) {
-            if (theSpace && theSpace.propertyValueIds) {
-              if (theSpace.templateInfo.properties) {
-                let tmp = _propertiesIdsToNames(theSpace.propertyValueIds, theSpace.templateInfo.properties.items);
-                if (tmp.length > 0) {
-                    target.propertyValueNames = tmp;
-                } else {
-                    console.log('wwsGetTemplatedSpace : ISSUES with properties for space ' + theSpace.title + ' !!!');
-                }
-              } else {
-                console.log('wwsGetTemplatedSpace : No Properties Information in TEMPLATE for space ' + theSpace.title + ' !!!');
-                node.warn('wwsGetTemplatedSpace: No Properties Information in TEMPLATE for space ' + theSpace.title);
-              }
-            } else {
-              console.log('wwsGetTemplatedSpace : No properties for space ' + theSpace.title + ' !!!');
-            }
-            //
-            //  And now we need to add the name of the status
-            //
-            if (theSpace && theSpace.statusValueId) {
-              if (theSpace.templateInfo && theSpace.templateInfo.spaceStatus) {
-                let statuses = theSpace.templateInfo.spaceStatus.acceptableValues;
-                let found = false;
-                for (let i = 0; i < statuses.length; i++) {
-                  if (theSpace.statusValueId === statuses[i].id) {
-                    found = true;
-                    target.statusValueName = statuses[i].displayName;
-                    break;
-                  }
-                }
-                if (!found) {
-                  //
-                  //  We cannot get the name of a status that does not exist
-                  //
-                  console.log('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!');
-                  node.status({fill: "red", shape: "dot", text: 'Status ' + theSpace.statusValueId + ' is unknown!'});
-                  node.error('wwsGetTemplatedSpace: Status ' + theSpace.statusValueId + ' for space ' + theSpace.title + ' is unknown!', msg);
-                  return false;
-                }
-              } else {
-                console.log('wwsGetTemplatedSpace : No Status Information in TEMPLATE for space ' + theSpace.title + ' !!!');
-                node.warn('wwsGetTemplatedSpace: No Status Information in TEMPLATE for space ' + theSpace.title);
-              }
-            } else {
-              console.log('wwsGetTemplatedSpace : No Status Information for space ' + theSpace.title + ' !!!');
-            }
-            return true;
-          }
             
         //
         //  Start Processing
@@ -641,10 +615,10 @@ module.exports = function(RED) {
                 //  if referralMessageId is present, it takes precedence
                 //
                 if (msg.payload && msg.payload.referralMessageId) {
-                    console.log('wwsWebhook.__whichOriginalMessage: retrieving referral message ' + msg.payload.referralMessageId);
+                    __log('wwsWebhook.__whichOriginalMessage: retrieving referral message ' + msg.payload.referralMessageId);
                     theId =  msg.payload.referralMessageId;
                 } else {
-                    console.log('wwsWebhook.__whichOriginalMessage: retrieving normal message ' + msg.wwsMessageId);
+                    __log('wwsWebhook.__whichOriginalMessage: retrieving normal message ' + msg.wwsMessageId);
                     theId = msg.wwsMessageId;
                 }
                 return theId;
@@ -695,7 +669,7 @@ module.exports = function(RED) {
                         //  Ignoring own app messages
                         //
                         if (req.body.userId !== whoAmI) {
-                            console.log('wwsWebhook: PROCESSING incoming <' + req.body.type + '> event type...');
+                            __log('wwsWebhook: PROCESSING incoming <' + req.body.type + '> event type...');
                             if (req.body && req.headers 
 //                            && (req.headers['x-outbound-token'] === crypto.createHmac('sha256', node.credentials.webhookSecret).update(theSample).digest('hex'))
                             ) {
@@ -781,26 +755,38 @@ module.exports = function(RED) {
                                         msg.wwsAnnotationId      = req.body.annotationId;
                                         msg.wwsAnnotationService = req.body.userId;
                                         msg.wwsAnnotationType    = req.body.annotationType;
-                                        if (msg.wwsAnnotationType === "actionSelected") {
-                                            let annotationPayload = JSON.parse(req.body.annotationPayload);
-                                            msg.wwsActionId = annotationPayload.actionId;
-                                        }
                                         msg.payload              = JSON.parse(req.body.annotationPayload);
                                         if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
                                         if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
-                                        //
-                                        //  The Annotation refers to a Message.
-                                        //  Is the message already in Cache ?
-                                        //
-                                        msgToBeRetrieved = __whichOriginalMessage(msg);
-                                        originalMessage = node.theCache.getById(msgToBeRetrieved);
-                                        msg.wwsReferralMsgId = msgToBeRetrieved;
-                                        if (originalMessage) {
+                                        if (msg.wwsAnnotationType === "actionSelected") {
                                             //
-                                            //  A message was found. Attach it to the payload
+                                            //  Promote actionId to top level attribute wwsActionId
                                             //
-                                            msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
-                                            msgToBeRetrieved = null;
+                                            msg.wwsActionId = msg.payload.actionId;
+                                        }
+                                        //
+                                        //  Check if the Annotation is a SLASH COMMAND
+                                        //
+                                        if ((msg.wwsAnnotationType === 'actionSelected') && msg.wwsActionId.startsWith('/')) {
+                                            //
+                                            //  In the case of a Slash Command, there is no associated Message !!!
+                                            //
+                                            msg.wwsOriginalMessage = null;
+                                        } else {
+                                            //
+                                            //  The Annotation refers to a Message.
+                                            //  Is the message already in Cache ?
+                                            //
+                                            msgToBeRetrieved = __whichOriginalMessage(msg);
+                                            originalMessage = node.theCache.getById(msgToBeRetrieved);
+                                            msg.wwsReferralMsgId = msgToBeRetrieved;
+                                            if (originalMessage) {
+                                                //
+                                                //  A message was found. Attach it to the payload
+                                                //
+                                                msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
+                                                msgToBeRetrieved = null;
+                                            }
                                         }
                                         break;
                                     case "message-annotation-edited":
@@ -813,26 +799,38 @@ module.exports = function(RED) {
                                         msg.wwsAnnotationId      = req.body.annotationId;
                                         msg.wwsAnnotationService = req.body.userId;
                                         msg.wwsAnnotationType    = req.body.annotationType;
-                                        if (msg.wwsAnnotationType === "actionSelected") {
-                                            let annotationPayload = JSON.parse(req.body.annotationPayload);
-                                            msg.wwsActionId = annotationPayload.actionId;
-                                        }
-                                        msg.payload = JSON.parse(req.body.annotationPayload);
+                                        msg.payload              = JSON.parse(req.body.annotationPayload);
                                         if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
                                         if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
-                                        //
-                                        //  The Annotation refers to a Message.
-                                        //  Is the message already in Cache ?
-                                        //
-                                        msgToBeRetrieved = __whichOriginalMessage(msg);
-                                        originalMessage = node.theCache.getById(msgToBeRetrieved);
-                                        msg.wwsReferralMsgId = msgToBeRetrieved;
-                                        if (originalMessage) {
+                                        if (msg.wwsAnnotationType === "actionSelected") {
                                             //
-                                            //  A message was found. Attach it to the payload
+                                            //  Promote actionId to top level attribute wwsActionId
                                             //
-                                            msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
-                                            msgToBeRetrieved = null;
+                                            msg.wwsActionId = msg.payload.actionId;
+                                        }
+                                        //
+                                        //  Check if the Annotation is a SLASH COMMAND
+                                        //
+                                        if ((msg.wwsAnnotationType === 'actionSelected') && msg.wwsActionId.startsWith('/')) {
+                                            //
+                                            //  In the case of a Slash Command, there is no associated Message !!!
+                                            //
+                                            msg.wwsOriginalMessage = null;
+                                        } else {
+                                            //
+                                            //  The Annotation refers to a Message.
+                                            //  Is the message already in Cache ?
+                                            //
+                                            msgToBeRetrieved = __whichOriginalMessage(msg);
+                                            originalMessage = node.theCache.getById(msgToBeRetrieved);
+                                            msg.wwsReferralMsgId = msgToBeRetrieved;
+                                            if (originalMessage) {
+                                                //
+                                                //  A message was found. Attach it to the payload
+                                                //
+                                                msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
+                                                msgToBeRetrieved = null;
+                                            }
                                         }
                                         break;
                                     case "message-annotation-removed":
@@ -845,21 +843,38 @@ module.exports = function(RED) {
                                         msg.wwsAnnotationId      = req.body.annotationId;
                                         msg.wwsAnnotationService = req.body.userId;
                                         msg.wwsAnnotationType    = req.body.annotationType;
-                                        //
-                                        //  The Annotation refers to a Message.
-                                        //  Is the message already in Cache ?
-                                        //
-                                        originalMessage = node.theCache.getById(msg.wwsMessageId);
-                                        if (originalMessage) {
+                                        msg.payload              = JSON.parse(req.body.annotationPayload);
+                                        if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
+                                        if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
+                                        if (msg.wwsAnnotationType === "actionSelected") {
                                             //
-                                            //  A message was found. Attach it to the payload
+                                            //  Promote actionId to top level attribute wwsActionId
                                             //
-                                            msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
+                                            msg.wwsActionId = msg.payload.actionId;
+                                        }
+                                        //
+                                        //  Check if the Annotation is a SLASH COMMAND
+                                        //
+                                        if ((msg.wwsAnnotationType === 'actionSelected') && msg.wwsActionId.startsWith('/')) {
+                                            //
+                                            //  In the case of a Slash Command, there is no associated Message !!!
+                                            //
+                                            msg.wwsOriginalMessage = null;
                                         } else {
                                             //
-                                            //  We need to retrieve the original message as it is not in the cache
+                                            //  The Annotation refers to a Message.
+                                            //  Is the message already in Cache ?
                                             //
-                                            msgToBeRetrieved = true;
+                                            msgToBeRetrieved = __whichOriginalMessage(msg);
+                                            originalMessage = node.theCache.getById(msgToBeRetrieved);
+                                            msg.wwsReferralMsgId = msgToBeRetrieved;
+                                            if (originalMessage) {
+                                                //
+                                                //  A message was found. Attach it to the payload
+                                                //
+                                                msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
+                                                msgToBeRetrieved = null;
+                                            }
                                         }
                                         break;   
                                     case "reaction-added":
@@ -929,7 +944,7 @@ module.exports = function(RED) {
                                         let infoCollected = false;
                                         msg.wwsUserId = req.body.userId;
                                         if (req.body.spaceProperties) {
-                                            console.log('wwsWebhook : space-updated ... Properties Change ');
+                                            __log('wwsWebhook : space-updated ... Properties Change ');
                                             if (! msg.payload) msg.payload = {};
                                             msg.payload.propertyValueIds = req.body.spaceProperties;
                                             msg.wwsUpdateCause = "property-change";
@@ -937,7 +952,7 @@ module.exports = function(RED) {
                                             infoCollected = true;
                                         }
                                         if (req.body.statusValue) {
-                                            console.log('wwsWebhook : space-updated ... Status Change ');
+                                            __log('wwsWebhook : space-updated ... Status Change ');
                                             if (! msg.payload) msg.payload = {};
                                             msg.payload.statusValueId = req.body.statusValue;
                                             if (infoCollected) {
@@ -949,7 +964,7 @@ module.exports = function(RED) {
                                             infoCollected = true;
                                         }
                                         if (req.body.description) {
-                                            console.log('wwsWebhook : space-updated ... Description Change ');
+                                            __log('wwsWebhook : space-updated ... Description Change ');
                                             if (! msg.payload) msg.payload = {};
                                             msg.payload.description = req.body.description;
                                             if (infoCollected) {
@@ -960,7 +975,7 @@ module.exports = function(RED) {
                                             infoCollected = true;
                                         } 
                                         if (req.body.title) {
-                                            console.log('wwsWebhook : space-updated ... Title Change ');
+                                            __log('wwsWebhook : space-updated ... Title Change ');
                                             if (! msg.payload) msg.payload = {};
                                             msg.payload.title = req.body.title;
                                             if (infoCollected) {
@@ -971,7 +986,7 @@ module.exports = function(RED) {
                                             infoCollected = true;
                                         } 
                                         if (! infoCollected) {
-                                            console.log('wwsWebhook : space-updated ... OTHER GENERIC Change ');
+                                            __log('wwsWebhook : space-updated ... OTHER GENERIC Change ');
                                             msg.wwsUpdateCause="other";
                                         }
                                         break;
@@ -1015,7 +1030,7 @@ module.exports = function(RED) {
                                         //
                                         //  do NOT process app messages
                                         //
-                                        console.log('wwsWebhook : appMessage received... IGNORING ');
+                                        __log('wwsWebhook : appMessage received... IGNORING ');
                                         ignore = true;
                                         break;
                                     default:
@@ -1084,7 +1099,7 @@ module.exports = function(RED) {
                             //
                             //  Own App Message
                             //
-                            console.log('wwsWebhook: dealing with Own AppMessage');
+                            __log('wwsWebhook: dealing with Own AppMessage');
                             //
                             //  Send response to Webhook to avoid timeouts!
                             //

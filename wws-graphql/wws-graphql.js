@@ -2,6 +2,27 @@ module.exports = function (RED) {
   const ALL_FLAGS = "PUBLIC, BETA, DIRECT_MESSAGING, FAVORITES, USERSPACEATTRIBUTES, MENTION, TYPED_ANNOTATIONS, SPACE_TEMPLATE, SPACE_MEMBERS, EXPERIMENTAL";
   const BETA_EXP_FLAGS = "PUBLIC,BETA,EXPERIMENTAL";
 
+  var __isDebug = process.env.debug || false;
+
+
+  console.log("*****************************************");
+  console.log("* Debug mode is " + (__isDebug ? "enabled" : "disabled") + ' for module WWS-GRAPHQL');
+  console.log("*****************************************");
+
+
+  //Common logging function with JSON Objects
+  function ___logJson(logMsg, jsonObject) {
+    if (__isDebug) {
+        console.log((logMsg ? logMsg : "") + JSON.stringify(jsonObject, " ", 2));
+    };
+  }
+  //Common logging function
+  function __log(logMsg) {
+    if (__isDebug) {
+        console.log(logMsg);
+    };
+  }
+
   //
   //  Generic graphQL Node
   //
@@ -37,8 +58,8 @@ module.exports = function (RED) {
       if (config.wwsBetaFeatures) viewType += ',BETA';
       if (config.wwsExperimentalFeatures) viewType += ',EXPERIMENTAL';
 
-      console.log('wwsGraphQLNode: executing GraphQL statement : ' + msg.payload);
-      console.log('wwsGraphQLNode: using the following Flags = ' + viewType);
+      __log('wwsGraphQLNode: executing GraphQL statement : ' + msg.payload);
+      __log('wwsGraphQLNode: using the following Flags = ' + viewType);
       node.status({fill:"blue", shape:"dot", text:"executing GraphQL query..."});
       var req = _graphQL_options(msg.wwsToken, graphQL_url, msg.payload, viewType, msg.operationName, msg.variables);
       node.application.wwsRequest(req)
@@ -55,7 +76,7 @@ module.exports = function (RED) {
           //
           //  Successfull Result !
           //
-          console.log('wwsGraphQLNode: graphQL statement successfully executed');
+          __log('wwsGraphQLNode: graphQL statement successfully executed');
           node.status({fill: "green", shape: "dot", text: 'graphQL statement successfully executed'});
         }
         msg.payload = res.data;
@@ -146,7 +167,7 @@ module.exports = function (RED) {
           //
           //  Successfull Result !
           //
-          console.log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' succesfully completed!');
+          __log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' succesfully completed!');
           node.status({fill: "green", shape: "dot", text: 'message ' + messageId + ' succesfully retrieved!'});
         }
         if (res.data && res.data.message) {
@@ -158,7 +179,7 @@ module.exports = function (RED) {
           //
           msg.payload = res.data;
           console.log('wwsGetMessage: Retrieving Message for messageID ' + messageId + ' returned an EMPTY MESSAGE - Returning res.data !!!');
-          console.log(JSON.stringify(res.data));
+          console.log(JSON.stringify(res.data, ' ', 2));
         }
         node.send(msg);
         //
@@ -166,7 +187,8 @@ module.exports = function (RED) {
         //
         setTimeout(() => {node.status({});}, 2000);
       }).catch((err) => {
-        console.log("wwsGetMessage: errors getting Message " + messageId, err);
+        console.log("wwsGetMessage: errors getting Message " + messageId);
+        console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "errors getting Message " + messageId});
         node.error("wwsGetMessage: errors getting Message " + messageId, err);
         return;
@@ -190,11 +212,11 @@ module.exports = function (RED) {
     var asyncTasks = [];
         
     var _dummyCallback = function(err, item) {
-      console.log('wwsGetPersons._dummyCallback : ' + item);
+      __log('wwsGetPersons._dummyCallback : ' + item);
     }
 
     function _beforeSend(theMsg) {
-        console.log('wwsGetPersons._beforeSend: need to process ' + asyncTasks.length + ' async tasks...');
+        __log('wwsGetPersons._beforeSend: need to process ' + asyncTasks.length + ' async tasks...');
         //
         //  This is where the MAGIC of Async happens
         //
@@ -204,7 +226,7 @@ module.exports = function (RED) {
                               //
                               // All tasks are done now. We can return
                               //
-                              console.log("wwsGetPersons._beforeSend : ready to send final information....");
+                              __log("wwsGetPersons._beforeSend : ready to send final information....");
                               node.send(theMsg);
                               //
                               //  Reset visual status on success
@@ -242,13 +264,13 @@ module.exports = function (RED) {
           //
           fullMsg.wwsQLErrors = res.errors;
           console.log('wwsGetPersons._getPersonDetails : errors found in getting ' + person + '. Continuing...');
-          console.log(JSON.stringify(res.errors));
+          console.log(JSON.stringify(res.errors, " ", 2));
           node.status({fill: "yellow", shape: "dot", text: 'Some errors in getting ' + person});
         } else {
           //
           //  Successfull Result !
           //
-          console.log('wwsGetPersons._getPersonDetails : Person ' + person + ' succesfully retrieved !');
+          __log('wwsGetPersons._getPersonDetails : Person ' + person + ' succesfully retrieved !');
           node.status({fill: "green", shape: "dot", text: 'Person ' + person + ' retrieved !'});
         }
         if (res.data && res.data.me) {
@@ -258,7 +280,8 @@ module.exports = function (RED) {
         if (res.data) fullMsg.payload.push(res.data);
         theCallback(null, person);
       }).catch((err) => {
-        console.log("wwsGetPersons._getPersonDetails : Errors while retrieveing " + person, err);
+        console.log("wwsGetPersons._getPersonDetails : Errors while retrieveing " + person);
+        console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "Errors while retrieveing " + person});
         node.error("wwsGetPersons: Errors while retrieveing " + person, err);
         return;
@@ -434,13 +457,13 @@ module.exports = function (RED) {
           //
           msg.wwsQLErrors = res.errors;
           console.log('wwsAddRemoveMembers: some errors found in adding/removing Members');
-          console.log(JSON.stringify(res.errors));
+          console.log(JSON.stringify(res.errors, ' ', 2));
           node.status({fill: "yellow", shape: "dot", text: "Some errors adding/removing Members"});
         } else {
           //
           //  Successfull Result !
           //
-          console.log('wwsAddRemoveMembers: Members operation ' + config.ARoperation + ' succesfully completed !');
+          __log('wwsAddRemoveMembers: Members operation ' + config.ARoperation + ' succesfully completed !');
           node.status({fill: "green", shape: "dot", text: 'Members operation ' + config.ARoperation + ' succesfully completed !'});
         }
         msg.payload = res.data;
@@ -450,7 +473,8 @@ module.exports = function (RED) {
         //
         setTimeout(() => {node.status({});}, 2000);
       }).catch((err) => {
-        console.log("wwsAddRemoveMembers: Errors while adding/removing Members", err);
+        console.log("wwsAddRemoveMembers: Errors while adding/removing Members");
+        console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "Errors while adding/removing Members..."});
         node.error("wwsAddRemoveMembers: Errors while adding/removing Members...", err);
         return;
@@ -531,7 +555,6 @@ module.exports = function (RED) {
       } else {
         actionList = msg.wwsActionsList.split(',');
       }
-
       //
       //  Preparing the attribute which contains the Skeleton for the "createTargetedMessage" Mutation
       //
@@ -539,7 +562,7 @@ module.exports = function (RED) {
         let payload = JSON.parse(msg.wwsEvent.annotationPayload);
         if (payload.conversationId && payload.targetDialogId && payload.updatedBy) {
           msg.wwsAFMutation = _buildTargetedMessage(payload.conversationId, payload.updatedBy, payload.targetDialogId);
-          console.log("wwsFilterActions: CreateTargetedMessage Mutation succesfully built and Returned !");
+          __log("wwsFilterActions: CreateTargetedMessage Mutation succesfully built and Returned !");
         } else {
           console.log("wwsFilterActions: CreateTargetedMessage Mutation not built : missing parameters !");
           node.warn("wwsFilterActions: CreateTargetedMessage Mutation not built : missing parameters !");
@@ -589,8 +612,8 @@ module.exports = function (RED) {
       //
       //  If the ActionId does not correspond to a LENS (intent), we do not have to do much....
       //
-      console.log('wwsFilterActions: Selected Rule is : ' + selectedRule + ' (over ' + actionList.length + ') : ' + actionList[selectedRule].trim());
-      console.log('wwsFilterActions: processing .....');
+      __log('wwsFilterActions: Selected Rule is : ' + selectedRule + ' (over ' + actionList.length + ') : ' + actionList[selectedRule].trim());
+      __log('wwsFilterActions: processing .....');
       var theAction = actionList[selectedRule].trim();
       if (theAction.match(parExp) === null) {
         console.log('wwsFilterActions: Selected Rule ' + actionList[selectedRule].trim() + ' has NO LENS. Returning....');
@@ -640,7 +663,7 @@ module.exports = function (RED) {
       //  Check to find the one that is "message-focus" and corresponds to the lens=ActionId
       //
       var lens = theAction.match(parExp)[2].trim();
-      console.log('wwsFilterActions: Selected Rule ' + actionList[selectedRule].trim() + ' has Lens ' + lens);
+      __log('wwsFilterActions: Selected Rule ' + actionList[selectedRule].trim() + ' has Lens ' + lens);
       node.status({fill: "blue", shape: "dot", text: "Ready to get lens " + lens});
       //
       //  If the ActionId has a lens, then we need to get the one annotation from the referralMsessageId which
@@ -661,13 +684,13 @@ module.exports = function (RED) {
           //
           msg.wwsQLErrors = res.errors;
           console.log('wwsFilterActions.getAnnotations: some errors found in query');
-          console.log(JSON.stringify(res.errors));
+          console.log(JSON.stringify(res.errors, ' ', 2));
           node.status({fill: "yellow", shape: "dot", text: "Some Errors in getAnnotations query"});
         } else {
           //
           //  Ok, we got the array of annotations...
           //
-          console.log('wwsFilterActions: Success from graphQL query : Annotations retrieved');
+          __log('wwsFilterActions: Success from graphQL query : Annotations retrieved');
           node.status({fill: "green", shape: "dot", text: "Annotations retrieved..."});
         }
         //
@@ -687,7 +710,7 @@ module.exports = function (RED) {
           }
         }
         if (found) {
-          console.log('wwsFilterActions: Lens ' + lens + ' found. Returning Message-Focus....');
+          __log('wwsFilterActions: Lens ' + lens + ' found. Returning Message-Focus....');
           //
           //  Build the output Array (as the node has multiple outputs)
           //  all the outputs will be initialized to NULL
@@ -720,7 +743,8 @@ module.exports = function (RED) {
         }
       }).catch((err) => {
         msg.payload = err;
-        console.log("wwsFilterActions: Error while posting GraphQL query to WWS.", err);
+        console.log("wwsFilterActions: Error while posting GraphQL query to WWS.");
+        console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
         node.error('wwsFilterActions: Error while posting GraphQL query to WWS.', msg);
         return;
@@ -773,6 +797,9 @@ module.exports = function (RED) {
         return;
       }
       annotationType = msg.wwsAnnotationType.trim();
+      //
+      //  Process the multiple outputs
+      //
       if (config.filterOutputs2) {
         //
         //  Check if the incoming actionId is in the list
@@ -865,7 +892,9 @@ module.exports = function (RED) {
           //
           console.log("wwsFilterAnnotations: AnnotationType " + annotationType + ' is NOT Processed');
           node.status({fill:"yellow", shape:"square", text:"AnnotationType  " + annotationType + " NOT processed"});
-          return;
+          //
+          //  We do NOT SEND anything to the output
+          //
         } else {
           //
           //  Build an array of NULL messages
@@ -881,7 +910,7 @@ module.exports = function (RED) {
           //
           //  Provide the answer
           //
-          console.log("wwsFilterAnnotations: Filtering annotation " + annotationType + ' through the output '+ theIndex);
+          __log("wwsFilterAnnotations: Filtering annotation " + annotationType + ' through the output '+ theIndex);
           node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
           node.send(outArray);
           //
@@ -893,7 +922,7 @@ module.exports = function (RED) {
         //
         //  Only one output. All Annotations go to the same
         //
-        console.log("wwsFilterAnnotations: Pushing annotation " + annotationType + ' through the single output');
+        __log("wwsFilterAnnotations: Pushing annotation " + annotationType + ' through the single output');
         node.status({fill: "green", shape: "dot", text: "annotation processed " + annotationType});
         node.send(msg);
         //
@@ -968,13 +997,13 @@ module.exports = function (RED) {
           //
           msg.wwsQLErrors = res.errors;
           console.log('wwsGetTemplate: some errors found in query');
-          console.log(JSON.stringify(res.errors));
+          console.log(JSON.stringify(res.errors, ' ', 2));
           node.status({fill: "yellow", shape: "dot", text: "Some Errors in query"});
         } else {
           //
           //  Successfull Result !
           //
-          console.log('wwsGetTemplate: Success from graphQL query');
+          __log('wwsGetTemplate: Success from graphQL query');
           node.status({fill: "green", shape: "dot", text: "graphQL Query success"});
         }
         msg.payload = res.data;
@@ -984,7 +1013,8 @@ module.exports = function (RED) {
         //
         setTimeout(() => {node.status({});}, 2000);
       }).catch((err) => {
-        console.log("wwsGetTemplate: Error while posting GraphQL query to WWS.", err);
+        console.log("wwsGetTemplate: Error while posting GraphQL query to WWS.");
+        console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
         node.error("wwsGetTemplate: Sending query failed...", err);
         return;
@@ -1089,13 +1119,13 @@ module.exports = function (RED) {
           //
           msg.wwsQLErrors = res.errors;
           console.log('wwsGetTemplatedSpace: some errors found in Query. Continuing....');
-          console.log(JSON.stringify(res.errors));
+          console.log(JSON.stringify(res.errors, ' ', 2));
           node.status({fill: "yelloo", shape: "dot", text: "Some Errors in query"});
         } else {
           //
           //  Successfull Result !
           //
-          console.log('wwsGetTemplatedSpace: Success from graphQL query');
+          __log('wwsGetTemplatedSpace: Success from graphQL query');
           node.status({fill: "green", shape: "dot", text: "space " + theSpace + " retrieved"});
         }
         msg.payload = res.data;
@@ -1105,7 +1135,7 @@ module.exports = function (RED) {
         switch (config.SpaceOperation) {
           case 'byId':
             if (__makePropertiesAndStatusReadable(msg.payload.space, node)) {
-              console.log('wwsGetTemplatedSpace: operation completed');
+              __log('wwsGetTemplatedSpace: operation completed');
               node.status({fill: "green", shape: "dot", text: 'operation completed'});
               node.send(msg);
               //
@@ -1125,7 +1155,7 @@ module.exports = function (RED) {
               }
             }
             if (allOk) {
-              console.log('wwsGetTemplatedSpace: operation completed');
+              __log('wwsGetTemplatedSpace: operation completed');
               node.status({fill: "green", shape: "dot", text: 'operation completed'});
               node.send(msg);
               //
@@ -1137,7 +1167,8 @@ module.exports = function (RED) {
           default:
         }
     }).catch((err) => {
-        console.log("wwsGetTemplatedSpace: Error while posting GraphQL query to WWS.", err);
+        console.log("wwsGetTemplatedSpace: Error while posting GraphQL query to WWS.");
+        console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
         node.error("wwsGetTemplatedSpace: Sending query failed...", err);
         return;
@@ -1328,14 +1359,14 @@ module.exports = function (RED) {
           //
           msg.wwsQLErrors = res.errors;
           console.log('wwsUpdateSpace: Some errors found in getting the Template');
-          console.log(JSON.stringify(res.errors));
+          console.log(JSON.stringify(res.errors, ' ', 2));
           node.status({fill: "yellow", shape: "dot", text: "some Errors getting the Template"});
         } else {
           //
           //  Ok, we should have the information about the teamplate.
           //  We need to parse them
           //
-          console.log('wwsUpdateSpace: Success getting Space infos');
+          __log('wwsUpdateSpace: Success getting Space infos');
           node.status({fill: "green", shape: "dot", text: "Space succesfully retrieved"});
         }
         if (res.data && res.data.space && res.data.space.templateInfo) {
@@ -1417,9 +1448,9 @@ module.exports = function (RED) {
             variables += ', "statusValue" : {"statusValueId" : "' + newStatus + '"}'
           }
           variables += '}}';
-          console.log('wwsUpdateSpace: Updating Space ' + spaceId + ' with these data :');
-          console.log(variables);
-          console.log('-------------------------------------------');
+          __log('wwsUpdateSpace: Updating Space ' + spaceId + ' with these data :');
+          __log(variables);
+          __log('-------------------------------------------');
           //
           //  Now we can proceed building the mutation to modify the space
           //  Build the mutation
@@ -1438,13 +1469,13 @@ module.exports = function (RED) {
               //
               msg.wwsQLErrors = res.errors;
               console.log('wwsUpdateSpace: Some errors found in updating space ' + spaceId);
-              console.log(JSON.stringify(res.errors));
+              console.log(JSON.stringify(res.errors, ' ', 2));
               node.status({fill: "yellow", shape: "dot", text: 'Some Errors updating space ' + spaceId});
             } else {
               //
               //  Successfull results
               //
-              console.log('wwsUpdateSpace: Space ' + spaceId + ' UPDATED !!');
+              __log('wwsUpdateSpace: Space ' + spaceId + ' UPDATED !!');
               node.status({fill: "green", shape: "dot", text: "Space Updated !"});
             }
             msg.payload = res.data.updateSpace;
@@ -1479,7 +1510,8 @@ module.exports = function (RED) {
             //
             setTimeout(() => {node.status({});}, 2000);
           }).catch((err) => {
-            console.log("wwsUpdateSpace: Error updating space.", err);
+            console.log("wwsUpdateSpace: Error updating space.");
+            console.log(JSON.stringify(err, ' ', 2));
             node.status({fill: "red", shape: "ring", text: "Error updating space..."});
             node.error("wwsUpdateSpace: Error updating space.", err);
             return;
@@ -1489,12 +1521,14 @@ module.exports = function (RED) {
           //  Issues with getting the TEMPLATE !!!
           //
           console.log("wwsUpdateSpace: Error while getting templatedSpace TWO.");
+          console.log(JSON.stringify(res, ' ' , 2));
           node.status({fill: "red", shape: "ring", text: "Error while getting templatedSpace TWO..."});
-          node.error("wwsUpdateSpace: Error while getting templatedSpace TWO.", res.data);
+          node.error("wwsUpdateSpace: Error while getting templatedSpace TWO.", res);
           return;
         }
       }).catch((err) => {
-        console.log("wwsUpdateSpace: Error while getting templatedSpace.", err);
+        console.log("wwsUpdateSpace: Error while getting templatedSpace.");
+        console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "Error while getting templatedSpace..."});
         node.error("wwsUpdateSpace: Error while getting templatedSpace.", err);
         return;
@@ -1685,13 +1719,13 @@ module.exports = function (RED) {
           //
           msg.wwsQLErrors = res.errors;
           console.log("wwsCreateSpaceFromTemplate: Some Errors in retrieving TemplateId " + templateId);
-          console.log(JSON.stringify(res.errors));
+          console.log(JSON.stringify(res.errors, ' ', 2));
           node.status({fill: "yellow", shape: "dot", text: "Some Errors retrieving TemplateId " + templateId});
         } else {
           //
           //  Successfull Result ! HABEMUS TEMPLATE
           //
-          console.log('wwsCreateSpaceFromTemplate: Success retrieving Template ' + templateId);
+          __log('wwsCreateSpaceFromTemplate: Success retrieving Template ' + templateId);
           node.status({fill: "green", shape: "dot", text: "template " + templateId + " retrieved"});
         }
         let templateProperties; 
@@ -1740,9 +1774,9 @@ module.exports = function (RED) {
           //
         }
         variables += '}}';
-        console.log('wwsCreateSpaceFromTemplate: Creating Space ' + spaceName + ' from template ' + templateId + ' with these data :');
-        console.log(variables);
-        console.log('------------------');
+        __log('wwsCreateSpaceFromTemplate: Creating Space ' + spaceName + ' from template ' + templateId + ' with these data :');
+        __log(variables);
+        __log('------------------');
         //
         //  The Mutation is independent if there are Properties or not (this will change the way in which the "variables" will be defined)
         //  So we can define the mutation upfront
@@ -1767,7 +1801,7 @@ module.exports = function (RED) {
             //
             //  Successfull Result !
             //
-            console.log('wwsCreateSpaceFromTemplate: Space ' + spaceName + ' CREATED !!');
+            __log('wwsCreateSpaceFromTemplate: Space ' + spaceName + ' CREATED !!');
             node.status({fill: "green", shape: "dot", text: "Space Created !"});
           }
           msg.payload = res.data.createSpace;
@@ -1807,7 +1841,8 @@ module.exports = function (RED) {
           return;
         });
       }).catch((err) => {
-        console.log("wwsCreateSpaceFromTemplate: Error getting Template Infos.", err);
+        console.log("wwsCreateSpaceFromTemplate: Error getting Template Infos.");
+        console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "Error getting Template Infos."});
         node.error("wwsCreateSpaceFromTemplate: Error getting Template Infos.", err);
         return;
@@ -1976,7 +2011,7 @@ module.exports = function (RED) {
           //
           //  Ok, we got the information for the message...
           //
-          console.log('wwsAddFocus: Success from graphQL query : message ' + messageId + ' retrieved');
+          __log('wwsAddFocus: Success from graphQL query : message ' + messageId + ' retrieved');
           node.status({fill: "green", shape: "dot", text: "Message " + messageId + " retrieved..."});
         }
         //
@@ -1992,7 +2027,7 @@ module.exports = function (RED) {
             //
             //  the String is in the CONTENT of the original Message
             //
-            console.log('wwsAddFocus: String ' + theString + ' found in Message. Going to add new Focus to ' + messageId + ' ....');
+            __log('wwsAddFocus: String ' + theString + ' found in Message. Going to add new Focus to ' + messageId + ' ....');
             node.status({fill:"blue", shape:"dot", text:"Adding Focus to messsage..."});
             mutation = _addFocusMutation(messageId, res.data.message.content, theString, actionId, lens, category, thePayload);
           } else {
@@ -2016,9 +2051,10 @@ module.exports = function (RED) {
                   //
                   //  the string is succesfully found in the GENERIC annotation
                   //
-                  console.log('wwsAddFocus: String ' + theString + ' found in Annotation. Going to add new Focus to ' + messageId + ' ....');
+                  __log('wwsAddFocus: String ' + theString + ' found in Annotation. Going to add new Focus to ' + messageId + ' ....');
                   node.status({fill:"blue", shape:"dot", text:"Adding Focus to Annotation..."});
                   mutation = _addFocusMutation(messageId, annotations[i].text, theString, actionId, lens, category, thePayload);
+                  break;
                 } else {
                   //
                   //  There is a GENERIC ANNOTATION but the STRING is not part of the TEXT. 
@@ -2028,7 +2064,6 @@ module.exports = function (RED) {
                   node.status({fill:"yellow", shape:"square", text: "No focus added to Annotation"});
                   node.warn('wwsAddFocus: Focus not addes as ' + theString + ' is not part of the text for any ' + messageId + ' Annotations...')
                 }
-                break;
               }
             }
           } else {
@@ -2062,7 +2097,7 @@ module.exports = function (RED) {
               //
               //  Successfull Result !
               //
-              console.log('wwsAddFocus: Success from graphQL query');
+              __log('wwsAddFocus: Success from graphQL query');
               node.status({fill: "green", shape: "dot", text: "Focus added"});
             }
             msg.payload = res.data.addMessageFocus.message;
@@ -2279,9 +2314,9 @@ module.exports = function (RED) {
       //  Now we need to replace the placeholder in AFMutation with the details string we just built
       //
       AFMutation = AFMutation.replace('$$$$$$$$', details);
-      console.log('wwsActionFulfillment: ready to execute ActionFulfillment mutation (see here) : ');
-      console.log(AFMutation);
-      console.log('--------------------------');
+      __log('wwsActionFulfillment: ready to execute ActionFulfillment mutation (see here) : ');
+      __log(AFMutation);
+      __log('--------------------------');
       var req = _graphQL_options(msg.wwsToken, graphQL_url, AFMutation, BETA_EXP_FLAGS);
       //
       //  Perform the operation
@@ -2295,13 +2330,13 @@ module.exports = function (RED) {
           //
           msg.wwsQLErrors = res.errors;
           console.log('wwsActionFulfillment: Some errors from AF mutation');
-          console.log(JSON.stringify(res.errors));
+          console.log(JSON.stringify(res.errors, ' ', 2));
           node.status({fill: "yellow", shape: "dot", text: "Some Errors from AF mutation"});
         } else {
           //
           //  Successfull Result !
           //
-          console.log('wwsActionFulfillment: ActionFulfillment mutation succesfully created');
+          __log('wwsActionFulfillment: ActionFulfillment mutation succesfully created');
           node.status({fill: "green", shape: "dot", text: "AF Created"});
         }
         msg.payload = res.data;
@@ -2311,7 +2346,8 @@ module.exports = function (RED) {
         //
         setTimeout(() => {node.status({});}, 2000);
       }).catch((err) => {
-        console.log("wwsActionFulfillment: Error while posting AF mutation", err);
+        console.log("wwsActionFulfillment: Error while posting AF mutation");
+        console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "Posting AF mutation failed."});
         node.error("wwsActionFulfillment: Error while posting AF mutation", err);
         return;
@@ -2401,9 +2437,9 @@ module.exports = function (RED) {
     if (variables) options.body.variables = variables;
     if (operationName) options.body.operationName = operationName;
 
-    console.log("_graphQL_options : executing graphQL call with these options");
-    console.log(JSON.stringify(options, ' ', 2));
-    console.log('-------------------------------------------------------')
+    __log("_graphQL_options : executing graphQL call with these options");
+    __log(JSON.stringify(options, ' ', 2));
+    __log('-------------------------------------------------------')
     return options;
   }
 
@@ -2766,7 +2802,8 @@ module.exports = function (RED) {
     mutation += 'mutation {addMessageFocus(input: {';
     mutation += 'messageId: "' + messageId + '", ';
     mutation += 'messageFocus: {';
-    mutation += 'phrase: "' + escape(theSentence) + '", ';
+    //mutation += 'phrase: "' + escape(theSentence) + '", ';
+    mutation += 'phrase: "' + theString + '", ';
     mutation += 'lens: "' + lens + '", ';
     if (category !== '') mutation += 'category: "' + category + '", ';
     mutation += 'actions: ["' + actionId + '"], ';
@@ -2774,19 +2811,12 @@ module.exports = function (RED) {
     mutation += 'start: ' + theSentence.indexOf(theString) + ', ';
     mutation += 'end: ' + (theSentence.indexOf(theString) + theString.length) + ', ';
     if (thePayload !== '') mutation += 'payload: "' + escape(thePayload) + '", ';
+    //if (thePayload !== '') mutation += 'payload: "' + thePayload + '", ';
     mutation += 'version: 1, ';
     mutation += 'hidden: false}}';
     mutation += ') {message ' + _messageQL_details() + '}';
     mutation += '}}';
+
     return mutation;
   }
-
-
-  /*
-  Mutation
-
-  mutation updateSpace ($input:  UpdateSpaceInput!) {updateSpace(input: $input) {space {id title description team {id displayName teamSettings {appApprovalEnabled} } allowGuests visibility modifyMember modifyApp modifySpaceSetting templateId propertyValueIds { propertyId propertyValueId } statusValueId type userSpaceState { unread markedImportant predictedImportant important lastSpaceReadDate } created updated createdBy { id displayName email customerId presence photoUrl } activeMeeting { meetingNumber password }}}}"
-variables 
-"{"input":{"id":"5b101230e4b09834e0e434d7","propertyValues":[{"propertyId":"acdd0cba-c260-43c1-b77d-0d13526ca1ad","propertyValueId":"TRUE"},{"propertyId":"d2708223-02ca-4a28-b03b-4a9088fc589b","propertyValueId":"due"},{"propertyId":"e1b35006-2c50-4cc6-aab8-a3d1155db4c2","propertyValueId":"FALSE"},{"propertyId":"6409ec4c-1cbc-4f32-a9d8-e5113baaad46","propertyValueId":"9ad4db4c-3e6d-403e-8519-979f12f58d21"},{"propertyId":"66d8289c-706f-4223-b0b4-7def0a2ebfc9","propertyValueId":"00fddd0d-5aaf-487f-90db-ba98bcee321e"},{"propertyId":"285e5b11-ec29-4e72-b938-5dbaf8923442","propertyValueId":"uno"}]}}"
-*/
 };
