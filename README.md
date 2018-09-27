@@ -18,6 +18,14 @@ Here is the list of Nodes currently proposed by this package.
 Full documentation, including sample NodeRed flows using these nodes, is available in the Documentation Directory of the [corresponding Github repository](https://github.com/stefanopog/node-red-contrib-wws/tree/master/docs)
 
 # *Changes*
+## Changes in V2.0.10
+* Most nodes provide less verbose console outputs. To get full logging on the console, the **wwDebug** environment variable should be set (to true) before running the NodeRed instance
+
+
+## Changes in V2.0.9
+* Bug fixing in the **Webhook node** (the _msg.wwsOriginalMessage_ output is not provided for _Slash Commands annotations_)
+
+
 ## Changes in V2.0.8
 * the **Add Focus** node has been fixed. It now supports also adding focus to messages created by Applications (i.e. add focus to Generic Annotations)
 

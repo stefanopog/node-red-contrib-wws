@@ -7,7 +7,7 @@ module.exports = function(RED) {
     const getRawBody = require('raw-body');
     const crypto = require('crypto');
     const rp = require("request-promise-native");
-    var __isDebug = process.env.debug || false;
+    var __isDebug = process.env.wwsDebug || false;
 
 
     console.log("*****************************************");

@@ -2,7 +2,7 @@ module.exports = function (RED) {
   const ALL_FLAGS = "PUBLIC, BETA, DIRECT_MESSAGING, FAVORITES, USERSPACEATTRIBUTES, MENTION, TYPED_ANNOTATIONS, SPACE_TEMPLATE, SPACE_MEMBERS, EXPERIMENTAL";
   const BETA_EXP_FLAGS = "PUBLIC,BETA,EXPERIMENTAL";
 
-  var __isDebug = process.env.debug || false;
+  var __isDebug = process.env.wwsDebug || false;
 
 
   console.log("*****************************************");
