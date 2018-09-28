@@ -18,6 +18,9 @@ Here is the list of Nodes currently proposed by this package.
 Full documentation, including sample NodeRed flows using these nodes, is available in the Documentation Directory of the [corresponding Github repository](https://github.com/stefanopog/node-red-contrib-wws/tree/master/docs)
 
 # *Changes*
+## Changes in V2.0.11
+* fixing a bug in the **send Message** node
+
 ## Changes in V2.0.10
 * Most nodes provide less verbose console outputs. To get full logging on the console, the **wwDebug** environment variable should be set (to true) before running the NodeRed instance
 

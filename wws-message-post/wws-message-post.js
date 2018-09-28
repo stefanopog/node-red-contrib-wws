@@ -7,7 +7,7 @@ module.exports = function(RED) {
         //
         //  Service routines
         //
-        function _prepareAppMessage(node, msg, thePayload) {
+        function _prepareAppMessage(config, msg, thePayload) {
             //
             //  Check for defaults
             //
@@ -15,16 +15,16 @@ module.exports = function(RED) {
                 "type": "generic",
                 "version": 1.0
             };
-            if (msg.wwsAvatar || node.avatar) {
-                annotation.actor = {"name": node.avatar ? node.avatar : msg.wwsAvatar};
+            if (msg.wwsAvatar ||config.avatar) {
+                annotation.actor = {"name": config.avatar ? config.avatar : msg.wwsAvatar};
             }
-            if (msg.wwsColor || node.color) {
-                annotation.color = node.color ? node.color : msg.wwsColor;
+            if (msg.wwsColor || config.color) {
+                annotation.color = config.color ? config.color : msg.wwsColor;
             } else {
                 annotation.color = "#11ABA5";
             }
-            if (msg.wwsTitle || node.color) {
-                annotation.title = node.title ? node.title : msg.wwsTitle;
+            if (msg.wwsTitle || config.color) {
+                annotation.title = config.title ? config.title : msg.wwsTitle;
             }
             annotation.text = thePayload;
             let reqBody = {
@@ -36,13 +36,13 @@ module.exports = function(RED) {
             return msg;
         }
     
-        let stringOrDefault = (value, defaultValue) => {
-            return typeof value == 'string' && value.length > 0 ? value : defaultValue;
-        };
 
         //
         //  start decoration checking
         //
+        //let stringOrDefault = (value, defaultValue) => {
+        //    return typeof value == 'string' && value.length > 0 ? value : defaultValue;
+        //};
         //this.color = stringOrDefault(config.color, "#11ABA5");
         //this.avatar = stringOrDefault(config.avatar, undefined);
         //this.spaceId = stringOrDefault(config.spaceId, undefined);
@@ -107,7 +107,7 @@ module.exports = function(RED) {
             //
             //  Check decoration
             //
-            msg = _prepareAppMessage(this, msg, thePayload);
+            msg = _prepareAppMessage(config, msg, thePayload);
             //
             //  Prepare the request
             //
