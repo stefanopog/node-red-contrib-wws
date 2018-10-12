@@ -18,6 +18,10 @@ Here is the list of Nodes currently proposed by this package.
 Full documentation, including sample NodeRed flows using these nodes, is available in the Documentation Directory of the [corresponding Github repository](https://github.com/stefanopog/node-red-contrib-wws/tree/master/docs)
 
 # *Changes*
+## Changes in V2.0.12
+* fixing a documentation issue for node **Get Person(s)** (input attribute is **msg.wwsPersonList***)
+
+
 ## Changes in V2.0.11
 * fixing a bug in the **send Message** node
 

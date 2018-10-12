@@ -640,6 +640,7 @@ module.exports = function(RED) {
                 //
                 if((typeof req.body === 'object') && req.body.type) {
                     node.setStatus(req.body.type);
+                    ___logJson('wwsWebhook: getting an incoming message', req.body);
                     if ((req.body.type === 'verification') && req.body.challenge) {
                         //
                         //  App Registration Processing
@@ -657,6 +658,7 @@ module.exports = function(RED) {
                         //
                         //  Verify that the incoming message really comes from Workspace
                         //
+                        /*
                         let theSample = '';
                         if (req.body.type === "message-created") {
                             let tmp = JSON.parse(JSON.stringify(req.body));
@@ -665,6 +667,7 @@ module.exports = function(RED) {
                         } else {
                             theSample = JSON.stringify(req.body);
                         }
+                        */
                         //
                         //  Ignoring own app messages
                         //
