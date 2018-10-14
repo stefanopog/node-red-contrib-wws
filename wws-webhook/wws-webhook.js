@@ -693,91 +693,207 @@ module.exports = function(RED) {
                                 //
                                 //  ignoring own app message
                                 //
-                                switch(req.body.type) {
-                                    case "message-created":
-                                        //
-                                        //  Message-Created
-                                        //  ----------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        if (!msg.payload) {
+                                try {
+                                    switch(req.body.type) {
+                                        case "message-created":
                                             //
-                                            //  Ignore empty message-created entries (happens during app messages e.g. from other apps attached to the same space)
+                                            //  Message-Created
+                                            //  ----------------
                                             //
-                                            ignore = true;
-                                        } else {
+                                            //  Prepare output information
+                                            //
+                                            if (!msg.payload) {
+                                                //
+                                                //  Ignore empty message-created entries (happens during app messages e.g. from other apps attached to the same space)
+                                                //
+                                                ignore = true;
+                                            } else {
+                                                msg.wwsUserName = req.body.userName;
+                                                msg.wwsUserId   = req.body.userId;
+                                                msg.payload     = req.body.content;
+                                                //
+                                                //  Since this is a message, we can store it in the cache for further re-use
+                                                //
+                                                node.theCache.push(msg.wwsMessageId, req.body);
+                                            }
+                                            break;
+                                        case "message-edited":
+                                            //
+                                            //  Message-Edited
+                                            //  --------------
+                                            //
+                                            //  Prepare output information
+                                            //
                                             msg.wwsUserName = req.body.userName;
                                             msg.wwsUserId   = req.body.userId;
                                             msg.payload     = req.body.content;
                                             //
-                                            //  Since this is a message, we can store it in the cache for further re-use
+                                            //  We need to remove the old message from the cache (if it existed) ...
+                                            //
+                                            node.theCache.removeById(msg.wwsMessageId);
+                                            //
+                                            //  ....and re-add it ...
                                             //
                                             node.theCache.push(msg.wwsMessageId, req.body);
-                                        }
-                                        break;
-                                    case "message-edited":
-                                        //
-                                        //  Message-Edited
-                                        //  --------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        msg.wwsUserName = req.body.userName;
-                                        msg.wwsUserId   = req.body.userId;
-                                        msg.payload     = req.body.content;
-                                        //
-                                        //  We need to remove the old message from the cache (if it existed) ...
-                                        //
-                                        node.theCache.removeById(msg.wwsMessageId);
-                                        //
-                                        //  ....and re-add it ...
-                                        //
-                                        node.theCache.push(msg.wwsMessageId, req.body);
-                                        break;
-                                    case "message-deleted":
-                                        //
-                                        //  Message-Deleted
-                                        //  ----------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        msg.payload = msg.wwsMessageId;
-                                        //
-                                        //  We need to remove the old message from the cache (if it existed) ...
-                                        //
-                                        node.theCache.removeById(msg.wwsMessageId);
-                                        break;
-                                    case "message-annotation-added":
-                                        //
-                                        //  Message-Annotation-Added
-                                        //  ------------------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        msg.wwsAnnotationId      = req.body.annotationId;
-                                        msg.wwsAnnotationService = req.body.userId;
-                                        msg.wwsAnnotationType    = req.body.annotationType;
-                                        msg.payload              = JSON.parse(req.body.annotationPayload);
-                                        if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
-                                        if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
-                                        if (msg.wwsAnnotationType === "actionSelected") {
+                                            break;
+                                        case "message-deleted":
                                             //
-                                            //  Promote actionId to top level attribute wwsActionId
+                                            //  Message-Deleted
+                                            //  ----------------
                                             //
-                                            msg.wwsActionId = msg.payload.actionId;
-                                        }
-                                        //
-                                        //  Check if the Annotation is a SLASH COMMAND
-                                        //
-                                        if ((msg.wwsAnnotationType === 'actionSelected') && msg.wwsActionId.startsWith('/')) {
+                                            //  Prepare output information
                                             //
-                                            //  In the case of a Slash Command, there is no associated Message !!!
+                                            msg.payload = msg.wwsMessageId;
                                             //
-                                            msg.wwsOriginalMessage = null;
-                                        } else {
+                                            //  We need to remove the old message from the cache (if it existed) ...
                                             //
-                                            //  The Annotation refers to a Message.
+                                            node.theCache.removeById(msg.wwsMessageId);
+                                            break;
+                                        case "message-annotation-added":
+                                            //
+                                            //  Message-Annotation-Added
+                                            //  ------------------------
+                                            //
+                                            //  Prepare output information
+                                            //
+                                            msg.wwsAnnotationId      = req.body.annotationId;
+                                            msg.wwsAnnotationService = req.body.userId;
+                                            msg.wwsAnnotationType    = req.body.annotationType;
+                                            msg.payload              = JSON.parse(req.body.annotationPayload);
+                                            if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
+                                            if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
+                                            if (msg.wwsAnnotationType === "actionSelected") {
+                                                //
+                                                //  Promote actionId to top level attribute wwsActionId
+                                                //
+                                                msg.wwsActionId = msg.payload.actionId;
+                                            }
+                                            //
+                                            //  Check if the Annotation is a SLASH COMMAND
+                                            //
+                                            if ((msg.wwsAnnotationType === 'actionSelected') && msg.wwsActionId.startsWith('/')) {
+                                                //
+                                                //  In the case of a Slash Command, there is no associated Message !!!
+                                                //
+                                                msg.wwsOriginalMessage = null;
+                                            } else {
+                                                //
+                                                //  The Annotation refers to a Message.
+                                                //  Is the message already in Cache ?
+                                                //
+                                                msgToBeRetrieved = __whichOriginalMessage(msg);
+                                                originalMessage = node.theCache.getById(msgToBeRetrieved);
+                                                msg.wwsReferralMsgId = msgToBeRetrieved;
+                                                if (originalMessage) {
+                                                    //
+                                                    //  A message was found. Attach it to the payload
+                                                    //
+                                                    msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
+                                                    msgToBeRetrieved = null;
+                                                }
+                                            }
+                                            break;
+                                        case "message-annotation-edited":
+                                            //
+                                            //  Message-Annotation-Edited
+                                            //  -------------------------
+                                            //
+                                            //  Prepare output information
+                                            //
+                                            msg.wwsAnnotationId      = req.body.annotationId;
+                                            msg.wwsAnnotationService = req.body.userId;
+                                            msg.wwsAnnotationType    = req.body.annotationType;
+                                            msg.payload              = JSON.parse(req.body.annotationPayload);
+                                            if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
+                                            if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
+                                            if (msg.wwsAnnotationType === "actionSelected") {
+                                                //
+                                                //  Promote actionId to top level attribute wwsActionId
+                                                //
+                                                msg.wwsActionId = msg.payload.actionId;
+                                            }
+                                            //
+                                            //  Check if the Annotation is a SLASH COMMAND
+                                            //
+                                            if ((msg.wwsAnnotationType === 'actionSelected') && msg.wwsActionId.startsWith('/')) {
+                                                //
+                                                //  In the case of a Slash Command, there is no associated Message !!!
+                                                //
+                                                msg.wwsOriginalMessage = null;
+                                            } else {
+                                                //
+                                                //  The Annotation refers to a Message.
+                                                //  Is the message already in Cache ?
+                                                //
+                                                msgToBeRetrieved = __whichOriginalMessage(msg);
+                                                originalMessage = node.theCache.getById(msgToBeRetrieved);
+                                                msg.wwsReferralMsgId = msgToBeRetrieved;
+                                                if (originalMessage) {
+                                                    //
+                                                    //  A message was found. Attach it to the payload
+                                                    //
+                                                    msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
+                                                    msgToBeRetrieved = null;
+                                                }
+                                            }
+                                            break;
+                                        case "message-annotation-removed":
+                                            //
+                                            //  Message-Annotation-Removed
+                                            //  --------------------------
+                                            //
+                                            //  Prepare output information
+                                            //
+                                            msg.wwsAnnotationId      = req.body.annotationId;
+                                            msg.wwsAnnotationService = req.body.userId;
+                                            msg.wwsAnnotationType    = req.body.annotationType;
+                                            msg.payload              = JSON.parse(req.body.annotationPayload);
+                                            if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
+                                            if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
+                                            if (msg.wwsAnnotationType === "actionSelected") {
+                                                //
+                                                //  Promote actionId to top level attribute wwsActionId
+                                                //
+                                                msg.wwsActionId = msg.payload.actionId;
+                                            }
+                                            //
+                                            //  Check if the Annotation is a SLASH COMMAND
+                                            //
+                                            if ((msg.wwsAnnotationType === 'actionSelected') && msg.wwsActionId.startsWith('/')) {
+                                                //
+                                                //  In the case of a Slash Command, there is no associated Message !!!
+                                                //
+                                                msg.wwsOriginalMessage = null;
+                                            } else {
+                                                //
+                                                //  The Annotation refers to a Message.
+                                                //  Is the message already in Cache ?
+                                                //
+                                                msgToBeRetrieved = __whichOriginalMessage(msg);
+                                                originalMessage = node.theCache.getById(msgToBeRetrieved);
+                                                msg.wwsReferralMsgId = msgToBeRetrieved;
+                                                if (originalMessage) {
+                                                    //
+                                                    //  A message was found. Attach it to the payload
+                                                    //
+                                                    msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
+                                                    msgToBeRetrieved = null;
+                                                }
+                                            }
+                                            break;   
+                                        case "reaction-added":
+                                            //
+                                            //  Reaction-Added
+                                            //  --------------
+                                            //
+                                            //  Prepare output information
+                                            //
+                                            msg.wwsUserId       = req.body.userId;
+                                            msg.wwsMessageId    = req.body.objectId;
+                                            msg.wwsReactionType = req.body.objectType;
+                                            msg.payload         = req.body.reaction;
+                                            //
+                                            //  The Reaction refers to a Message.
                                             //  Is the message already in Cache ?
                                             //
                                             msgToBeRetrieved = __whichOriginalMessage(msg);
@@ -790,38 +906,20 @@ module.exports = function(RED) {
                                                 msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
                                                 msgToBeRetrieved = null;
                                             }
-                                        }
-                                        break;
-                                    case "message-annotation-edited":
-                                        //
-                                        //  Message-Annotation-Edited
-                                        //  -------------------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        msg.wwsAnnotationId      = req.body.annotationId;
-                                        msg.wwsAnnotationService = req.body.userId;
-                                        msg.wwsAnnotationType    = req.body.annotationType;
-                                        msg.payload              = JSON.parse(req.body.annotationPayload);
-                                        if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
-                                        if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
-                                        if (msg.wwsAnnotationType === "actionSelected") {
+                                            break;
+                                        case "reaction-removed":
                                             //
-                                            //  Promote actionId to top level attribute wwsActionId
+                                            //  Reaction-Removed
+                                            //  ----------------
                                             //
-                                            msg.wwsActionId = msg.payload.actionId;
-                                        }
-                                        //
-                                        //  Check if the Annotation is a SLASH COMMAND
-                                        //
-                                        if ((msg.wwsAnnotationType === 'actionSelected') && msg.wwsActionId.startsWith('/')) {
+                                            //  Prepare output information
                                             //
-                                            //  In the case of a Slash Command, there is no associated Message !!!
+                                            msg.wwsUserId       = req.body.userId;
+                                            msg.wwsMessageId    = req.body.objectId;
+                                            msg.wwsReactionType = req.body.objectType;
+                                            msg.payload         = req.body.reaction;
                                             //
-                                            msg.wwsOriginalMessage = null;
-                                        } else {
-                                            //
-                                            //  The Annotation refers to a Message.
+                                            //  The Reaction refers to a Message.
                                             //  Is the message already in Cache ?
                                             //
                                             msgToBeRetrieved = __whichOriginalMessage(msg);
@@ -834,223 +932,137 @@ module.exports = function(RED) {
                                                 msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
                                                 msgToBeRetrieved = null;
                                             }
-                                        }
-                                        break;
-                                    case "message-annotation-removed":
-                                        //
-                                        //  Message-Annotation-Removed
-                                        //  --------------------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        msg.wwsAnnotationId      = req.body.annotationId;
-                                        msg.wwsAnnotationService = req.body.userId;
-                                        msg.wwsAnnotationType    = req.body.annotationType;
-                                        msg.payload              = JSON.parse(req.body.annotationPayload);
-                                        if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
-                                        if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
-                                        if (msg.wwsAnnotationType === "actionSelected") {
+                                            break;
+                                        case "space-updated":
                                             //
-                                            //  Promote actionId to top level attribute wwsActionId
+                                            //  Space-Updated
+                                            //  --------------
                                             //
-                                            msg.wwsActionId = msg.payload.actionId;
-                                        }
-                                        //
-                                        //  Check if the Annotation is a SLASH COMMAND
-                                        //
-                                        if ((msg.wwsAnnotationType === 'actionSelected') && msg.wwsActionId.startsWith('/')) {
+                                            //  In case of "property-change" and/or "status-change", it will be helpful to inform the user about the 
+                                            //  real names of the properties, of their values and of the status.
+                                            //  In this case we need to get the information about the SPACE in which the modification happened in order to
+                                            //  get the actual displayName of the properties, property values and status values.
                                             //
-                                            //  In the case of a Slash Command, there is no associated Message !!!
+                                            //  Prepare output information
                                             //
-                                            msg.wwsOriginalMessage = null;
-                                        } else {
-                                            //
-                                            //  The Annotation refers to a Message.
-                                            //  Is the message already in Cache ?
-                                            //
-                                            msgToBeRetrieved = __whichOriginalMessage(msg);
-                                            originalMessage = node.theCache.getById(msgToBeRetrieved);
-                                            msg.wwsReferralMsgId = msgToBeRetrieved;
-                                            if (originalMessage) {
-                                                //
-                                                //  A message was found. Attach it to the payload
-                                                //
-                                                msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
-                                                msgToBeRetrieved = null;
+                                            let infoCollected = false;
+                                            msg.wwsUserId = req.body.userId;
+                                            if (req.body.spaceProperties) {
+                                                __log('wwsWebhook : space-updated ... Properties Change ');
+                                                if (! msg.payload) msg.payload = {};
+                                                msg.payload.propertyValueIds = req.body.spaceProperties;
+                                                msg.wwsUpdateCause = "property-change";
+                                                getSpace = true;
+                                                infoCollected = true;
                                             }
-                                        }
-                                        break;   
-                                    case "reaction-added":
-                                        //
-                                        //  Reaction-Added
-                                        //  --------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        msg.wwsUserId       = req.body.userId;
-                                        msg.wwsMessageId    = req.body.objectId;
-                                        msg.wwsReactionType = req.body.objectType;
-                                        msg.payload         = req.body.reaction;
-                                        //
-                                        //  The Reaction refers to a Message.
-                                        //  Is the message already in Cache ?
-                                        //
-                                        msgToBeRetrieved = __whichOriginalMessage(msg);
-                                        originalMessage = node.theCache.getById(msgToBeRetrieved);
-                                        msg.wwsReferralMsgId = msgToBeRetrieved;
-                                        if (originalMessage) {
-                                            //
-                                            //  A message was found. Attach it to the payload
-                                            //
-                                            msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
-                                            msgToBeRetrieved = null;
-                                        }
-                                        break;
-                                    case "reaction-removed":
-                                        //
-                                        //  Reaction-Removed
-                                        //  ----------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        msg.wwsUserId       = req.body.userId;
-                                        msg.wwsMessageId    = req.body.objectId;
-                                        msg.wwsReactionType = req.body.objectType;
-                                        msg.payload         = req.body.reaction;
-                                        //
-                                        //  The Reaction refers to a Message.
-                                        //  Is the message already in Cache ?
-                                        //
-                                        msgToBeRetrieved = __whichOriginalMessage(msg);
-                                        originalMessage = node.theCache.getById(msgToBeRetrieved);
-                                        msg.wwsReferralMsgId = msgToBeRetrieved;
-                                        if (originalMessage) {
-                                            //
-                                            //  A message was found. Attach it to the payload
-                                            //
-                                            msg.wwsOriginalMessage = JSON.parse(JSON.stringify(originalMessage.payload));
-                                            msgToBeRetrieved = null;
-                                        }
-                                        break;
-                                    case "space-updated":
-                                        //
-                                        //  Space-Updated
-                                        //  --------------
-                                        //
-                                        //  In case of "property-change" and/or "status-change", it will be helpful to inform the user about the 
-                                        //  real names of the properties, of their values and of the status.
-                                        //  In this case we need to get the information about the SPACE in which the modification happened in order to
-                                        //  get the actual displayName of the properties, property values and status values.
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        let infoCollected = false;
-                                        msg.wwsUserId = req.body.userId;
-                                        if (req.body.spaceProperties) {
-                                            __log('wwsWebhook : space-updated ... Properties Change ');
-                                            if (! msg.payload) msg.payload = {};
-                                            msg.payload.propertyValueIds = req.body.spaceProperties;
-                                            msg.wwsUpdateCause = "property-change";
-                                            getSpace = true;
-                                            infoCollected = true;
-                                        }
-                                        if (req.body.statusValue) {
-                                            __log('wwsWebhook : space-updated ... Status Change ');
-                                            if (! msg.payload) msg.payload = {};
-                                            msg.payload.statusValueId = req.body.statusValue;
-                                            if (infoCollected) {
-                                                msg.wwsUpdateCause += ', status-change';
-                                            } else {
-                                                msg.wwsUpdateCause = "status-change";
+                                            if (req.body.statusValue) {
+                                                __log('wwsWebhook : space-updated ... Status Change ');
+                                                if (! msg.payload) msg.payload = {};
+                                                msg.payload.statusValueId = req.body.statusValue;
+                                                if (infoCollected) {
+                                                    msg.wwsUpdateCause += ', status-change';
+                                                } else {
+                                                    msg.wwsUpdateCause = "status-change";
+                                                }
+                                                getSpace = true;
+                                                infoCollected = true;
                                             }
-                                            getSpace = true;
-                                            infoCollected = true;
-                                        }
-                                        if (req.body.description) {
-                                            __log('wwsWebhook : space-updated ... Description Change ');
-                                            if (! msg.payload) msg.payload = {};
-                                            msg.payload.description = req.body.description;
-                                            if (infoCollected) {
-                                                msg.wwsUpdateCause += ', description-change';
-                                            } else {
-                                                msg.wwsUpdateCause = "description-change";
+                                            if (req.body.description) {
+                                                __log('wwsWebhook : space-updated ... Description Change ');
+                                                if (! msg.payload) msg.payload = {};
+                                                msg.payload.description = req.body.description;
+                                                if (infoCollected) {
+                                                    msg.wwsUpdateCause += ', description-change';
+                                                } else {
+                                                    msg.wwsUpdateCause = "description-change";
+                                                }
+                                                infoCollected = true;
+                                            } 
+                                            if (req.body.title) {
+                                                __log('wwsWebhook : space-updated ... Title Change ');
+                                                if (! msg.payload) msg.payload = {};
+                                                msg.payload.title = req.body.title;
+                                                if (infoCollected) {
+                                                    msg.wwsUpdateCause += ', title-change';
+                                                } else {
+                                                    msg.wwsUpdateCause = "title-change";
+                                                }
+                                                infoCollected = true;
+                                            } 
+                                            if (! infoCollected) {
+                                                __log('wwsWebhook : space-updated ... OTHER GENERIC Change ');
+                                                msg.wwsUpdateCause="other";
                                             }
-                                            infoCollected = true;
-                                        } 
-                                        if (req.body.title) {
-                                            __log('wwsWebhook : space-updated ... Title Change ');
-                                            if (! msg.payload) msg.payload = {};
-                                            msg.payload.title = req.body.title;
-                                            if (infoCollected) {
-                                                msg.wwsUpdateCause += ', title-change';
-                                            } else {
-                                                msg.wwsUpdateCause = "title-change";
+                                            break;
+                                        case "space-deleted":
+                                            //
+                                            //  Space-Deleted
+                                            //  -------------
+                                            //
+                                            //  Prepare output information
+                                            //
+                                            msg.wwsUserId = req.body.userId;
+                                            break;
+                                        case "space-members-added":
+                                            //
+                                            //  Space-Members-Added
+                                            //  -------------------
+                                            //
+                                            //  Prepare output information
+                                            //
+                                            if (node.isApp(req.body.memberIds)) {
+                                                msg.wwsCause = "app-added";
                                             }
-                                            infoCollected = true;
-                                        } 
-                                        if (! infoCollected) {
-                                            __log('wwsWebhook : space-updated ... OTHER GENERIC Change ');
-                                            msg.wwsUpdateCause="other";
-                                        }
-                                        break;
-                                    case "space-deleted":
-                                        //
-                                        //  Space-Deleted
-                                        //  -------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        msg.wwsUserId = req.body.userId;
-                                        break;
-                                    case "space-members-added":
-                                        //
-                                        //  Space-Members-Added
-                                        //  -------------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        if (node.isApp(req.body.memberIds)) {
-                                            msg.wwsCause = "app-added";
-                                        }
-                                        msg.payload = req.body.memberIds;
-                                        break;   
-                                    case "space-members-removed":
-                                        //
-                                        //  Space-Members-Removed
-                                        //  ---------------------
-                                        //
-                                        //  Prepare output information
-                                        //
-                                        if (node.isApp(req.body.memberIds)) {
-                                            msg.wwsCause = "app-removed";
-                                        }
-                                        msg.payload = req.body.memberIds;
-                                        break;   
-                                    case "appMessage":
-                                        //
-                                        //  appMessage
-                                        //  -------------------
-                                        //
-                                        //  do NOT process app messages
-                                        //
-                                        __log('wwsWebhook : appMessage received... IGNORING ');
-                                        ignore = true;
-                                        break;
-                                    default:
-                                        console.dir(' ');
-                                        console.dir('********************************************');
-                                        console.dir(' ');
-                                        console.dir('webhook: UNKNOWN INCOMING EVENT');
-                                        console.dir(JSON.stringify(req.body, ' ', 2));
-                                        console.dir(' ');
-                                        console.dir('********************************************');
-                                        console.dir(' ');
-                                        node.status({fill: "red", shape: "ring", text: "UNKNOWN EVENT"});
-                                        node.error("wwsWebhook : An unknown event arrived into the Webhook ");
-                                        //
-                                        //  do NOT process this message
-                                        //
-                                        ignore = true;
+                                            msg.payload = req.body.memberIds;
+                                            break;   
+                                        case "space-members-removed":
+                                            //
+                                            //  Space-Members-Removed
+                                            //  ---------------------
+                                            //
+                                            //  Prepare output information
+                                            //
+                                            if (node.isApp(req.body.memberIds)) {
+                                                msg.wwsCause = "app-removed";
+                                            }
+                                            msg.payload = req.body.memberIds;
+                                            break;   
+                                        case "appMessage":
+                                            //
+                                            //  appMessage
+                                            //  -------------------
+                                            //
+                                            //  do NOT process app messages
+                                            //
+                                            __log('wwsWebhook : appMessage received... IGNORING ');
+                                            ignore = true;
+                                            break;
+                                        default:
+                                            console.dir(' ');
+                                            console.dir('********************************************');
+                                            console.dir(' ');
+                                            console.dir('webhook: UNKNOWN INCOMING EVENT');
+                                            console.dir(JSON.stringify(req.body, ' ', 2));
+                                            console.dir(' ');
+                                            console.dir('********************************************');
+                                            console.dir(' ');
+                                            node.status({fill: "red", shape: "ring", text: "UNKNOWN EVENT"});
+                                            node.error("wwsWebhook : An unknown event arrived into the Webhook ");
+                                            //
+                                            //  do NOT process this message
+                                            //
+                                            ignore = true;
+                                    }                                   
+                                } catch (error) {
+                                    //
+                                    //  Error 
+                                    //
+                                    console.log(' ');
+                                    console.log('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+                                    console.log('wwsWebhook: error processing incoming message');
+                                    console.log(JSON.stringify(error, ' ', 2));
+                                    console.log('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+                                    console.log(' ');
                                 }
                                 //
                                 //  Send response to Webhook to avoid timeouts!
