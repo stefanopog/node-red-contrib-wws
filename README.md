@@ -18,6 +18,12 @@ Here is the list of Nodes currently proposed by this package.
 Full documentation, including sample NodeRed flows using these nodes, is available in the Documentation Directory of the [corresponding Github repository](https://github.com/stefanopog/node-red-contrib-wws/tree/master/docs)
 
 # *Changes*
+## Changes in V2.0.14
+* The Cache limit on the **Webhook node** can be zero. In this case, no caching will be performed of incoming messages
+* the default for the Cache limit in case an invalid number is provided is now **0 (zero)**
+* New events will not be in stored in cache after a **message-created** event, but only when the **msg.wwsOriginalMessage** is required to be filled
+* **action-selected** annotations with a defined **lens** will try first to get the annotation from _msg.wwsOriginalMessage_ . if this is not valid, a graphQL query to get the annotations is performed.
+  
 ## Changes in V2.0.12
 * fixing a documentation issue for node **Get Person(s)** (input attribute is **msg.wwsPersonList***)
 

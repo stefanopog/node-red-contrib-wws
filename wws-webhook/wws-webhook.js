@@ -1,32 +1,46 @@
 
-var rp = require("request-promise-native");
+/**
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
 module.exports = function(RED) {
     "use strict";
-     const crypto = require('crypto');
-     const bodyParser = require("body-parser");
-     const jsonParser = bodyParser.json();
+    var rp = require("request-promise-native");
+    const crypto = require('crypto');
+    const bodyParser = require("body-parser");
+    const jsonParser = bodyParser.json();
 
 
-     var __isDebug = process.env.wwsDebug || false;
+    var __isDebug = process.env.wwsDebug || false;
 
 
-     console.log("*****************************************");
-     console.log("* Debug mode is " + (__isDebug ? "enabled" : "disabled") + ' for module WWS-WEBHOOK');
-     console.log("*****************************************");
-   
-   
-     //Common logging function with JSON Objects
-     function ___logJson(logMsg, jsonObject) {
-       if (__isDebug) {
-           console.log((logMsg ? logMsg : "") + JSON.stringify(jsonObject, " ", 2));
-       };
-     }
-     //Common logging function
-     function __log(logMsg) {
-       if (__isDebug) {
-           console.log(logMsg);
-       };
-     }
+    console.log("*****************************************");
+    console.log("* Debug mode is " + (__isDebug ? "enabled" : "disabled") + ' for module WWS-WEBHOOK');
+    console.log("*****************************************");
+
+
+    //Common logging function with JSON Objects
+    function ___logJson(logMsg, jsonObject) {
+        if (__isDebug) {
+            console.log((logMsg ? logMsg : "") + JSON.stringify(jsonObject, " ", 2));
+        };
+    }
+    //Common logging function
+    function __log(logMsg) {
+        if (__isDebug) {
+            console.log(logMsg);
+        };
+    }
    
     //
     //  Cache Management
@@ -51,7 +65,7 @@ module.exports = function(RED) {
         //  Add item to Cache
         //
         this.push = function(id, body) {
-            if (body) {
+            if (body && (this.limit > 0)) {
                 let newElement = {};
                 newElement.messageId = id;
                 newElement.payload   =  JSON.parse(JSON.stringify(body));
@@ -227,6 +241,10 @@ module.exports = function(RED) {
                     //  Successfull Result !
                     //
                     node.status({fill: "green", shape: "dot", text: messageId + ' retrieved!'});
+                    //
+                    //  Now storing in the CACHE
+                    //
+                    node.theCache.push(messageId, res.data.message);
                 }
                 if (res.data && res.data.message) {
                     msg.wwsOriginalMessage = res.data.message;
@@ -239,6 +257,7 @@ module.exports = function(RED) {
                     //  Parsing Annotations
                     //
                     if (msg.wwsOriginalMessage.annotations) {
+                        __log('wwsWebhook.__wwsGetMessage : Processing Annotations...');
                         if (msg.wwsOriginalMessage.annotations.length > 0) {
                             let annotations = [];
                             for (let i = 0; i < msg.wwsOriginalMessage.annotations.length; i++) {
@@ -256,8 +275,7 @@ module.exports = function(RED) {
                     console.log(JSON.stringify(res.data, ' ', 2));
                     node.status({fill: "yellow", shape: "dot", text: "wwsWebhook.__wwsGetMessage.__wwsGraphQL : wwsOriginalMessage is EMPTY"});
                     msg.payload = JSON.parse(msg.wwsEvent.annotationPayload);
-               }
-                node.theCache.push(messageId, res.data.message);
+                }
                 __sendFinalMessage(msg, config, type);
             })
             .catch((err) => {
@@ -296,7 +314,7 @@ module.exports = function(RED) {
                     //  Query Successfull but with Errors
                     //
                     msg.wwsQLErrors = res.errors;
-                    console.log('webhook.wwsGetSpace: Some errors getting the Space');
+                    console.log('webhook.__wwsGetSpace: Some errors getting the Space');
                     console.log(JSON.stringify(res.errors, ' ', 2));
                     node.status({fill: "yellow", shape: "dot", text: "Some Errors getting the Space"});
                 } else {
@@ -304,7 +322,7 @@ module.exports = function(RED) {
                     //  Ok, we should have the information about the teamplate.
                     //  We need to parse them
                     //
-                    __log('webhook.wwsGetSpace: Space successfully retrieved');
+                    __log('webhook.__wwsGetSpace: Space successfully retrieved');
                     node.status({fill: "green", shape: "dot", text: "Space succesfully retrieved"});
                 }
                 if (res.data.space && res.data.space.templateInfo) {
@@ -330,16 +348,16 @@ module.exports = function(RED) {
                                 //
                                 //  We cannot Set a status that does not exist
                                 //
-                                console.log('webhook.wwsGetSpace: Status ' + msg.payload.statusValue + ' is unknown!');
+                                console.log('webhook.__wwsGetSpace: Status ' + msg.payload.statusValue + ' is unknown!');
                                 node.status({fill: "red", shape: "dot", text: 'Status ' + msg.payload.statusValue + ' is unknown!'});
-                                node.error('webhook.wwsGetSpace: Status ' + msg.payload.statusValue + ' is unknown!', msg);
+                                node.error('webhook.__wwsGetSpace: Status ' + msg.payload.statusValue + ' is unknown!', msg);
                                 return;
                             }
                         } else {
                             //
                             //  Cannot retrieve the Status DISPLAY NAME
                             //
-                            console.log('webhook.wwsGetSpace: cannot provide a name to the STATUS...');
+                            console.log('webhook.__wwsGetSpace: cannot provide a name to the STATUS...');
                             node.status({fill: "yellow", shape: "dot", text: 'cannot provide a name to the STATUS...'});
                         }
                     }
@@ -350,14 +368,14 @@ module.exports = function(RED) {
                         //
                         //  there was a change in the value of one or more Properties. We need to get the DisplayName and Value for each of thme
                         //
-                        console.dir(templateInfo);
+                        ___logJson('webhook.__wwsGetSpace: Template retieved', templateInfo);
                         if (templateInfo.properties && templateInfo.properties.items && Array.isArray(templateInfo.properties.items)) {
                             msg.payload.propertyValueIds = _propertiesIdsToNames(msg.payload.propertyValueIds, templateInfo.properties.items);
                         } else {
                             //
                             //  Cannot retrieve the PROPERTIES DISPLAY NAME
                             //
-                            console.log('webhook.wwsGetSpace: cannot provide a name to the PROPERTIES...');
+                            console.log('webhook.__wwsGetSpace: cannot provide a name to the PROPERTIES...');
                             node.status({fill: "yellow", shape: "dot", text: 'cannot provide a name to the PROPERTIES...'});
                         }
                     }
@@ -365,7 +383,7 @@ module.exports = function(RED) {
                     //
                     //  Problems getting the TEMPLATE INFO from the space
                     //
-                    console.log('webhook.wwsGetSpace: cannot retrieve information about the TEMPLATE!');
+                    console.log('webhook.__wwsGetSpace: cannot retrieve information about the TEMPLATE!');
                     node.status({fill: "yellow", shape: "dot", text: 'cannot retrieve information about the TEMPLATE!'});
                 }
                 //
@@ -373,11 +391,10 @@ module.exports = function(RED) {
                 //
                 __returnAnswer(msg, msgToBeRetrieved, config, type);
             }).catch((err) => {
-                console.log("webhook.wwsGetSpace: Error while getting templatedSpace.");
+                console.log("webhook.__wwsGetSpace: Error while getting templatedSpace.");
                 console.log(JSON.stringify(err, ' ', 2));
                 node.status({fill: "red", shape: "ring", text: "Error while getting templatedSpace..."});
-                node.error("webhook.wwsGetSpace: Error while getting templatedSpace.", err);
-                return;
+                node.error("webhook.__wwsGetSpace: Error while getting templatedSpace.", err);
             });
         }
         //
@@ -463,7 +480,7 @@ module.exports = function(RED) {
                  let theProp = {};
                 theProp.key = key;
                 theProp.value = properties[key];
-                console.dir(theProp);
+                ___logJson('webhook._propertiesIdsToNames : Processing property: ', theProp);
 
                 let found = false;
                 let newProp = {};
@@ -519,7 +536,7 @@ module.exports = function(RED) {
                     //  There was something wrong. Either the name of the property is unknown or the property value is not valid
                     //  returning the index of the offending property
                     //
-                    console.dir('webhook._propertiesIdsToNames : Match NOT Found ' + theProp.key);
+                    ___logJson('webhook._propertiesIdsToNames : Match NOT Found ' + theProp.key, theProp);
                 } else {
                     outProperties.push(newProp);
                 }
@@ -559,7 +576,7 @@ module.exports = function(RED) {
         //  Cache management
         //
         if (isNaN(config.cacheLimit) || (config.cacheLimit === '')) {
-            this.theCache = new __wwsCache(5000);
+            this.theCache = new __wwsCache(0);
         } else {
             this.theCache = new __wwsCache(config.cacheLimit);
         }
@@ -713,8 +730,9 @@ module.exports = function(RED) {
                                                 msg.payload     = req.body.content;
                                                 //
                                                 //  Since this is a message, we can store it in the cache for further re-use
+                                                //  Change on 19 October 2018 - Filling the cache when Annotations arrive 
                                                 //
-                                                node.theCache.push(msg.wwsMessageId, req.body);
+                                                //node.theCache.push(msg.wwsMessageId, req.body);
                                             }
                                             break;
                                         case "message-edited":
@@ -1057,12 +1075,12 @@ module.exports = function(RED) {
                                     //
                                     //  Error 
                                     //
-                                    console.log(' ');
-                                    console.log('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
-                                    console.log('wwsWebhook: error processing incoming message');
-                                    console.log(JSON.stringify(error, ' ', 2));
-                                    console.log('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
-                                    console.log(' ');
+                                    console.dir(' ');
+                                    console.dir('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+                                    console.dir('wwsWebhook: error processing incoming message');
+                                    console.dir(JSON.stringify(error, ' ', 2));
+                                    console.dir('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+                                    console.dir(' ');
                                 }
                                 //
                                 //  Send response to Webhook to avoid timeouts!

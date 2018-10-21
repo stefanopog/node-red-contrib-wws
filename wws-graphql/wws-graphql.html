@@ -1093,12 +1093,12 @@ msg.payload = `
  
   <h3>Inputs</h3>
   <dl class="message-properties">
-    <dt class="optional">wwsPersonList 
+    <dt class="optional">wwsMemberList 
       <span class="property-type">comma-separated string</span>
     </dt>
     <dd>
       The list of people whose details need to be retrieved.<br>
-      The value on the configuration panel overrides the value in <code>msg.wwsPersonList</code> (which is itself a string).
+      The value on the configuration panel overrides the value in <code>msg.wwsMemberList</code> (which is itself a string).
     </dd>
       
     <dt class="optional">wwsToken 
@@ -1302,7 +1302,7 @@ msg.payload = `
         <span class="property-type">string</span>
       </dt>
       <dd>
-        the <b>optional</b> payload to be associated with the new focus. <br/>
+        The <b>optional</b> payload to be associated with the new focus. <br/>
         It <b>must be a string</b>, but you can pass the <b>string representation of a JSON object</b> in case you want to provide more rich and structured information. <br />
         For this reason, the node transparently <b>escapes</b> the value of this attribute before using it.<br />
         The value on the configuration panel overrides the value in <code>msg.wwsPayload</code>
@@ -1676,7 +1676,16 @@ msg.payload = `
           <code>actionName (lens)</code><br />
           where the name of the <b>lens</b> appears within the parenthesis and precedes the <code>comma</code> introducing the next item.<br />
           In these situations, the node will automatically fetch the <b>message-focus annotation</b> corresponding to the <b>lens</b> and the output will contain, 
-          as <b>payload</b>, the <b>annotation</b> that was just retrieved. 
+          as <b>payload</b>, the <b>focus annotation</b> that was just retrieved. 
+          <br />
+          This is extermely useful when you need to process <b>actions-selected annotations corresponding to foci</b>: in fact, in the case, the <code>msg.payload</code>
+          attribute will provide all the information (<b>payload, context, extractInfo...</b>) coming from the focus and that you may need to properly implement
+          the algorthm that corresponds to the <b>action-selected</b>. Here an example of output for an <b>actions-selected/b> annotation (<b>GetPhoto</b>) corresponding to 
+          a lens (<b>photo</b>):
+          <br />
+          <img src="icons/node-red-contrib-wws/wws-focus-action-desc.png" />
+          <br />
+          Note that this change in the <msg.payload output</b> only happens when a <b>lens</b> is specified as part of the <code>wwsActionList</code> attribute.
         </p>
         <p>
           <b>Note:</b><br>
