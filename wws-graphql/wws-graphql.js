@@ -2012,10 +2012,10 @@ module.exports = function (RED) {
       if (config.wwsCategory.trim() !== '') {
         category = config.wwsCategory.trim();
       } else {
-        if (!msg.wwsCategory && (msg.wwsCategory.trim() !== '')) {
-          category = msg.wwsCategory.trim();
-        } else {
+        if (!msg.wwsCategory || (msg.wwsCategory.trim() === '')) {
           console.log("wwsAddFocus: Missing OPTIONAL Category Information");
+        } else {
+          category = msg.wwsCategory.trim();
         }
       }
 
@@ -2025,10 +2025,10 @@ module.exports = function (RED) {
       if (config.wwsPayload.trim() !== '') {
         thePayload = config.wwsPayload.trim();
       } else {
-        if (!msg.wwsPayload && (msg.wwsPayload.trim() !== '')) {
-          thePayload = msg.wwsPayload.trim();
-        } else {
+        if (!msg.wwsPayload || (msg.wwsPayload.trim() === '')) {
           console.log("wwsAddFocus: Missing OPTIONAL PAYLOAD Information");
+        } else {
+          thePayload = msg.wwsPayload.trim();
         }
       }
       //
