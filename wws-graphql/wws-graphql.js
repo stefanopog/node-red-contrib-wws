@@ -1,3 +1,17 @@
+/**
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
 module.exports = function (RED) {
   const ALL_FLAGS = "PUBLIC, BETA, DIRECT_MESSAGING, FAVORITES, USERSPACEATTRIBUTES, MENTION, TYPED_ANNOTATIONS, SPACE_TEMPLATE, SPACE_MEMBERS, EXPERIMENTAL";
   const BETA_EXP_FLAGS = "PUBLIC,BETA,EXPERIMENTAL";
@@ -9,20 +23,22 @@ module.exports = function (RED) {
   console.log("* Debug mode is " + (__isDebug ? "enabled" : "disabled") + ' for module WWS-GRAPHQL');
   console.log("*****************************************");
 
-
-  //Common logging function with JSON Objects
+  //
+  //  Common logging function with JSON Objects
+  //
   function ___logJson(logMsg, jsonObject) {
     if (__isDebug) {
         console.log((logMsg ? logMsg : "") + JSON.stringify(jsonObject, " ", 2));
     };
   }
-  //Common logging function
+  //
+  //  Common logging function
+  //
   function __log(logMsg) {
     if (__isDebug) {
         console.log(logMsg);
     };
   }
-
   //
   //  Generic graphQL Node
   //
@@ -38,6 +54,7 @@ module.exports = function (RED) {
     //  Check for token on start up
     //
     if (!node.application) {
+      console.log("wwsGraphQLNode: Please configure your Watson Workspace App first!");
       node.status({fill: "red", shape: "dot", text: "token unavailable"});
       node.error("wwsGraphQLNode: Please configure your Watson Workspace App first!");
       return;
@@ -47,26 +64,30 @@ module.exports = function (RED) {
     //  Now wait for the input to this node
     //
     this.on("input", (msg) => {
-      if (!msg.payload) {
+      if (!msg.payload || (msg.payload.trim() === '')) {
         console.log("wwsGraphQLNode: No Payload Info");
         node.status({fill:"red", shape:"dot", text:"No Payload"});
         node.error("wwsGraphQLNode: Missing required input in msg object: payload");
         return;
       }
-      
+      //
+      //  Configure Flags
+      //
       var viewType = "PUBLIC";
       if (config.wwsBetaFeatures) viewType += ',BETA';
       if (config.wwsExperimentalFeatures) viewType += ',EXPERIMENTAL';
-
+      //
+      //  Executing the Query
+      //
       __log('wwsGraphQLNode: executing GraphQL statement : ' + msg.payload);
       __log('wwsGraphQLNode: using the following Flags = ' + viewType);
       node.status({fill:"blue", shape:"dot", text:"executing GraphQL query..."});
-      var req = _graphQL_options(msg.wwsToken, graphQL_url, msg.payload, viewType, msg.operationName, msg.variables);
+      var req = _graphQL_options(msg.wwsToken, graphQL_url, msg.payload.trim(), viewType, msg.operationName, msg.variables);
       node.application.wwsRequest(req)
       .then((res) => {
         if (res.errors) {
           //
-          //  Query Successfull but with Errors
+          //  Query Successfull but with graphQL Errors
           //
           msg.wwsQLErrors = res.errors;
           console.log('wwsGraphQLNode: errors found in graphQL statement. Continuing...');
@@ -116,6 +137,7 @@ module.exports = function (RED) {
     //  Check for token on start up
     //
     if (!node.application) {
+      console.log("wwsGetMessage: Please configure your Watson Workspace App first!");
       node.status({fill: "red", shape: "dot", text: "token unavailable"});
       node.error("wwsGetMessage: Please configure your Watson Workspace App first!");
       return;
@@ -129,8 +151,8 @@ module.exports = function (RED) {
       //  get Space Id
       //
       var messageId = '';
-      if ((config.wwsMessageId === '') && 
-          ((msg.wwsMessageId === undefined) || (msg.wwsMessageId === ''))) {
+      if ((config.wwsMessageId.trim() === '') && 
+          (!msg.wwsMessageId || (msg.wwsMessageId.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -139,10 +161,10 @@ module.exports = function (RED) {
         node.error('wwsGetMessage: Missing messageID', msg);
         return;
       }
-      if (config.wwsMessageId !== '') {
-        messageId = config.wwsMessageId;
+      if (config.wwsMessageId.trim() !== '') {
+        messageId = config.wwsMessageId.trim();
       } else {
-        messageId = msg.wwsMessageId;
+        messageId = msg.wwsMessageId.trim();
       }
       //
       //  Prepare the operation
@@ -320,11 +342,10 @@ module.exports = function (RED) {
         //
         let people = null;
         if ((config.wwsPersonList.trim() === '') && 
-            ((msg.wwsPersonList === undefined) || (msg.wwsPersonList === null))) {
+            (!msg.wwsPersonList || (msg.wwsPersonList.trim() === ''))) {
               console.log("wwsGetPersons : No Person to retrieve ");
               node.status({fill:"red", shape:"dot", text:"No Person to retrieve "});
               node.error("wwsGetPersons: No Person to retrieve ");
-              return;
         } else {
           let theList = null;
           if (config.wwsPersonList.trim() !== '') {
@@ -393,8 +414,8 @@ module.exports = function (RED) {
       //  get Space Id
       //
       var spaceId = '';
-      if ((config.wwsSpaceId === '') && 
-          ((msg.wwsSpaceId === undefined) || (msg.wwsSpaceId === ''))) {
+      if ((config.wwsSpaceId.trim() === '') && 
+          (!msg.wwsSpaceId || (msg.wwsSpaceId.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -403,21 +424,21 @@ module.exports = function (RED) {
         node.error('wwsAddRemoveMembers: Missing spaceID', msg);
         return;
       }
-      if (config.wwsSpaceId !== '') {
-        spaceId = config.wwsSpaceId;
+      if (config.wwsSpaceId.trim() !== '') {
+        spaceId = config.wwsSpaceId.trim();
       } else {
-        spaceId = msg.wwsSpaceId;
+        spaceId = msg.wwsSpaceId.trim();
       }
       //
       //  Get Members
       //
       var members = null;
       if ((config.wwsMemberList.trim() === '') && 
-          ((msg.wwsMemberList === undefined) || (msg.wwsMemberList === null))) {
-        //
-        //  No Members to be added / removed 
-        //  I am fine with this
-        //
+          (!msg.wwsMemberList || (msg.wwsMemberList.trim() === ''))) {
+          //
+          //  No Members to be added / removed 
+          //  I am fine with this
+          //
           console.log("wwsAddRemoveMembers: No Members to be added/removed. Exiting");
           node.status({fill:"yellow", shape:"square", text:"No members to be added/removed"});
           node.send(msg);
@@ -495,6 +516,29 @@ module.exports = function (RED) {
   function wwsFilterActions(config) {
     RED.nodes.createNode(this, config);
 
+    function __returnArray(msg, actionList, selectedRule, label, node) {
+      //
+      //  Build the output Array (as the node has multiple outputs)
+      //  all the outputs will be initialized to NULL
+      //
+      let outArray = [];
+      for (let i=0; i <= actionList.length; i++) {
+        outArray.push(null);
+      }
+      //
+      //  the array item corresponding to the selectedRule is filled with the result
+      //
+      outArray[selectedRule] = msg;
+      //  
+      //  Sends the output array
+      //
+      node.status({fill: "green", shape: "dot", text: label});
+      node.send(outArray);
+      //
+      //  Reset visual status on success
+      //
+      setTimeout(() => {node.status({});}, 2000);
+    }
     //
     //  Get the application config node
     //
@@ -521,8 +565,8 @@ module.exports = function (RED) {
       //
       //  Get the incoming action
       //
-      if ((config.wwsActionId === '') && 
-          ((msg.wwsActionId === undefined) || (msg.wwsActionId === ''))) {
+      if ((config.wwsActionId.trim() === '') && 
+          (!msg.wwsActionId || (msg.wwsActionId.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -531,7 +575,7 @@ module.exports = function (RED) {
         node.error('wwsFilterActions: Missing actionId Information', msg);
         return;
       }
-      if (config.wwsActionId !== '') {
+      if (config.wwsActionId.trim() !== '') {
         actionId = config.wwsActionId.trim();
       } else {
         actionId = msg.wwsActionId.trim();
@@ -540,8 +584,8 @@ module.exports = function (RED) {
       //
       //  Get the list of Actions the node is able to deal with
       //
-      if ((config.wwsActionsList === '') && 
-          ((msg.wwsActionsList === undefined) || (msg.wwsActionsList === ''))) {
+      if ((config.wwsActionsList.trim() === '') && 
+          (!msg.wwsActionsList || (msg.wwsActionsList.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -550,7 +594,7 @@ module.exports = function (RED) {
         node.error('wwsFilterActions: Missing ActionsList', msg);
         return;
       }
-      if (config.wwsActionsList !== '') {
+      if (config.wwsActionsList.trim() !== '') {
         actionList = config.wwsActionsList.split(',');
       } else {
         actionList = msg.wwsActionsList.split(',');
@@ -617,23 +661,7 @@ module.exports = function (RED) {
       var theAction = actionList[selectedRule].trim();
       if (theAction.match(parExp) === null) {
         console.log('wwsFilterActions: Selected Rule ' + actionList[selectedRule].trim() + ' has NO LENS. Returning....');
-        //
-        //  Build the output Array (as the node has multiple outputs)
-        //  all the outputs will be initialized to NULL
-        //
-        let outArray2 = [];
-        for (let i=0; i <= actionList.length; i++) {
-          outArray2.push(null);
-        }
-        //
-        //  the array item corresponding to the selectedRule is filled with the INCOMING MESSAGE
-        //
-        outArray2[selectedRule] = msg;
-        //  
-        //  Sends the output array
-        //
-        node.status({fill:"green", shape:"dot", text:"No Lens for Action " + actionId});
-        node.send(outArray2);  
+        __returnArray(msg, actionList, selectedRule, "No Lens for Action " + actionId, node)
         return;      
       }
       //
@@ -643,8 +671,8 @@ module.exports = function (RED) {
       //  Check the presence of the wwsReferralMsgId input
       //  It is only required in this case !!!!
       //
-      if ((config.wwsReferralMsgId === '') && 
-          ((msg.wwsReferralMsgId === undefined) || (msg.wwsReferralMsgId === ''))) {
+      if ((config.wwsReferralMsgId.trim() === '') && 
+          (!msg.wwsReferralMsgId || (msg.wwsReferralMsgId.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -653,18 +681,53 @@ module.exports = function (RED) {
         node.error('wwsFilterActions: Missing ReferralMsgId', msg);
         return;
       }
-      if (config.wwsReferralMsgId !== '') {
+      if (config.wwsReferralMsgId.trim() !== '') {
         referralMessageId = config.wwsReferralMsgId.trim();
       } else {
         referralMessageId = msg.wwsReferralMsgId.trim();
       }
-      
       //
       //  Check to find the one that is "message-focus" and corresponds to the lens=ActionId
       //
       var lens = theAction.match(parExp)[2].trim();
       __log('wwsFilterActions: Selected Rule ' + actionList[selectedRule].trim() + ' has Lens ' + lens);
       node.status({fill: "blue", shape: "dot", text: "Ready to get lens " + lens});
+      //
+      //  First check if the focus annotation is already in the wwOriginalMessage
+      //
+      if (msg.wwsOriginalMessage && msg.wwsOriginalMessage.annotations && Array.isArray(msg.wwsOriginalMessage.annotations)) {
+        //
+        //  wwsOriginalMessage and its annotations are there
+        //
+        __log('wwsFilterActions: wwsOriginalMessage.annotations was found...');
+        let found = false;
+        for (let j=0; j < msg.wwsOriginalMessage.annotations.length; j++) {
+          let intent = msg.wwsOriginalMessage.annotations[j];
+          __log('wwsFilterActions: parsing annotation type ' + intent.type);
+          if ((intent.type === "message-focus") && (intent.lens === lens)) {
+            //
+            //  the right lens was already in wwsOriginalMessage.annotations !!!
+            //
+            __log('wwsFilterActions: Focus annotation with lens ' + lens + ' was found !');
+            msg.payload = intent;
+            if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
+            if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
+            found = true;
+            break;
+          }
+        }
+        if (found) {
+          //
+          //  we can setup and return the modified input
+          //
+          __returnArray(msg, actionList, selectedRule, "Lens " + lens + " returned", node);
+          return;
+        } else {
+          __log('wwsFilterActions: Focus annotation with lens ' + lens + ' was NOTfound in wwsOriginalMessage!');
+        }
+      } else {
+        __log('wwsFilterActions: Focus annotation with lens ' + lens + ' was found since wwsOriginalMessage is not well formed!');
+      }
       //
       //  If the ActionId has a lens, then we need to get the one annotation from the referralMsessageId which
       //  corresponds to the Actios ID.
@@ -692,54 +755,35 @@ module.exports = function (RED) {
           //
           __log('wwsFilterActions: Success from graphQL query : Annotations retrieved');
           node.status({fill: "green", shape: "dot", text: "Annotations retrieved..."});
-        }
-        //
-        //  Now we have the annotations. Check to find the one that is "message-focus" and corresponds to the lens=ActionId
-        //
-        var found = false;
-        if (res.data && res.data.message && res.data.message.annotations) {
-          for (let i=0; i < res.data.message.annotations.length; i++) {
-            let intent = JSON.parse(res.data.message.annotations[i]);
-            if ((intent.type === "message-focus") && (intent.lens === lens)) {
-              msg.payload = intent;
-              if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
-              if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
-              found = true;
-              break;
+          //
+          //  Now we have the annotations. Check to find the one that is "message-focus" and corresponds to the lens=ActionId
+          //
+          let found = false;
+          if (res.data && res.data.message && res.data.message.annotations) {
+            __log('wwsFilterActions: processing Annotations...');
+            for (let i=0; i < res.data.message.annotations.length; i++) {
+              let intent = JSON.parse(res.data.message.annotations[i]);
+              __log('wwsFilterActions: processing annotation-type : ' + intent.type);
+              if ((intent.type === "message-focus") && (intent.lens === lens)) {
+                msg.payload = intent;
+                __log('wwsFilterActions: Lens ' + lens + ' found. Returning Message-Focus....');
+                if (msg.payload.payload) msg.payload.payload = __myJSONparse(msg.payload.payload);
+                if (msg.payload.context) msg.payload.context = __myJSONparse(msg.payload.context);
+                found = true;
+                break;
+              }
             }
           }
-        }
-        if (found) {
-          __log('wwsFilterActions: Lens ' + lens + ' found. Returning Message-Focus....');
-          //
-          //  Build the output Array (as the node has multiple outputs)
-          //  all the outputs will be initialized to NULL
-          //
-          var outArray = [];
-          for (let i=0; i <= actionList.length; i++) {
-            outArray.push(null);
+          if (found) {
+            __returnArray(msg, actionList, selectedRule, "Lens " + lens + " returned", node);
+          } else {
+            //
+            //  Strange situation (no annotations or the LENS was not found....)
+            //
+            console.log("wwsFilterActions: Error while dealing with action " + actionId + ' for lens ' + lens);
+            node.status({fill: "red", shape: "ring", text: "Error while dealing with action " + actionId + ' for lens ' + lens});
+            node.error('wwsFilterActions: Lens ' + lens + ' not found for action ' + actionId, msg);
           }
-          //
-          //  the array item corresponding to the selectedRule is filled with the result
-          //
-          outArray[selectedRule] = msg;
-          //  
-          //  Sends the output array
-          //
-          node.status({fill: "green", shape: "dot", text: "Lens " + lens + " returned"});
-          node.send(outArray);
-          //
-          //  Reset visual status on success
-          //
-          setTimeout(() => {node.status({});}, 2000);
-        } else {
-          //
-          //  Strange situation (no annotations or the LENS was not found....)
-          //
-          console.log("wwsFilterActions: Error while dealing with action " + actionId + ' for lens ' + lens);
-          node.status({fill: "red", shape: "ring", text: "Error while dealing with action " + actionId + ' for lens ' + lens});
-          node.error('wwsFilterActions: Lens ' + lens + ' not found for action ' + actionId, msg);
-          return;
         }
       }).catch((err) => {
         msg.payload = err;
@@ -747,7 +791,6 @@ module.exports = function (RED) {
         console.log(JSON.stringify(err, ' ', 2));
         node.status({fill: "red", shape: "ring", text: "Sending query failed..."});
         node.error('wwsFilterActions: Error while posting GraphQL query to WWS.', msg);
-        return;
       });
     });
     this.on('close', function(removed, done) {
@@ -787,7 +830,7 @@ module.exports = function (RED) {
       //
       //  Get the incoming Annotation Type
       //
-      if ((msg.wwsAnnotationType === undefined) || (msg.wwsAnnotationType.trim() === '')) {
+      if (!msg.wwsAnnotationType || (msg.wwsAnnotationType.trim() === '')) {
         //
         //  There is an issue
         //
@@ -965,8 +1008,8 @@ module.exports = function (RED) {
     //
     this.on("input", (msg) => {
       var templateId = '';
-      if ((config.wwsTemplateId === '') && 
-          ((msg.wwsTemplateId === undefined) || (msg.wwsTemplateId === ''))) {
+      if ((config.wwsTemplateId.trim() === '') && 
+          (!msg.wwsTemplateId || (msg.wwsTemplateId.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -975,10 +1018,10 @@ module.exports = function (RED) {
         node.error('wwsGetTemplate: Missing TemplateID', msg);
         return;
       }
-      if (config.wwsTemplateId !== '') {
-        templateId = config.wwsTemplateId;
+      if (config.wwsTemplateId.trim() !== '') {
+        templateId = config.wwsTemplateId.trim();
       } else {
-        templateId = msg.wwsTemplateId;
+        templateId = msg.wwsTemplateId.trim();
       }
       //
       //  Prepare the operation
@@ -1057,8 +1100,8 @@ module.exports = function (RED) {
       var theSpace = '';
       switch (config.SpaceOperation) {
         case 'byId':
-          if ((config.wwsSpaceId === '') && 
-              ((msg.wwsSpaceId === undefined) || (msg.wwsSpaceId === ''))) {
+          if ((config.wwsSpaceId.trim() === '') && 
+              (!msg.wwsSpaceId || (msg.wwsSpaceId.trim() === ''))) {
             //
             //  There is an issue
             //
@@ -1067,10 +1110,10 @@ module.exports = function (RED) {
             node.error('wwsGetTemplatedSpace: Missing SpaceID', msg);
             return;
           }
-          if (config.wwsSpaceId !== '') {
-            theSpace = config.wwsSpaceId;
+          if (config.wwsSpaceId.trim() !== '') {
+            theSpace = config.wwsSpaceId.trim();
           } else {
-            theSpace = msg.wwsSpaceId;
+            theSpace = msg.wwsSpaceId.trim();
           }
           //
           //  Prepare the operation
@@ -1078,8 +1121,8 @@ module.exports = function (RED) {
           query = _getTemplatedSpaceQuery(theSpace);
           break;
         case 'byName':
-          if ((config.wwsSpaceName === '') && 
-              ((msg.wwsSpaceName === undefined) || (msg.wwsSpaceName === ''))) {
+          if ((config.wwsSpaceName.trim() === '') && 
+              (!msg.wwsSpaceName || (msg.wwsSpaceName.trim() === ''))) {
             //
             //  There is an issue
             //
@@ -1088,10 +1131,10 @@ module.exports = function (RED) {
             node.error('wwsGetTemplatedSpace: Missing SpaceName', msg);
             return;
           }
-          if (config.wwsSpaceName !== '') {
-            theSpace = config.wwsSpaceName;
+          if (config.wwsSpaceName.trim() !== '') {
+            theSpace = config.wwsSpaceName.trim();
           } else {
-            theSpace = msg.wwsSpaceName;
+            theSpace = msg.wwsSpaceName.trim();
           }
           //
           //  Prepare the operation
@@ -1102,7 +1145,7 @@ module.exports = function (RED) {
           //
           //  Prepare the operation
           //
-          query = _getMySpaces(theSpace);
+          query = _getMySpaces();
           break;
         default:
       }
@@ -1214,8 +1257,8 @@ module.exports = function (RED) {
       //  Get the SpaceID
       //
       var spaceId = '';
-      if ((config.wwsSpaceId === '') && 
-          ((msg.wwsSpaceId === undefined) || (msg.wwsSpaceId === ''))) {
+      if ((config.wwsSpaceId.trim() === '') && 
+          (!msg.wwsSpaceId || (msg.wwsSpaceId.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -1224,17 +1267,17 @@ module.exports = function (RED) {
         node.error('wwsUpdateSpace: Missing SpaceID', msg);
         return;
       }
-      if (config.wwsSpaceId !== '') {
-        spaceId = config.wwsSpaceId;
+      if (config.wwsSpaceId.trim() !== '') {
+        spaceId = config.wwsSpaceId.trim();
       } else {
-        spaceId = msg.wwsSpaceId;
+        spaceId = msg.wwsSpaceId.trim();
       }
       //
       //  Get the Properties to be modified
       //
       var properties = null;
       if ((config.wwsPropertyList.trim() === '') && 
-          ((msg.wwsPropertyList === undefined) || (msg.wwsPropertyList === null))) {
+          (!msg.wwsPropertyList || !Array.isArray(msg.wwsPropertyList))) {
         //
         //  No Properties to be modified! 
         //  I am fine with this
@@ -1279,7 +1322,7 @@ module.exports = function (RED) {
       //
       var newStatus = null;
       if ((config.wwsNewStatus.trim() === '') && 
-          ((msg.wwsNewStatus === undefined) || (msg.wwsNewStatus === ''))) {
+          (!msg.wwsNewStatus || (msg.wwsNewStatus.trim() === ''))) {
         //
         //  Status does not need to be modified 
         //  I am fine with this
@@ -1302,7 +1345,7 @@ module.exports = function (RED) {
       //
       var members = null;
       if ((config.wwsMemberList.trim() === '') && 
-          ((msg.wwsMemberList === undefined) || (msg.wwsMemberList === null))) {
+          (!msg.wwsMemberList || (msg.wwsMemberList.trim() === ''))) {
         //
         //  No Members to be added  
         //  I am fine with this
@@ -1574,8 +1617,8 @@ module.exports = function (RED) {
       //  Get the templateID
       //
       var templateId = '';
-      if ((config.wwsTemplateId === '') && 
-          ((msg.wwsTemplateId === undefined) || (msg.wwsTemplateId === ''))) {
+      if ((config.wwsTemplateId.trim() === '') && 
+          (!msg.wwsTemplateId || (msg.wwsTemplateId.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -1584,17 +1627,17 @@ module.exports = function (RED) {
         node.error('wwsCreateSpaceFromTemplate: Missing templateID', msg);
         return;
       }
-      if (config.wwsTemplateId !== '') {
-        templateId = config.wwsTemplateId;
+      if (config.wwsTemplateId.trim() !== '') {
+        templateId = config.wwsTemplateId.trim();
       } else {
-        templateId = msg.wwsTemplateId;
+        templateId = msg.wwsTemplateId.trim();
       }
       //
       //  Get the new space Name
       //
       var spaceName = '';
-      if ((config.wwsSpaceName === '') && 
-          ((msg.wwsSpaceName === undefined) || (msg.wwsSpaceName === ''))) {
+      if ((config.wwsSpaceName.trim() === '') && 
+          (!msg.wwsSpaceName || (msg.wwsSpaceName.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -1603,17 +1646,17 @@ module.exports = function (RED) {
         node.error('wwsCreateSpaceFromTemplate: Missing Space Name', msg);
         return;
       }
-      if (config.wwsSpaceName !== '') {
-        spaceName = config.wwsSpaceName;
+      if (config.wwsSpaceName.trim() !== '') {
+        spaceName = config.wwsSpaceName.trim();
       } else {
-        spaceName = msg.wwsSpaceName;
+        spaceName = msg.wwsSpaceName.trim();
       }
       //
       //  Get the Properties to be modified
       //
       var properties = null;
       if ((config.wwsPropertyList.trim() === '') && 
-          ((msg.wwsPropertyList === undefined) || (msg.wwsPropertyList === null))) {
+          (!msg.wwsPropertyList || !Array.isArray(msg.wwsPropertyList))) {
         //
         //  No Properties to be modified! 
         //  I am fine with this
@@ -1658,7 +1701,7 @@ module.exports = function (RED) {
       //
       var members = null;
       if ((config.wwsMemberList.trim() === '') && 
-          ((msg.wwsMemberList === undefined) || (msg.wwsMemberList === null))) {
+          (!msg.wwsMemberList || (msg.wwsMemberList.trim() === ''))) {
         //
         //  No Members to be added  
         //  I am fine with this
@@ -1891,7 +1934,7 @@ module.exports = function (RED) {
       //  Which Message needs to be added focus ?
       //
       if ((config.wwsMessageId.trim() === '') && 
-          ((msg.wwsMessageId === undefined) || (msg.wwsMessageId.trim() === ''))) {
+          (!msg.wwsMessageId || (msg.wwsMessageId.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -1910,7 +1953,7 @@ module.exports = function (RED) {
       //  Which String needs to be recognized ?
       //
       if ((config.wwsString.trim() === '') && 
-          ((msg.wwsString === undefined) || (msg.wwsString.trim() === ''))) {
+          (!msg.wwsString || (msg.wwsString.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -1929,7 +1972,7 @@ module.exports = function (RED) {
       //  Which Actions needs to be proposed as focus ?
       //
       if ((config.wwsActionId.trim() === '') && 
-          ((msg.wwsActionId === undefined) || (msg.wwsActionId.trim() === ''))) {
+          (!msg.wwsActionId || (msg.wwsActionId.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -1948,7 +1991,7 @@ module.exports = function (RED) {
       //  Which LENS needs to be proposed as focus ?
       //
       if ((config.wwsLens.trim() === '') && 
-          ((msg.wwsLens === undefined) || (msg.wwsLens.trim() === ''))) {
+          (!msg.wwsLens || (msg.wwsLens.trim() === ''))) {
         //
         //  There is an issue
         //
@@ -1969,7 +2012,7 @@ module.exports = function (RED) {
       if (config.wwsCategory.trim() !== '') {
         category = config.wwsCategory.trim();
       } else {
-        if ((msg.wwsCategory !== undefined) && (msg.wwsCategory.trim() !== '')) {
+        if (!msg.wwsCategory && (msg.wwsCategory.trim() !== '')) {
           category = msg.wwsCategory.trim();
         } else {
           console.log("wwsAddFocus: Missing OPTIONAL Category Information");
@@ -1982,7 +2025,7 @@ module.exports = function (RED) {
       if (config.wwsPayload.trim() !== '') {
         thePayload = config.wwsPayload.trim();
       } else {
-        if ((msg.wwsPayload !== undefined) && (msg.wwsPayload.trim() !== '')) {
+        if (!msg.wwsPayload && (msg.wwsPayload.trim() !== '')) {
           thePayload = msg.wwsPayload.trim();
         } else {
           console.log("wwsAddFocus: Missing OPTIONAL PAYLOAD Information");
@@ -2171,8 +2214,8 @@ module.exports = function (RED) {
       //
       //  Check for the AFElements input
       //
-      if ( (msg.wwsAFElements === undefined) || 
-           (!Array.isArray(msg.wwsAFElements)) || 
+      if ( !msg.wwsAFElements || 
+           !Array.isArray(msg.wwsAFElements) || 
            (msg.wwsAFElements.length <= 0) ) {
         //
         //  There is an issue
@@ -2187,7 +2230,7 @@ module.exports = function (RED) {
       //
       //  Check for the AFMutation input
       //
-      if ((msg.wwsAFMutation === undefined) || (msg.wwsAFMutation.trim() === '')) {
+      if (!msg.wwsAFMutation || (msg.wwsAFMutation.trim() === '')) {
         //
         //  There is an issue
         //
@@ -2246,6 +2289,20 @@ module.exports = function (RED) {
           } else {  
             details += ' date: "' + Math.floor(new Date()) + '"';
           }
+         /*
+          let _date;
+          if (AFElements[i].date) {
+            _date = AFElements[i].date;
+          } else {
+            _date = Math.floor(new Date());
+          }
+          let newDetails = ` {type: CARD, cardInput: {type: INFORMATION, informationCardInput: {
+             title: "${AFElements[i].title}",
+             subtitle: "${AFElements[i].subtitle}",
+             text: "${AFElements[i].text}",
+             date: "${_date}"`;
+          details += newDetails;
+          */
           if (AFElements[i].buttons && Array.isArray(AFElements[i].buttons)) {
             //
             //  There are buttons
@@ -2281,6 +2338,12 @@ module.exports = function (RED) {
           details += ' {genericAnnotation : {';
           details += ' title: "' + (AFElements[i].title) + '",';
           details += ' text: "' + (AFElements[i].text) + '"';
+          /*
+          let newDetails = ` {genericAnnotation : {
+          ' title: "${AFElements[i].title}",
+          ' text: "${AFElements[i].text}"'`;
+          details += newDetails;
+          */
           if (AFElements[i].buttons && Array.isArray(AFElements[i].buttons)) {
             //
             //  There are buttons
@@ -2437,9 +2500,10 @@ module.exports = function (RED) {
     if (variables) options.body.variables = variables;
     if (operationName) options.body.operationName = operationName;
 
-    __log("_graphQL_options : executing graphQL call with these options");
-    __log(JSON.stringify(options, ' ', 2));
-    __log('-------------------------------------------------------')
+    //__log("_graphQL_options : executing graphQL call with these options");
+    //__log(JSON.stringify(options, ' ', 2));
+    //__log('-------------------------------------------------------')
+
     return options;
   }
 
@@ -2775,7 +2839,7 @@ module.exports = function (RED) {
     query += '}}';
     return query;
   }
-  function _getMySpaces(spaceName) {
+  function _getMySpaces() {
     var query = 'query mySpaces {spaces ';
     query += '{items ';
     query += _spaceQL_details();
